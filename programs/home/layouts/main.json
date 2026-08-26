@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "id": "main",
+  "root": {
+    "id": "available-programs",
+    "type": "list",
+    "title": "Available programs",
+    "bind": "programs",
+    "key": "id",
+    "display": ["id", "description"]
+  }
+}
