@@ -1,1 +1,1 @@
-export const message = "development-a: shared";
+export const message = "private-a";
