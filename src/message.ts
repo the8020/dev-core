@@ -1,1 +1,1 @@
-export const message = "development-b: shared";
+export const message = "live-outside-activation-2026-08-27";
