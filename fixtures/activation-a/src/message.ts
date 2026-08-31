@@ -1,0 +1,1 @@
+export const message = "live-inside-activation-2026-08-27";

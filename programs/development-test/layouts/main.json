@@ -1,0 +1,41 @@
+{
+  "schema": 1,
+  "id": "development-test-main",
+  "root": {
+    "id": "root",
+    "type": "stack",
+    "children": [
+      {
+        "id": "workspace",
+        "type": "section",
+        "title": "Your development sandbox",
+        "children": [
+          {
+            "id": "workspace-fields",
+            "type": "field-group",
+            "title": "Workspace status",
+            "controls": [
+              "workspaceId",
+              "state",
+              "activeSandboxId",
+              "status",
+              "confirmDestructive"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "console-section",
+        "type": "section",
+        "title": "Local sandbox console",
+        "children": [
+          {
+            "id": "console",
+            "type": "custom",
+            "customElement": "sandbox-console"
+          }
+        ]
+      }
+    ]
+  }
+}

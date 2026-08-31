@@ -1,0 +1,4 @@
+schema = 1
+description = "Start, control, and open a local browser console in running sandboxes"
+entrypoint = "program.ts"
+default_layout = "layouts/main.json"

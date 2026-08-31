@@ -1,0 +1,4 @@
+schema = 1
+description = "80|20 development workspace tools and activation fixtures"
+documentation_url = "https://github.com/the8020/dev-core"
+license = "Apache-2.0"
