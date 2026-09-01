@@ -6,6 +6,11 @@
     "type": "stack",
     "children": [
       {
+        "id": "console",
+        "type": "custom",
+        "customElement": "sandbox-console"
+      },
+      {
         "id": "workspace",
         "type": "section",
         "title": "Your development sandbox",
@@ -21,18 +26,6 @@
               "status",
               "confirmDestructive"
             ]
-          }
-        ]
-      },
-      {
-        "id": "console-section",
-        "type": "section",
-        "title": "Local sandbox console",
-        "children": [
-          {
-            "id": "console",
-            "type": "custom",
-            "customElement": "sandbox-console"
           }
         ]
       }

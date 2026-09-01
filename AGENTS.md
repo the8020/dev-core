@@ -23,7 +23,8 @@
   console target directly as `dev-<username>`, automatically creates or starts
   that sandbox on entry, delegates lifecycle operations to typed kernel
   commands, and provides only the declarative `sandbox-console.v1` descriptor
-  with root's home and a standard administrative `PATH` to the UUI shell.
+  with root's home and a standard administrative `PATH` to the UUI shell. The
+  untitled terminal renders before the sandbox status fields.
 - Its destructive-reset guidance states that source reset preserves `/root` and
   system changes while factory reset deletes both.
 
