@@ -6,6 +6,15 @@
     "type": "stack",
     "children": [
       {
+        "id": "activation",
+        "type": "field-group",
+        "title": "Activation",
+        "controls": [
+          "message",
+          "status"
+        ]
+      },
+      {
         "id": "changed-packages",
         "type": "list",
         "title": "Changed packages",
@@ -17,16 +26,11 @@
           "addedRows",
           "removedRows",
           "ready"
-        ]
-      },
-      {
-        "id": "activation",
-        "type": "field-group",
-        "title": "Activation",
-        "controls": [
-          "message",
-          "status"
-        ]
+        ],
+        "headings": {
+          "addedRows": "+",
+          "removedRows": "-"
+        }
       }
     ]
   }
