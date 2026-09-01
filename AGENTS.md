@@ -19,14 +19,13 @@
   Workers use only the canonical runtime `@the8020/*` and `@packages/*` aliases.
 - Fixtures remain intentionally small and safe to edit, rename, delete, and
   restore through real development sandboxes.
-- Development test lists the authenticated user's workspace and every running
-  local development/runtime sandbox, automatically creates or starts that user's
-  development sandbox on entry and selects it as the default console target,
-  delegates lifecycle operations to typed kernel commands, and provides only the
-  declarative `sandbox-console.v1` descriptor with a standard administrative
-  `PATH` to the UUI shell.
-- Its destructive-reset guidance states that source reset preserves persistent
-  home and system changes while factory reset deletes both.
+- Development test lists only the authenticated user's workspace, derives its
+  console target directly as `dev-<username>`, automatically creates or starts
+  that sandbox on entry, delegates lifecycle operations to typed kernel
+  commands, and provides only the declarative `sandbox-console.v1` descriptor
+  with root's home and a standard administrative `PATH` to the UUI shell.
+- Its destructive-reset guidance states that source reset preserves `/root` and
+  system changes while factory reset deletes both.
 
 # Work Guidance
 
@@ -39,6 +38,6 @@
   development program. Development-domain unit and real gVisor tests use
   `the8020/dev-core` and `the8020/demo` identities to prove independent
   histories and multi-package activation without pushing remotes; the browser
-  E2E covers workspace lifecycle and both console target kinds.
+  E2E covers workspace lifecycle and the deterministic development console.
 
 # Child DOX Index

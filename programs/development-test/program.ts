@@ -11,29 +11,11 @@ import layout from "./layouts/main.json" with { type: "json" };
 interface Workspace {
   workspace_id: string;
   owner_user_id: string;
-  active_sandbox_id?: string;
   state: string;
 }
 
 interface DevelopmentListResult extends Record<string, unknown> {
   workspaces: Workspace[];
-}
-
-interface RuntimeSandbox {
-  sandbox_id: string;
-  workload_type: string;
-  state: string;
-}
-
-interface SandboxListResult extends Record<string, unknown> {
-  sandboxes: RuntimeSandbox[];
-}
-
-interface Target {
-  value: string;
-  label: string;
-  kind: "runtime" | "development";
-  sandboxId: string;
 }
 
 interface DevelopmentScreenModel {
@@ -42,14 +24,13 @@ interface DevelopmentScreenModel {
   activeSandboxId: string;
   status: string;
   confirmDestructive: boolean;
-  target: string;
 }
 
 export default async function developmentTest(): Promise<void> {
   const user = await kernel.auth.currentUser();
   if (user === undefined) throw new Error("authenticated user is required");
   const developmentUserId = user.username;
-  let selectedTarget = "";
+  const sandboxId = `dev-${developmentUserId}`;
   let status = await startDevelopmentSandbox(developmentUserId);
   let confirmDestructive = false;
   while (true) {
@@ -57,15 +38,7 @@ export default async function developmentTest(): Promise<void> {
     const workspace = workspaces.find((item) =>
       item.owner_user_id === developmentUserId
     );
-    const targets = await consoleTargets(workspaces);
-    if (!targets.some((item) => item.value === selectedTarget)) {
-      selectedTarget = workspace?.active_sandbox_id === undefined
-        ? targets[0]?.value ?? ""
-        : `development:${workspace.active_sandbox_id}`;
-      if (!targets.some((item) => item.value === selectedTarget)) {
-        selectedTarget = targets[0]?.value ?? "";
-      }
-    }
+    const running = workspace !== undefined && isRunning(workspace);
     const Screen = z.object({
       workspaceId: field(z.string(), {
         label: "Workspace",
@@ -95,37 +68,23 @@ export default async function developmentTest(): Promise<void> {
         label: "Confirm destructive reset",
         length: "short",
         description:
-          "Required for source reset or factory reset. Source reset preserves persistent home and installed system changes; factory reset deletes both.",
+          "Required for source reset or factory reset. Source reset preserves /root and installed system changes; factory reset deletes both.",
         control: "checkbox",
         hidden: workspace === undefined,
-      }),
-      target: field(z.string(), {
-        label: "Running sandbox",
-        length: "long",
-        description:
-          "Current bootstrap users are administrators and may open a console in any running local sandbox.",
-        control: "select",
-        reactive: true,
-        options: targets.map((item) => ({
-          value: item.value,
-          label: item.label,
-        })),
       }),
     });
     const model: DevelopmentScreenModel = {
       workspaceId: workspace?.workspace_id ?? "Not created",
       state: workspace?.state ?? "ABSENT",
-      activeSandboxId: workspace?.active_sandbox_id ?? "",
+      activeSandboxId: running ? sandboxId : "",
       status,
       confirmDestructive,
-      target: selectedTarget,
     };
-    const selected = targets.find((item) => item.value === selectedTarget);
     const event = await callScreen({
       id: "development-test",
       title: "Development test",
       description:
-        "Control your development sandbox and open a credentialless Bash PTY in any running local sandbox.",
+        "Control your development sandbox and open its credentialless Bash PTY.",
       schema: Screen,
       model,
       layout,
@@ -133,14 +92,12 @@ export default async function developmentTest(): Promise<void> {
         id: "sandbox-console",
         initializer: "sandbox-console.v1",
         preserve: true,
-        config: consoleConfiguration(selected),
+        config: consoleConfiguration(sandboxId, running),
       }],
       header: {
-        controls: [{ id: "target", bind: "target" }],
         actions: actionsFor(workspace),
       },
     });
-    selectedTarget = model.target;
     confirmDestructive = model.confirmDestructive;
     if (event.action === BACK_EVENT) return;
     if (event.action === "change") continue;
@@ -154,13 +111,11 @@ export default async function developmentTest(): Promise<void> {
           await kernel.admin.execute("development.sandbox.create", {
             user_id: developmentUserId,
           });
-          selectedTarget = "";
           status = "Development sandbox created and started";
         } else {
           await kernel.admin.execute("development.sandbox.start", {
             workspace_id: workspace.workspace_id,
           });
-          selectedTarget = "";
           status = "Development sandbox started";
         }
       }
@@ -182,7 +137,6 @@ export default async function developmentTest(): Promise<void> {
           workspace_id: workspace.workspace_id,
           confirm: true,
         });
-        selectedTarget = "";
         confirmDestructive = false;
         status = "Development source reset";
       }
@@ -192,7 +146,6 @@ export default async function developmentTest(): Promise<void> {
           workspace_id: workspace.workspace_id,
           confirm: true,
         });
-        selectedTarget = "";
         confirmDestructive = false;
         status = "Development workspace factory reset";
       }
@@ -208,8 +161,7 @@ async function startDevelopmentSandbox(userId: string): Promise<string> {
     item.owner_user_id === userId
   );
   if (
-    workspace?.active_sandbox_id !== undefined &&
-    (workspace.state === "READY" || workspace.state === "CONFLICTED")
+    workspace !== undefined && isRunning(workspace)
   ) {
     return "Ready";
   }
@@ -240,60 +192,30 @@ async function developmentWorkspaces(): Promise<Workspace[]> {
   return result.workspaces;
 }
 
-async function consoleTargets(workspaces: Workspace[]): Promise<Target[]> {
-  const result: Target[] = workspaces.flatMap((workspace) =>
-    workspace.active_sandbox_id === undefined ||
-      (workspace.state !== "READY" && workspace.state !== "CONFLICTED")
-      ? []
-      : [{
-        value: `development:${workspace.active_sandbox_id}`,
-        label:
-          `Development · ${workspace.owner_user_id} · ${workspace.active_sandbox_id}`,
-        kind: "development" as const,
-        sandboxId: workspace.active_sandbox_id,
-      }]
-  );
-  try {
-    const runtime = await kernel.admin.execute<SandboxListResult>(
-      "sandbox.list",
-    );
-    for (const sandbox of runtime.sandboxes) {
-      if (sandbox.state !== "READY") continue;
-      result.push({
-        value: `runtime:${sandbox.sandbox_id}`,
-        label: `Runtime · ${sandbox.workload_type} · ${sandbox.sandbox_id}`,
-        kind: "runtime",
-        sandboxId: sandbox.sandbox_id,
-      });
-    }
-  } catch {
-    // Development workspaces remain usable while runtime initialization fails.
-  }
-  return result.sort((left, right) => left.label.localeCompare(right.label));
+function isRunning(workspace: Workspace): boolean {
+  return workspace.state === "READY" || workspace.state === "CONFLICTED";
 }
 
-function consoleConfiguration(target: Target | undefined) {
-  const development = target?.kind === "development";
+function consoleConfiguration(sandboxId: string, enabled: boolean) {
   return {
-    enabled: target !== undefined,
+    enabled,
     websocketPath: "/_the8020/console",
     target: {
-      kind: target?.kind ?? "development",
-      sandboxId: target?.sandboxId ?? "unavailable",
+      kind: "development",
+      sandboxId,
     },
     arguments: ["/bin/bash", "-l"],
     environment: [
       "TERM=xterm-256color",
       "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-      `HOME=${development ? "/home/developer" : "/tmp"}`,
+      "HOME=/root",
     ],
-    workingDirectory: development ? "/workspace" : "/",
+    workingDirectory: "/workspace",
   };
 }
 
 function actionsFor(workspace: Workspace | undefined) {
-  const running = workspace?.active_sandbox_id !== undefined &&
-    (workspace.state === "READY" || workspace.state === "CONFLICTED");
+  const running = workspace !== undefined && isRunning(workspace);
   return [
     ...(!running
       ? [{ id: "start", label: "Start sandbox", kind: "primary" as const }]
