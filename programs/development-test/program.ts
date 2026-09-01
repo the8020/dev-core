@@ -84,7 +84,7 @@ export default async function developmentTest(): Promise<void> {
       id: "development-test",
       title: "Development test",
       description:
-        "Control your development sandbox and open its credentialless Bash PTY.",
+        `Connect from your own terminal with ssh ${developmentUserId}@localhost -p 22. Change the hostname or port when 80|20 is containerized, behind a proxy, or published through different port mappings.`,
       schema: Screen,
       model,
       layout,

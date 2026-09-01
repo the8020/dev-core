@@ -24,7 +24,9 @@
   that sandbox on entry, delegates lifecycle operations to typed kernel
   commands, and provides only the declarative `sandbox-console.v1` descriptor
   with root's home and a standard administrative `PATH` to the UUI shell. The
-  untitled terminal renders before the sandbox status fields.
+  untitled terminal renders before the sandbox status fields. Its description
+  shows an SSH command for the authenticated username on localhost port 22 and
+  warns that container, proxy, or published endpoint mappings may differ.
 - Its destructive-reset guidance states that source reset preserves `/root` and
   system changes while factory reset deletes both.
 
