@@ -1,6 +1,6 @@
 # Purpose
 
-- Provide the first-party 80|20 development workspace program and compact
+- Provide the first-party 80|20 development sandbox program and compact
   activation fixtures.
 - This file is the root contract of the independent `the8020/dev-core` Git
   repository.
@@ -9,7 +9,7 @@
 
 - Own `programs/development-test`, its sandbox lifecycle/console screen, and
   small `fixtures/activation-*` text and TypeScript fixtures.
-- Do not own development workspace state, Git activation logic, sandbox
+- Do not own development sandbox state, Git activation logic, sandbox
   implementation, browser console rendering, or services.
 
 # Local Contracts
@@ -19,9 +19,9 @@
   Workers use only the canonical runtime `@the8020/*` and `@packages/*` aliases.
 - Fixtures remain intentionally small and safe to edit, rename, delete, and
   restore through real development sandboxes.
-- Development test lists only the authenticated user's workspace, derives its
-  console target directly as `dev-<username>`, automatically creates or starts
-  that sandbox on entry, delegates lifecycle operations to typed kernel
+- Development test selects the authenticated user's single sandbox by `user_id`,
+  derives its console target directly as `dev-<username>`, automatically creates
+  or starts it on entry, delegates lifecycle operations to typed kernel
   commands, and provides only the declarative `sandbox-console.v1` descriptor
   with root's home and a standard administrative `PATH` to the UUI shell. The
   untitled terminal renders before the sandbox status fields. Its description
@@ -29,6 +29,10 @@
   warns that container, proxy, or published endpoint mappings may differ.
 - Its destructive-reset guidance states that source reset preserves `/root` and
   system changes while factory reset deletes both.
+- Its activation screen previews every changed package with changed-file and
+  added/removed-row counts plus ready/blocked state, requires one commit
+  message, and invokes the typed user-scoped activation command to sync all
+  ready changes at once. It owns no Git or overlay implementation.
 
 # Work Guidance
 
@@ -41,6 +45,7 @@
   development program. Development-domain unit and real gVisor tests use
   `the8020/dev-core` and `the8020/demo` identities to prove independent
   histories and multi-package activation without pushing remotes; the browser
-  E2E covers workspace lifecycle and the deterministic development console.
+  E2E covers sandbox lifecycle, the deterministic development console, UUI
+  activation validation/statistics, independent commits, and overlay reset.
 
 # Child DOX Index

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "id": "development-activation",
+  "root": {
+    "id": "root",
+    "type": "stack",
+    "children": [
+      {
+        "id": "changed-packages",
+        "type": "list",
+        "title": "Changed packages",
+        "bind": "packages",
+        "key": "package",
+        "display": [
+          "package",
+          "changedFiles",
+          "addedRows",
+          "removedRows",
+          "ready"
+        ]
+      },
+      {
+        "id": "activation",
+        "type": "field-group",
+        "title": "Activation",
+        "controls": [
+          "message",
+          "status"
+        ]
+      }
+    ]
+  }
+}

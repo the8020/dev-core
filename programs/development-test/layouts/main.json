@@ -11,18 +11,17 @@
         "customElement": "sandbox-console"
       },
       {
-        "id": "workspace",
+        "id": "sandbox",
         "type": "section",
         "title": "Your development sandbox",
         "children": [
           {
-            "id": "workspace-fields",
+            "id": "sandbox-fields",
             "type": "field-group",
-            "title": "Workspace status",
+            "title": "Sandbox status",
             "controls": [
-              "workspaceId",
+              "sandboxId",
               "state",
-              "activeSandboxId",
               "status",
               "confirmDestructive"
             ]

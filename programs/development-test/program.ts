@@ -7,24 +7,75 @@ import {
   z,
 } from "@packages/the8020/uui/mod.ts";
 import layout from "./layouts/main.json" with { type: "json" };
+import activationLayout from "./layouts/activation.json" with { type: "json" };
 
-interface Workspace {
-  workspace_id: string;
-  owner_user_id: string;
+interface DevelopmentSandbox {
+  user_id: string;
+  sandbox_id: string;
   state: string;
 }
 
 interface DevelopmentListResult extends Record<string, unknown> {
-  workspaces: Workspace[];
+  sandboxes: DevelopmentSandbox[];
 }
 
 interface DevelopmentScreenModel {
-  workspaceId: string;
+  sandboxId: string;
   state: string;
-  activeSandboxId: string;
   status: string;
   confirmDestructive: boolean;
 }
+
+interface ActivationPackagePreview {
+  package_id: string;
+  changed_files: number;
+  added_rows: number;
+  removed_rows: number;
+  activation_ready: boolean;
+}
+
+interface ActivationPreviewResult extends Record<string, unknown> {
+  preview: {
+    packages: ActivationPackagePreview[];
+  };
+}
+
+interface ActivationRunResult extends Record<string, unknown> {
+  activation: {
+    success: boolean;
+    status: string;
+  };
+}
+
+const ActivationScreen = z.object({
+  packages: field(
+    z.array(z.object({
+      package: z.string(),
+      changedFiles: z.number(),
+      addedRows: z.number(),
+      removedRows: z.number(),
+      ready: z.string(),
+    })),
+    {
+      label: "Changed packages",
+      control: "list",
+      readOnly: true,
+    },
+  ),
+  message: field(z.string(), {
+    label: "Commit message",
+    description:
+      "Required. The same message is used for every changed package in this activation.",
+    control: "textarea",
+    length: "long",
+    rowSpan: 2,
+  }),
+  status: field(z.string(), {
+    label: "Activation status",
+    length: "long",
+    readOnly: true,
+  }),
+});
 
 export default async function developmentTest(): Promise<void> {
   const user = await kernel.auth.currentUser();
@@ -34,14 +85,14 @@ export default async function developmentTest(): Promise<void> {
   let status = await startDevelopmentSandbox(developmentUserId);
   let confirmDestructive = false;
   while (true) {
-    const workspaces = await developmentWorkspaces();
-    const workspace = workspaces.find((item) =>
-      item.owner_user_id === developmentUserId
+    const sandboxes = await developmentSandboxes();
+    const sandbox = sandboxes.find((item) =>
+      item.user_id === developmentUserId
     );
-    const running = workspace !== undefined && isRunning(workspace);
+    const running = sandbox !== undefined && isRunning(sandbox);
     const Screen = z.object({
-      workspaceId: field(z.string(), {
-        label: "Workspace",
+      sandboxId: field(z.string(), {
+        label: "Sandbox",
         length: "long",
         control: "text",
         readOnly: true,
@@ -49,12 +100,6 @@ export default async function developmentTest(): Promise<void> {
       state: field(z.string(), {
         label: "State",
         length: "short",
-        control: "text",
-        readOnly: true,
-      }),
-      activeSandboxId: field(z.string(), {
-        label: "Active sandbox",
-        length: "long",
         control: "text",
         readOnly: true,
       }),
@@ -70,13 +115,12 @@ export default async function developmentTest(): Promise<void> {
         description:
           "Required for source reset or factory reset. Source reset preserves /root and installed system changes; factory reset deletes both.",
         control: "checkbox",
-        hidden: workspace === undefined,
+        hidden: sandbox === undefined,
       }),
     });
     const model: DevelopmentScreenModel = {
-      workspaceId: workspace?.workspace_id ?? "Not created",
-      state: workspace?.state ?? "ABSENT",
-      activeSandboxId: running ? sandboxId : "",
+      sandboxId: sandbox?.sandbox_id ?? sandboxId,
+      state: sandbox?.state ?? "ABSENT",
       status,
       confirmDestructive,
     };
@@ -95,7 +139,7 @@ export default async function developmentTest(): Promise<void> {
         config: consoleConfiguration(sandboxId, running),
       }],
       header: {
-        actions: actionsFor(workspace),
+        actions: actionsFor(sandbox),
       },
     });
     confirmDestructive = model.confirmDestructive;
@@ -105,49 +149,54 @@ export default async function developmentTest(): Promise<void> {
       status = "Refreshed";
       continue;
     }
+    if (event.action === "activate" && sandbox !== undefined) {
+      await activateChanges(developmentUserId);
+      status = "Activation screen closed";
+      continue;
+    }
     try {
       if (event.action === "start") {
-        if (workspace === undefined) {
+        if (sandbox === undefined) {
           await kernel.admin.execute("development.sandbox.create", {
             user_id: developmentUserId,
           });
           status = "Development sandbox created and started";
         } else {
           await kernel.admin.execute("development.sandbox.start", {
-            workspace_id: workspace.workspace_id,
+            user_id: developmentUserId,
           });
           status = "Development sandbox started";
         }
       }
-      if (event.action === "stop" && workspace !== undefined) {
+      if (event.action === "stop" && sandbox !== undefined) {
         await kernel.admin.execute("development.sandbox.stop", {
-          workspace_id: workspace.workspace_id,
+          user_id: developmentUserId,
         });
         status = "Development sandbox stopped";
       }
-      if (event.action === "restart" && workspace !== undefined) {
+      if (event.action === "restart" && sandbox !== undefined) {
         await kernel.admin.execute("development.sandbox.restart", {
-          workspace_id: workspace.workspace_id,
+          user_id: developmentUserId,
         });
         status = "Development sandbox restarted";
       }
-      if (event.action === "reset-source" && workspace !== undefined) {
+      if (event.action === "reset-source" && sandbox !== undefined) {
         requireDestructiveConfirmation(confirmDestructive);
         await kernel.admin.execute("development.sandbox.reset_source", {
-          workspace_id: workspace.workspace_id,
+          user_id: developmentUserId,
           confirm: true,
         });
         confirmDestructive = false;
         status = "Development source reset";
       }
-      if (event.action === "factory-reset" && workspace !== undefined) {
+      if (event.action === "factory-reset" && sandbox !== undefined) {
         requireDestructiveConfirmation(confirmDestructive);
         await kernel.admin.execute("development.sandbox.factory_reset", {
-          workspace_id: workspace.workspace_id,
+          user_id: developmentUserId,
           confirm: true,
         });
         confirmDestructive = false;
-        status = "Development workspace factory reset";
+        status = "Development sandbox factory reset";
       }
     } catch (error) {
       status = error instanceof Error ? error.message : String(error);
@@ -156,23 +205,97 @@ export default async function developmentTest(): Promise<void> {
   }
 }
 
+async function activateChanges(userId: string): Promise<void> {
+  let message = "";
+  let status = "Review all private package changes before activation";
+  while (true) {
+    const result = await kernel.admin.execute<ActivationPreviewResult>(
+      "development.activate.preview",
+      { user_id: userId },
+    );
+    const packages = result.preview.packages.map((item) => ({
+      package: item.package_id,
+      changedFiles: item.changed_files,
+      addedRows: item.added_rows,
+      removedRows: item.removed_rows,
+      ready: item.activation_ready ? "Ready" : "Blocked",
+    }));
+    const model: z.infer<typeof ActivationScreen> = {
+      packages,
+      message,
+      status: packages.length === 0 ? "No private changes" : status,
+    };
+    const event = await callScreen({
+      id: "development-activation",
+      title: "Activate development changes",
+      description:
+        "Commit every changed package independently, publish the private deltas to shared sources, and reset the sandbox overlay.",
+      schema: ActivationScreen,
+      model,
+      layout: activationLayout,
+      header: {
+        actions: [
+          ...(packages.length > 0
+            ? [{
+              id: "sync-all",
+              label: "Sync all changes",
+              kind: "primary" as const,
+            }]
+            : []),
+          { id: "refresh", label: "Refresh" },
+        ],
+      },
+    });
+    message = model.message;
+    status = model.status;
+    if (event.action === BACK_EVENT) return;
+    if (event.action === "change" || event.action === "refresh") continue;
+    if (event.action === "sync-all") {
+      if (message.trim() === "") {
+        status = "A commit message is required";
+        showNotification(status, "error");
+        continue;
+      }
+      try {
+        const activation = await kernel.admin.execute<ActivationRunResult>(
+          "development.activate.run",
+          {
+            user_id: userId,
+            message: message.trim(),
+            metadata: JSON.stringify({ client: "uui" }),
+          },
+        );
+        if (!activation.activation.success) {
+          throw new Error(`Activation ${activation.activation.status}`);
+        }
+        message = "";
+        status = "All package changes activated and the overlay was reset";
+        showNotification(status, "success");
+      } catch (error) {
+        status = error instanceof Error ? error.message : String(error);
+        showNotification(status, "error");
+      }
+    }
+  }
+}
+
 async function startDevelopmentSandbox(userId: string): Promise<string> {
-  const workspace = (await developmentWorkspaces()).find((item) =>
-    item.owner_user_id === userId
+  const sandbox = (await developmentSandboxes()).find((item) =>
+    item.user_id === userId
   );
   if (
-    workspace !== undefined && isRunning(workspace)
+    sandbox !== undefined && isRunning(sandbox)
   ) {
     return "Ready";
   }
-  if (workspace === undefined) {
+  if (sandbox === undefined) {
     await kernel.admin.execute("development.sandbox.create", {
       user_id: userId,
     });
     return "Development sandbox created and started";
   }
   await kernel.admin.execute("development.sandbox.start", {
-    workspace_id: workspace.workspace_id,
+    user_id: userId,
   });
   return "Development sandbox started";
 }
@@ -180,20 +303,20 @@ async function startDevelopmentSandbox(userId: string): Promise<string> {
 function requireDestructiveConfirmation(confirmed: boolean): void {
   if (!confirmed) {
     throw new Error(
-      "Select Confirm destructive reset before resetting the workspace",
+      "Select Confirm destructive reset before resetting the sandbox",
     );
   }
 }
 
-async function developmentWorkspaces(): Promise<Workspace[]> {
+async function developmentSandboxes(): Promise<DevelopmentSandbox[]> {
   const result = await kernel.admin.execute<DevelopmentListResult>(
     "development.sandbox.list",
   );
-  return result.workspaces;
+  return result.sandboxes;
 }
 
-function isRunning(workspace: Workspace): boolean {
-  return workspace.state === "READY" || workspace.state === "CONFLICTED";
+function isRunning(sandbox: DevelopmentSandbox): boolean {
+  return sandbox.state === "READY" || sandbox.state === "CONFLICTED";
 }
 
 function consoleConfiguration(sandboxId: string, enabled: boolean) {
@@ -207,23 +330,24 @@ function consoleConfiguration(sandboxId: string, enabled: boolean) {
     arguments: ["/bin/bash", "-l"],
     environment: [
       "TERM=xterm-256color",
-      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      "PATH=/workspace/scripts:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       "HOME=/root",
     ],
     workingDirectory: "/workspace",
   };
 }
 
-function actionsFor(workspace: Workspace | undefined) {
-  const running = workspace !== undefined && isRunning(workspace);
+function actionsFor(sandbox: DevelopmentSandbox | undefined) {
+  const running = sandbox !== undefined && isRunning(sandbox);
   return [
     ...(!running
       ? [{ id: "start", label: "Start sandbox", kind: "primary" as const }]
       : [
+        { id: "activate", label: "Activate changes", kind: "primary" as const },
         { id: "stop", label: "Stop sandbox", kind: "danger" as const },
         { id: "restart", label: "Restart sandbox" },
       ]),
-    ...(workspace === undefined ? [] : [
+    ...(sandbox === undefined ? [] : [
       { id: "reset-source", label: "Reset source", kind: "danger" as const },
       {
         id: "factory-reset",
