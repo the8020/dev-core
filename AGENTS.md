@@ -38,6 +38,14 @@
 
 - Keep examples readable as plain files so activation commits are easy to
   inspect.
+- User-visible descriptions, hints, placeholders, notices, and empty-state copy
+  must help the user act or understand a user-visible outcome. Never add copy
+  solely to explain internal architecture, storage, persistence, sessions,
+  transport, or implementation details; omit it entirely and keep those details
+  in DOX or developer documentation. For example, never show
+  `Value is stored per-session in the user storage.` or
+  `The value is sent directly to kernel secret storage and is not shown again.`
+  in the UI.
 
 # Verification
 
