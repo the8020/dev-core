@@ -17,7 +17,7 @@
 
 - The package root is its independent Git repository root.
 - Source checks resolve sibling `kernel` and `uui` repositories; deployed
-  Workers use only the canonical runtime `@the8020/*` and `@packages/*` aliases.
+  Workers use only the canonical runtime `@the8020/*` and `/p/*` aliases.
 - Fixtures remain intentionally small and safe to edit, rename, delete, and
   restore through real development sandboxes.
 - `cbus/commands/**/command.toml` maps visible `dev-core.*` commands to
