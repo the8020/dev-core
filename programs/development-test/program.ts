@@ -3,7 +3,7 @@ import {
   BACK_EVENT,
   callScreen,
   field,
-  showNotification,
+  sendMessage,
   z,
 } from "@packages/the8020/uui/mod.ts";
 import layout from "./layouts/main.json" with { type: "json" };
@@ -13,10 +13,6 @@ interface DevelopmentSandbox {
   user_id: string;
   sandbox_id: string;
   state: string;
-}
-
-interface DevelopmentListResult extends Record<string, unknown> {
-  sandboxes: DevelopmentSandbox[];
 }
 
 interface DevelopmentScreenModel {
@@ -157,50 +153,44 @@ export default async function developmentTest(): Promise<void> {
     try {
       if (event.action === "start") {
         if (sandbox === undefined) {
-          await kernel.admin.execute("development.sandbox.create", {
-            user_id: developmentUserId,
-          });
+          await kernel.development.sandbox.run("create", developmentUserId);
           status = "Development sandbox created and started";
         } else {
-          await kernel.admin.execute("development.sandbox.start", {
-            user_id: developmentUserId,
-          });
+          await kernel.development.sandbox.run("start", developmentUserId);
           status = "Development sandbox started";
         }
       }
       if (event.action === "stop" && sandbox !== undefined) {
-        await kernel.admin.execute("development.sandbox.stop", {
-          user_id: developmentUserId,
-        });
+        await kernel.development.sandbox.run("stop", developmentUserId);
         status = "Development sandbox stopped";
       }
       if (event.action === "restart" && sandbox !== undefined) {
-        await kernel.admin.execute("development.sandbox.restart", {
-          user_id: developmentUserId,
-        });
+        await kernel.development.sandbox.run("restart", developmentUserId);
         status = "Development sandbox restarted";
       }
       if (event.action === "reset-source" && sandbox !== undefined) {
         requireDestructiveConfirmation(confirmDestructive);
-        await kernel.admin.execute("development.sandbox.reset_source", {
-          user_id: developmentUserId,
-          confirm: true,
-        });
+        await kernel.development.sandbox.run(
+          "reset-source",
+          developmentUserId,
+          { confirm: true },
+        );
         confirmDestructive = false;
         status = "Development source reset";
       }
       if (event.action === "factory-reset" && sandbox !== undefined) {
         requireDestructiveConfirmation(confirmDestructive);
-        await kernel.admin.execute("development.sandbox.factory_reset", {
-          user_id: developmentUserId,
-          confirm: true,
-        });
+        await kernel.development.sandbox.run(
+          "factory-reset",
+          developmentUserId,
+          { confirm: true },
+        );
         confirmDestructive = false;
         status = "Development sandbox factory reset";
       }
     } catch (error) {
       status = error instanceof Error ? error.message : String(error);
-      showNotification(status, "error");
+      sendMessage(status, "error");
     }
   }
 }
@@ -209,10 +199,9 @@ async function activateChanges(userId: string): Promise<void> {
   let message = "";
   let status = "Review all private package changes before activation";
   while (true) {
-    const result = await kernel.admin.execute<ActivationPreviewResult>(
-      "development.activate.preview",
-      { user_id: userId },
-    );
+    const result = {
+      preview: await kernel.development.activate.preview({ user_id: userId }),
+    } as ActivationPreviewResult;
     const packages = result.preview.packages.map((item) => ({
       package: item.package_id,
       changedFiles: item.changed_files,
@@ -253,27 +242,26 @@ async function activateChanges(userId: string): Promise<void> {
     if (event.action === "sync-all") {
       if (message.trim() === "") {
         status = "A commit message is required";
-        showNotification(status, "error");
+        sendMessage(status, "error");
         continue;
       }
       try {
-        const activation = await kernel.admin.execute<ActivationRunResult>(
-          "development.activate.run",
-          {
+        const activation = {
+          activation: await kernel.development.activate.run({
             user_id: userId,
             message: message.trim(),
             metadata: JSON.stringify({ client: "uui" }),
-          },
-        );
+          }),
+        } as ActivationRunResult;
         if (!activation.activation.success) {
           throw new Error(`Activation ${activation.activation.status}`);
         }
         message = "";
         status = "All package changes activated and the overlay was reset";
-        showNotification(status, "success");
+        sendMessage(status, "success");
       } catch (error) {
         status = error instanceof Error ? error.message : String(error);
-        showNotification(status, "error");
+        sendMessage(status, "error");
       }
     }
   }
@@ -289,14 +277,10 @@ async function startDevelopmentSandbox(userId: string): Promise<string> {
     return "Ready";
   }
   if (sandbox === undefined) {
-    await kernel.admin.execute("development.sandbox.create", {
-      user_id: userId,
-    });
+    await kernel.development.sandbox.run("create", userId);
     return "Development sandbox created and started";
   }
-  await kernel.admin.execute("development.sandbox.start", {
-    user_id: userId,
-  });
+  await kernel.development.sandbox.run("start", userId);
   return "Development sandbox started";
 }
 
@@ -309,10 +293,7 @@ function requireDestructiveConfirmation(confirmed: boolean): void {
 }
 
 async function developmentSandboxes(): Promise<DevelopmentSandbox[]> {
-  const result = await kernel.admin.execute<DevelopmentListResult>(
-    "development.sandbox.list",
-  );
-  return result.sandboxes;
+  return await kernel.development.sandbox.list() as DevelopmentSandbox[];
 }
 
 function isRunning(sandbox: DevelopmentSandbox): boolean {

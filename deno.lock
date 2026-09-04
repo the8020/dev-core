@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "jsr:@hono/hono@4.9.8": "4.9.8",
+    "npm:kysely@0.29.4": "0.29.4",
     "npm:zod@4.1.5": "4.1.5"
   },
   "jsr": {
@@ -10,6 +11,9 @@
     }
   },
   "npm": {
+    "kysely@0.29.4": {
+      "integrity": "sha512-y5mVgQNkMbs1eK9Xyc0pmNdabN2wHhRYY/5r4W5HrUT1rYCEPeVNSj1RUJeSDKT3U0p+mXCvLgkrFuIafYI6BA=="
+    },
     "zod@4.1.5": {
       "integrity": "sha512-rcUUZqlLJgBC33IT3PNMgsCq6TzLQEG/Ei/KTCU0PedSWRMAXoOUN+4t/0H+Q8bdnLPdqUYnvboJT0bn/229qg=="
     }
@@ -18,6 +22,7 @@
     "dependencies": [
       "jsr:@hono/hono@4.9.8",
       "jsr:@std/assert@1.0.14",
+      "npm:kysely@0.29.4",
       "npm:zod@4.1.5"
     ]
   }

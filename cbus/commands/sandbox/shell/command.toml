@@ -1,0 +1,8 @@
+version = 1
+program = "sandbox-shell"
+summary = "Execute inside a development sandbox"
+usage = "<user-id> [--command <command>]"
+mutates_state = true
+restart_behavior = "none"
+[[examples]]
+command = "dev-core.sandbox.shell alice --command pwd"

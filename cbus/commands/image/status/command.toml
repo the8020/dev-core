@@ -1,0 +1,7 @@
+version = 1
+program = "image-status"
+summary = "Inspect the development image"
+mutates_state = false
+restart_behavior = "none"
+[[examples]]
+command = "dev-core.image.status"

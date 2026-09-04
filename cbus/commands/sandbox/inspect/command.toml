@@ -1,0 +1,8 @@
+version = 1
+program = "sandbox-inspect"
+summary = "Inspect a development sandbox"
+usage = "<user-id>"
+mutates_state = false
+restart_behavior = "none"
+[[examples]]
+command = "dev-core.sandbox.inspect alice"

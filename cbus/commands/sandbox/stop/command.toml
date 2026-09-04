@@ -1,0 +1,8 @@
+version = 1
+program = "sandbox-stop"
+summary = "Stop a development sandbox"
+usage = "<user-id>"
+mutates_state = true
+restart_behavior = "none"
+[[examples]]
+command = "dev-core.sandbox.stop alice"

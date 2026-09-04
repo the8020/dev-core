@@ -7,8 +7,9 @@
 
 # Ownership
 
-- Own `programs/development-test`, its sandbox lifecycle/console screen, and
-  small `fixtures/activation-*` text and TypeScript fixtures.
+- Own `programs/development-test`, administrative development command programs,
+  its sandbox lifecycle/console screen, and small `fixtures/activation-*` text
+  and TypeScript fixtures.
 - Do not own development sandbox state, Git activation logic, sandbox
   implementation, browser console rendering, or services.
 
@@ -19,6 +20,10 @@
   Workers use only the canonical runtime `@the8020/*` and `@packages/*` aliases.
 - Fixtures remain intentionally small and safe to edit, rename, delete, and
   restore through real development sandboxes.
+- `cbus/commands/**/command.toml` maps visible `dev-core.*` commands to
+  non-discoverable ordinary programs whose default exports parse raw string
+  arguments, report intentional input errors structurally, and call typed kernel
+  development operations.
 - Development test selects the authenticated user's single sandbox by `user_id`,
   derives its console target directly as `dev-<username>`, automatically creates
   or starts it on entry, delegates lifecycle operations to typed kernel

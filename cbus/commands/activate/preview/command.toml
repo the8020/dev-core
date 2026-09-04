@@ -1,0 +1,8 @@
+version = 1
+program = "activate-preview"
+summary = "Preview package activation"
+usage = "<user-id> [options]"
+mutates_state = false
+restart_behavior = "none"
+[[examples]]
+command = "dev-core.activate.preview alice"
