@@ -1,4 +1,5 @@
 version = 1
+command = "dev-core.activate.preview"
 program = "activate-preview"
 summary = "Preview package activation"
 usage = "<user-id> [options]"

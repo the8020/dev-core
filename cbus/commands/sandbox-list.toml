@@ -1,4 +1,5 @@
 version = 1
+command = "dev-core.sandbox.list"
 program = "sandbox-list"
 summary = "List development sandboxes"
 mutates_state = false

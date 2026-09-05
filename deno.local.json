@@ -7,6 +7,7 @@
     "@the8020/protocol": "../kernel/defaults/config/runtime/protocol/generated.ts",
     "hono": "jsr:@hono/hono@4.9.8",
     "kysely": "npm:kysely@0.29.4",
-    "zod": "npm:zod@4.1.5"
+    "zod": "npm:zod@4.1.5",
+    "@the8020/context": "../kernel/defaults/config/runtime/deno/context/mod.ts"
   }
 }

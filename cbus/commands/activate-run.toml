@@ -1,4 +1,5 @@
 version = 1
+command = "dev-core.activate.run"
 program = "activate-run"
 summary = "Activate package changes"
 usage = "<user-id> --message <message> [options]"

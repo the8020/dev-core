@@ -30,6 +30,22 @@
         "headings": {
           "addedRows": "+",
           "removedRows": "-"
+        },
+        "columnOptions": {
+          "changedFiles": {
+            "length": "compact",
+            "shortHeading": "Files"
+          },
+          "addedRows": {
+            "length": "compact",
+            "shortHeading": "+",
+            "heading": "Added rows"
+          },
+          "removedRows": {
+            "length": "compact",
+            "shortHeading": "−",
+            "heading": "Removed rows"
+          }
         }
       }
     ]

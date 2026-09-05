@@ -1,8 +1,10 @@
+import { currentUser } from "/p/the8020/users/mod.ts";
 import { kernel } from "@the8020/kernel";
 import {
   BACK_EVENT,
   callScreen,
   field,
+  Model,
   sendMessage,
   z,
 } from "/p/the8020/uui/mod.ts";
@@ -74,12 +76,13 @@ const ActivationScreen = z.object({
 });
 
 export default async function developmentTest(): Promise<void> {
-  const user = await kernel.auth.currentUser();
+  const user = currentUser();
   if (user === undefined) throw new Error("authenticated user is required");
   const developmentUserId = user.username;
   const sandboxId = `dev-${developmentUserId}`;
   let status = await startDevelopmentSandbox(developmentUserId);
   let confirmDestructive = false;
+  let screenModel: Model<DevelopmentScreenModel> | undefined;
   while (true) {
     const sandboxes = await developmentSandboxes();
     const sandbox = sandboxes.find((item) =>
@@ -120,13 +123,15 @@ export default async function developmentTest(): Promise<void> {
       status,
       confirmDestructive,
     };
+    screenModel ??= new Model(model);
+    screenModel.data = model;
     const event = await callScreen({
       id: "development-test",
       title: "Development test",
       description:
         `Connect from your own terminal with ssh ${developmentUserId}@localhost -p 22. Change the hostname or port when 80|20 is containerized, behind a proxy, or published through different port mappings.`,
       schema: Screen,
-      model,
+      model: screenModel,
       layout,
       customElements: [{
         id: "sandbox-console",
@@ -198,6 +203,7 @@ export default async function developmentTest(): Promise<void> {
 async function activateChanges(userId: string): Promise<void> {
   let message = "";
   let status = "Review all private package changes before activation";
+  let screenModel1: Model<z.infer<typeof ActivationScreen>> | undefined;
   while (true) {
     const result = {
       preview: await kernel.development.activate.preview({ user_id: userId }),
@@ -214,13 +220,15 @@ async function activateChanges(userId: string): Promise<void> {
       message,
       status: packages.length === 0 ? "No private changes" : status,
     };
+    screenModel1 ??= new Model(model);
+    screenModel1.data = model;
     const event = await callScreen({
       id: "development-activation",
       title: "Activate development changes",
       description:
         "Commit every changed package independently, publish the private deltas to shared sources, and reset the sandbox overlay.",
       schema: ActivationScreen,
-      model,
+      model: screenModel1,
       layout: activationLayout,
       header: {
         actions: [

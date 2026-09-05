@@ -1,4 +1,5 @@
 version = 1
+command = "dev-core.sandbox.create"
 program = "sandbox-create"
 summary = "Create a development sandbox"
 usage = "<user-id>"

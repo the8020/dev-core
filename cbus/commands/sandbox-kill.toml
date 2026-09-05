@@ -1,4 +1,5 @@
 version = 1
+command = "dev-core.sandbox.kill"
 program = "sandbox-kill"
 summary = "Kill a development sandbox"
 usage = "<user-id>"
