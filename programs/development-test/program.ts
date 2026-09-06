@@ -79,7 +79,6 @@ export default async function developmentTest(): Promise<void> {
   const user = currentUser();
   if (user === undefined) throw new Error("authenticated user is required");
   const developmentUserId = user.username;
-  const sandboxId = `dev-${developmentUserId}`;
   let status = await startDevelopmentSandbox(developmentUserId);
   let confirmDestructive = false;
   let screenModel: Model<DevelopmentScreenModel> | undefined;
@@ -89,6 +88,7 @@ export default async function developmentTest(): Promise<void> {
       item.user_id === developmentUserId
     );
     const running = sandbox !== undefined && isRunning(sandbox);
+    const sandboxId = sandbox?.sandbox_id ?? "";
     const Screen = z.object({
       sandboxId: field(z.string(), {
         label: "Sandbox",

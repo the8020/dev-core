@@ -11,8 +11,8 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 
 # Local Contracts
 
-- Select the user's deterministic `dev-<username>` sandbox and pass only the
-  declarative console descriptor to UUI.
+- Select the user's sandbox by username, read its `sbx-` ID from kernel state,
+  and pass only the declarative console descriptor to UUI.
 - Activation previews all changed packages, requires a commit message, and
   invokes the typed user-scoped activation operation.
 - Retain the UUI Model while refreshing sandbox and activation state; preserve

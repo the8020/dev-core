@@ -146,13 +146,14 @@ below.
   exports parse raw string arguments, report intentional input errors
   structurally, and call typed kernel development operations.
 - Development test selects the authenticated user's single sandbox by `user_id`,
-  derives its console target directly as `dev-<username>`, automatically creates
-  or starts it on entry, delegates lifecycle operations to typed kernel
-  commands, and provides only the declarative `sandbox-console.v1` descriptor
-  with root's home and a standard administrative `PATH` to the UUI shell. The
-  untitled terminal renders before the sandbox status fields. Its description
-  shows an SSH command for the authenticated username on localhost port 22 and
-  warns that container, proxy, or published endpoint mappings may differ.
+  reads its opaque `sbx-` console target from the returned sandbox record,
+  automatically creates or starts it on entry, delegates lifecycle operations to
+  typed kernel commands, and provides only the declarative `sandbox-console.v1`
+  descriptor with root's home and a standard administrative `PATH` to the UUI
+  shell. The untitled terminal renders before the sandbox status fields. Its
+  description shows an SSH command for the authenticated username on localhost
+  port 22 and warns that container, proxy, or published endpoint mappings may
+  differ.
 - Its destructive-reset guidance states that source reset preserves `/root` and
   system changes while factory reset deletes both.
 - Its activation screen previews every changed package with changed-file and
@@ -183,5 +184,5 @@ below.
   development program. Development-domain unit and real gVisor tests use
   `the8020/dev-core` and `the8020/demo` identities to prove independent
   histories and multi-package activation without pushing remotes; the browser
-  E2E covers sandbox lifecycle, the deterministic development console, UUI
+  E2E covers sandbox lifecycle, the registered development console, UUI
   activation validation/statistics, independent commits, and overlay reset.
