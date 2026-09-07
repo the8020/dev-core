@@ -4,6 +4,7 @@ import type {
   TerminalBatch,
   TerminalEvent,
 } from "@the8020/kernel";
+import { TerminalClosedError } from "@the8020/kernel";
 import type {
   WebSocketData,
   WebSocketInboundEvent,
@@ -161,6 +162,9 @@ export class TestTerminals {
   exit(): void {
     this.#exited = true;
     this.#notify();
+  }
+  expire(): void {
+    this.#noViews.reject(new TerminalClosedError());
   }
   processed(after: number): Promise<void> {
     if (this.#readAfter >= after) return Promise.resolve();

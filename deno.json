@@ -32,6 +32,7 @@
     "test:browser": "deno run -A --import-map=deno.local.json ../uui/presentation_browser_e2e.ts --fixture=../dev-core/terminals/browser_scenarios.ts",
     "test:native-browser": "deno run -A --import-map=deno.local.json ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_browser_scenarios.ts",
     "test:native-resilience": "deno run -A --import-map=deno.local.json ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_resilience_scenarios.ts",
+    "test:native-idle": "deno run -A --import-map=deno.local.json ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_idle_scenarios.ts",
     "bench:native-terminals": "deno run -A --import-map=deno.local.json ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_performance_scenarios.ts"
   },
   "fmt": {

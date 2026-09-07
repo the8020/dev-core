@@ -1,6 +1,7 @@
 import {
   kernel,
   type TerminalAttachment,
+  TerminalClosedError,
   TerminalControlBusyError,
   type TerminalEvent,
 } from "@the8020/kernel";
@@ -57,9 +58,13 @@ export class TerminalOwner {
   async run(): Promise<void> {
     const failed = (error: unknown) => {
       if (!this.#stop.signal.aborted) {
-        this.#failure = error instanceof Error
-          ? error
-          : new Error(String(error));
+        if (error instanceof TerminalClosedError) {
+          this.#closeRequested = true;
+        } else {
+          this.#failure = error instanceof Error
+            ? error
+            : new Error(String(error));
+        }
         this.#closing.resolve();
       }
     };

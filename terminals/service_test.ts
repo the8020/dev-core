@@ -137,6 +137,7 @@ function fixture() {
     store,
     service,
     fetch,
+    finished: () => Promise.all(lifetimes),
     get completions() {
       return completions;
     },
@@ -157,6 +158,23 @@ function fixture() {
     },
   };
 }
+
+Deno.test("kernel expiry removes terminal metadata and completes its retained handler", async () => {
+  const test = fixture();
+  try {
+    const created = await test.fetch("/create", create, metadata());
+    assertEquals(created.status, 200);
+    const { terminal } = await created.json();
+    test.native.expire();
+    await test.finished();
+    assertEquals(test.store.records.size, 0);
+    assertEquals(test.completions, 1);
+    assertEquals(test.native.closed, [terminal.id]);
+    assertEquals(test.native.detached, [test.native.native.attachmentId]);
+  } finally {
+    await test.dispose();
+  }
+});
 
 Deno.test("terminal establishment survives request loss and list, rename, detach, and close retain exact ownership", async () => {
   const test = fixture();

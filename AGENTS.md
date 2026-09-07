@@ -163,6 +163,9 @@ below.
   status fields. Advanced owns sandbox identity, user help, SSH guidance,
   restart, and resets. Each reset requires its own confirmed modal: source reset
   preserves `/root` and system changes while factory reset deletes both.
+- Terminal and development-sandbox idle deadlines belong to the kernel's
+  existing owners and settings. The terminal service completes its retained
+  handler and removes metadata when physical expiry is reported by the SDK.
 - Its activation screen previews every changed package with changed-file and
   added/removed-row counts plus ready/blocked state, requires one commit
   message, and invokes the typed user-scoped activation command to sync all
@@ -203,6 +206,8 @@ below.
   doubles; native SSH, deployment, and interactive programs require separate
   qualification. `test:native-browser` uses the sibling UUI node harness and
   disposable real gVisor terminals; required options are in the terminal DOX.
+  `test:native-idle` checks real browser/SSH expiry and sandbox checkpoint/stop
+  with seconds-long deadlines through the same disposable harness.
   `bench:native-terminals` uses that harness for direct/retained transport,
   recovery, slow-view, and process-tree resource measurements. The sibling UUI
   `test:programs-browser` checks Advanced, reset confirmation, activation

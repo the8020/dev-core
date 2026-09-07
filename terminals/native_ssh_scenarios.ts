@@ -78,7 +78,7 @@ export async function verifyNativeSSHShell(
   }
 }
 
-class SSHView {
+export class SSHView {
   readonly engine = new TerminalEngine({ columns: 80, rows: 24 });
   readonly child: Deno.ChildProcess;
   readonly #input: WritableStreamDefaultWriter<Uint8Array>;
@@ -91,7 +91,7 @@ class SSHView {
   constructor(
     context: NativeBrowserFixtureContext,
     port: number,
-    terminalId: string,
+    terminalId?: string,
   ) {
     this.child = new Deno.Command("sshpass", {
       args: [
@@ -109,8 +109,7 @@ class SSHView {
         "-o",
         "PubkeyAuthentication=no",
         `${context.credentials.username}@127.0.0.1`,
-        "the8020",
-        `terminal-id=${terminalId}`,
+        ...(terminalId ? ["the8020", `terminal-id=${terminalId}`] : []),
       ],
       env: { SSHPASS: context.credentials.password, TERM: "xterm-256color" },
       stdin: "piped",

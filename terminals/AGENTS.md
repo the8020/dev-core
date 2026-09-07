@@ -35,8 +35,9 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   queue. Do not add a timer turn for every small PTY read or bypass xterm's
   parser scheduling with private synchronous writes.
 - Bound native data windows, pending input, state, and view buffers. View loss
-  detaches only; explicit close owns physical destruction. Report an absent
-  display owner or lost output explicitly instead of claiming tail recovery.
+  detaches only; the kernel owns explicit and idle physical destruction. Report
+  an absent display owner or lost output explicitly instead of claiming tail
+  recovery.
 - Names and owner references are bounded database metadata. Never store routing
   tokens, terminal contents, or authentication credentials there.
 - Existing authenticated service admission applies to establishment and every
@@ -76,9 +77,15 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   native display output is limited to one MiB/512 queued updates plus one
   in-flight update; writes are split into 64-KiB frames. A stalled frame has a
   ten-second transfer deadline, and initial recovery has a two-minute deadline.
-  Overflow or transport failure releases only the view; idle terminals have no
-  timer. Native clients recover normal history and current cells, then receive
-  changed rows, committed history, cursor appearance, and keyboard/mouse modes.
+  Overflow or transport failure releases only the view. Native clients recover
+  normal history and current cells, then receive changed rows, committed
+  history, cursor appearance, and keyboard/mouse modes.
+- The kernel expires terminals with no browser/SSH attachments using
+  `terminal.idle_timeout` (36 hours by default). This package supplies no
+  timeout; its canonical processor does not extend terminal lifetime.
+  `TerminalClosedError` ends the display handler normally, releases
+  attachments/engine, and removes metadata through the existing service
+  completion path.
 
 # Work Guidance
 
@@ -144,6 +151,10 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 - `test:native-resilience` uses the same disposable harness to check an exact
   terminal route through a second node, visible display-Worker loss, physical
   process survival, and explicit orphan close from the second node.
+- `test:native-idle` uses an eight-second terminal deadline and two-second
+  sandbox deadline to verify attached browser/SSH protection, repeated SSH
+  reattachment, expiry despite output, metadata cleanup, subsequent sandbox
+  stop, ordinary SSH lifetime, and restoration of private checkpointed files.
 
 # Child DOX Index
 

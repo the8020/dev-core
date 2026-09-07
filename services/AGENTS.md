@@ -17,7 +17,8 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   display owner. Ordinary list/metadata requests release their temporary
   binding.
 - Multiple logical terminal owners share a Worker. No tmux or extra SSH process
-  is involved, and no terminal is expired for being idle.
+  is involved. Kernel expiry completes the retained handler and metadata
+  cleanup; this package has no idle timer.
 - The terminal entrypoint composes its database metadata store with the sibling
   service implementation. Creation runs on the service's node, which must own
   the requested sandbox. Existing-owner HTTP and WebSocket attachment use the
