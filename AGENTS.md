@@ -160,9 +160,11 @@ below.
   through UUI's generic custom-element wrapper. Terminal code, xterm
   dependencies, state recovery, and browser styling belong to this package. The
   retained client owns named-terminal controls and renders before the sandbox
-  status fields. Advanced owns sandbox identity, user help, SSH guidance,
-  restart, and resets. Each reset requires its own confirmed modal: source reset
-  preserves `/root` and system changes while factory reset deletes both.
+  status fields. The group below the terminal owns sandbox identity, user help,
+  state, restart, and resets; the subtitle uses the runtime username and UUI
+  browser hostname for SSH guidance. Each reset requires its own confirmed
+  modal: source reset preserves `/root` and system changes while factory reset
+  deletes both.
 - Terminal and development-sandbox idle deadlines belong to the kernel's
   existing owners and settings. The terminal service completes its retained
   handler and removes metadata when physical expiry is reported by the SDK.
@@ -210,10 +212,11 @@ below.
   with seconds-long deadlines through the same disposable harness.
   `bench:native-terminals` uses that harness for direct/retained transport,
   recovery, slow-view, and process-tree resource measurements. The sibling UUI
-  `test:programs-browser` checks Advanced, reset confirmation, activation
-  validation, package navigation, and console DOM preservation against
-  deterministic kernel responses. Development-domain unit and real gVisor tests
-  use `the8020/dev-core` and `the8020/demo` identities to prove independent
-  histories and multi-package activation without pushing remotes; the browser
-  E2E covers sandbox lifecycle, the registered development console, UUI
-  activation validation/statistics, independent commits, and overlay reset.
+  `test:programs-browser` checks the combined settings group, SSH subtitle,
+  reset confirmation, activation validation, package navigation, and console DOM
+  preservation against deterministic kernel responses. Development-domain unit
+  and real gVisor tests use `the8020/dev-core` and `the8020/demo` identities to
+  prove independent histories and multi-package activation without pushing
+  remotes; the browser E2E covers sandbox lifecycle, the registered development
+  console, UUI activation validation/statistics, independent commits, and
+  overlay reset.

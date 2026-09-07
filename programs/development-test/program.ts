@@ -1,8 +1,9 @@
-import { currentUser } from "/p/the8020/users/mod.ts";
+import { context } from "@the8020/context";
 import { kernel } from "@the8020/kernel";
 import {
   BACK_EVENT,
   callScreen,
+  currentBrowser,
   field,
   Model,
   packageAssetURL,
@@ -24,6 +25,7 @@ interface DevelopmentSandbox {
 }
 
 interface DevelopmentScreenModel {
+  user: string;
   sandboxId: string;
   state: string;
   status: string;
@@ -81,9 +83,8 @@ const ActivationScreen = z.object({
 });
 
 export default async function developmentTest(): Promise<void> {
-  const user = currentUser();
-  if (user === undefined) throw new Error("authenticated user is required");
-  const developmentUserId = user.username;
+  if (!context.authenticated) throw new Error("authenticated user is required");
+  const developmentUserId = context.username;
   let status = await startDevelopmentSandbox(developmentUserId);
   let screenModel: Model<DevelopmentScreenModel> | undefined;
   while (true) {
@@ -94,8 +95,9 @@ export default async function developmentTest(): Promise<void> {
     const running = sandbox !== undefined && isRunning(sandbox);
     const sandboxId = sandbox?.sandbox_id ?? "";
     const Screen = z.object({
+      user: field(username, { readOnly: true }),
       sandboxId: field(z.string(), {
-        label: "Sandbox",
+        label: "Sandbox ID",
         length: "long",
         control: "text",
         readOnly: true,
@@ -114,18 +116,33 @@ export default async function developmentTest(): Promise<void> {
       }),
     });
     const model: DevelopmentScreenModel = {
+      user: developmentUserId,
       sandboxId: sandbox?.sandbox_id ?? sandboxId,
       state: sandbox?.state ?? "ABSENT",
       status,
     };
     screenModel ??= new Model(model);
     screenModel.data = model;
+    const actions = actionsFor(sandbox);
+    const screenLayout = structuredClone(layout);
+    const settingsActions = layout.root.children.flatMap((node) =>
+      node.actions ?? []
+    );
+    for (const node of screenLayout.root.children) {
+      if (node.actions) {
+        node.actions = node.actions.filter((id) =>
+          actions.some((a) => a.id === id)
+        );
+      }
+    }
     const event = await callScreen({
       id: "development-test",
       title: "Development",
+      description: sshHint(developmentUserId),
       schema: Screen,
       model: screenModel,
-      layout,
+      layout: screenLayout,
+      actions: actions.filter((action) => settingsActions.includes(action.id)),
       customElements: [{
         id: "sandbox-console",
         module: packageAssetURL("the8020/dev-core", terminalAssets.module),
@@ -136,10 +153,12 @@ export default async function developmentTest(): Promise<void> {
         config: consoleConfiguration(sandboxId, running),
       }],
       header: {
-        actions: actionsFor(sandbox),
+        actions: actions.filter((action) =>
+          !settingsActions.includes(action.id)
+        ),
       },
     });
-    let action = event.action;
+    const action = event.action;
     if (event.action === BACK_EVENT) return;
     if (event.action === "change") continue;
     if (event.action === "refresh") {
@@ -150,12 +169,11 @@ export default async function developmentTest(): Promise<void> {
       await presentPage(() => activateChanges(developmentUserId));
       continue;
     }
-    if (action === "advanced" && sandbox !== undefined) {
-      const selected = await presentPage(() =>
-        advancedSandbox(developmentUserId, sandbox)
-      );
-      if (!selected) continue;
-      action = selected;
+    if (
+      (action === "reset-source" || action === "factory-reset") &&
+      !(await confirmReset(action === "factory-reset"))
+    ) {
+      continue;
     }
     try {
       if (action === "start") {
@@ -296,80 +314,54 @@ async function startDevelopmentSandbox(userId: string): Promise<string> {
   return "Development sandbox started";
 }
 
-async function advancedSandbox(
-  user: string,
-  sandbox: DevelopmentSandbox,
-): Promise<string | undefined> {
-  const schema = z.object({
-    user: field(username, { readOnly: true }),
-    sandboxId: field(z.string(), { label: "Sandbox ID", readOnly: true }),
-    ssh: field(z.string(), {
-      label: "SSH command",
-      readOnly: true,
-      length: "long",
-      description:
-        "Replace localhost and port 22 with your server's address and published SSH port.",
-    }),
-  });
-  const model = new Model({
-    user,
-    sandboxId: sandbox.sandbox_id,
-    ssh: `ssh ${user}@localhost -p 22`,
-  });
-  while (true) {
-    const event = await callScreen({
-      id: "development-advanced",
-      title: "Advanced development settings",
-      schema,
-      model,
-      header: {
-        actions: [
-          ...(isRunning(sandbox)
-            ? [{ id: "restart", label: "Restart sandbox" }]
-            : []),
-          { id: "reset-source", label: "Reset source", kind: "danger" },
-          { id: "factory-reset", label: "Factory reset", kind: "danger" },
-        ],
-      },
-    });
-    if (event.action === BACK_EVENT) return;
-    if (event.action === "restart") return event.action;
-    if (event.action !== "reset-source" && event.action !== "factory-reset") {
-      continue;
-    }
-    const factory = event.action === "factory-reset";
-    const confirmed = await presentModal(async () => {
-      const confirm = new Model({ confirmed: false });
-      while (true) {
-        const response = await callScreen({
-          id: "development-reset-confirm",
-          title: factory ? "Factory reset?" : "Reset source?",
-          description: factory
-            ? "This deletes your source changes, root home directory, and installed system changes."
-            : "This deletes your unactivated source changes. Your root home directory and installed system changes are kept.",
-          schema: z.object({
-            confirmed: field(z.boolean(), {
-              label: "I understand that these changes will be deleted",
-            }),
+async function confirmReset(factory: boolean): Promise<boolean> {
+  return await presentModal(async () => {
+    const confirm = new Model({ confirmed: false });
+    while (true) {
+      const response = await callScreen({
+        id: "development-reset-confirm",
+        title: factory ? "Factory reset?" : "Reset source?",
+        description: factory
+          ? "This deletes your source changes, root home directory, and installed system changes."
+          : "This deletes your unactivated source changes. Your root home directory and installed system changes are kept.",
+        schema: z.object({
+          confirmed: field(z.boolean(), {
+            label: "I understand that these changes will be deleted",
           }),
-          model: confirm,
-          header: {
-            actions: [{
-              id: "reset",
-              label: factory ? "Factory reset" : "Reset source",
-              kind: "danger",
-            }, { id: "cancel", label: "Cancel" }],
-          },
-        });
-        if (response.action === BACK_EVENT || response.action === "cancel") {
-          return false;
-        }
-        if (response.action === "reset" && confirm.data.confirmed) return true;
-        sendMessage("Confirm deletion before resetting the sandbox.", "error");
+        }),
+        model: confirm,
+        header: {
+          actions: [{
+            id: "reset",
+            label: factory ? "Factory reset" : "Reset source",
+            kind: "danger",
+          }, { id: "cancel", label: "Cancel" }],
+        },
+      });
+      if (response.action === BACK_EVENT || response.action === "cancel") {
+        return false;
       }
-    });
-    if (confirmed) return event.action;
-  }
+      if (response.action === "reset" && confirm.data.confirmed) return true;
+      sendMessage("Confirm deletion before resetting the sandbox.", "error");
+    }
+  });
+}
+
+function sshHint(user: string): string | undefined {
+  const browser = currentBrowser();
+  if (!browser) return;
+  const destination = `${user}@${new URL(browser.origin).hostname}`;
+  const argument = /^[a-zA-Z0-9_.@:[\]-]+$/.test(destination)
+    ? destination
+    : `'${destination.replaceAll("'", "'\\''")}'`;
+  const command = `ssh -p 22 -- ${argument}`;
+  const fence = "`".repeat(
+    1 + Math.max(
+      0,
+      ...Array.from(command.matchAll(/`+/g), (match) => match[0].length),
+    ),
+  );
+  return `SSH: ${fence} ${command} ${fence}`;
 }
 
 async function developmentSandboxes(): Promise<DevelopmentSandbox[]> {
@@ -406,7 +398,11 @@ function actionsFor(sandbox: DevelopmentSandbox | undefined) {
         { id: "activate", label: "Review changes", kind: "primary" as const },
         { id: "stop", label: "Stop sandbox", kind: "danger" as const },
       ]),
-    ...(sandbox === undefined ? [] : [{ id: "advanced", label: "Advanced" }]),
+    ...(running ? [{ id: "restart", label: "Restart sandbox" }] : []),
+    ...(sandbox === undefined ? [] : [
+      { id: "reset-source", label: "Reset source", kind: "danger" as const },
+      { id: "factory-reset", label: "Factory reset", kind: "danger" as const },
+    ]),
     { id: "refresh", label: "Refresh" },
   ];
 }

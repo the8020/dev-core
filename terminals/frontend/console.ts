@@ -57,9 +57,9 @@ class RequestError extends Error {
 }
 
 export default function mount(
-  { host, config, signal }: CustomElementContext,
+  { host, config, signal, renderText }: CustomElementContext,
 ): CustomElementInstance {
-  const instance = new RetainedConsole(config);
+  const instance = new RetainedConsole(config, renderText);
   host.append(instance.element);
   signal.addEventListener("abort", () => instance.dispose(), { once: true });
   return instance;
@@ -113,18 +113,42 @@ class RetainedConsole implements CustomElementInstance {
   #connectEpoch = 0;
   #display: Promise<void> = Promise.resolve();
 
-  constructor(config: Record<string, unknown>) {
+  constructor(
+    config: Record<string, unknown>,
+    readonly renderText: CustomElementContext["renderText"],
+  ) {
     save("the8020.dev-core.terminal-client", this.#clientId);
     this.element.className = "sandbox-console";
     this.element.innerHTML = `<div class="sandbox-console-toolbar">
       <select class="sandbox-console-select" aria-label="Terminal"></select>
-      <button type="button" data-terminal-action="new">New</button>
-      <button type="button" data-terminal-action="rename">Rename</button>
-      <button type="button" data-terminal-action="close">Close</button>
-      <button type="button" data-terminal-action="refresh">Refresh</button>
+      <button type="button" data-terminal-action="new" aria-label="New terminal" title="New terminal"></button>
+      <button type="button" data-terminal-action="rename" aria-label="Rename terminal" title="Rename terminal"></button>
+      <button type="button" data-terminal-action="close" aria-label="Close terminal" title="Close terminal"></button>
+      <button type="button" data-terminal-action="refresh" aria-label="Refresh terminals" title="Refresh terminals"></button>
+      <button type="button" data-terminal-action="fullscreen"></button>
       <button type="button" data-terminal-action="takeover" hidden>Take control</button>
-    </div><div class="sandbox-console-status" role="status" aria-live="polite"></div>
+      <div class="sandbox-console-status" role="status" aria-live="polite"></div>
+    </div>
     <div class="sandbox-console-viewport"></div>`;
+    for (
+      const [action, icon] of Object.entries({
+        new: "add",
+        rename: "edit",
+        close: "close",
+        refresh: "refresh",
+      })
+    ) {
+      renderText(
+        this.element.querySelector(`[data-terminal-action="${action}"]`)!,
+        `[[icon=${icon}]]`,
+      );
+    }
+    this.#fullscreen(false);
+    this.element.querySelector('[data-terminal-action="fullscreen"]')!
+      .addEventListener("click", () =>
+        this.#fullscreen(
+          !this.element.classList.contains("uui-content-fullscreen"),
+        ));
     this.#select = this.element.querySelector("select")!;
     this.#status = this.element.querySelector(".sandbox-console-status")!;
     this.#viewport = this.element.querySelector(".sandbox-console-viewport")!;
@@ -216,7 +240,10 @@ class RetainedConsole implements CustomElementInstance {
     if (this.#active === active) return;
     this.#active = active;
     if (active) this.#start();
-    else this.#detach();
+    else {
+      this.#fullscreen(false);
+      this.#detach();
+    }
     this.#controls();
   }
 
@@ -811,7 +838,21 @@ class RetainedConsole implements CustomElementInstance {
   }
   #setStatus(message: string, state: string): void {
     this.#status.textContent = message;
+    this.#status.title = message;
     this.element.dataset.terminalState = state;
+  }
+  #fullscreen(enabled: boolean): void {
+    this.element.classList.toggle("uui-content-fullscreen", enabled);
+    const button = this.element.querySelector<HTMLButtonElement>(
+      '[data-terminal-action="fullscreen"]',
+    )!;
+    button.title = enabled ? "Exit fullscreen" : "Fullscreen";
+    button.setAttribute("aria-label", button.title);
+    button.setAttribute("aria-pressed", String(enabled));
+    this.renderText(
+      button,
+      `[[icon=${enabled ? "fullscreen_exit" : "fullscreen"}]]`,
+    );
   }
   #controls(): void {
     const enabled = this.#canConnect() && !this.#busy;
@@ -821,6 +862,10 @@ class RetainedConsole implements CustomElementInstance {
         ".sandbox-console-toolbar button",
       )
     ) {
+      if (button.dataset.terminalAction === "fullscreen") {
+        button.disabled = !this.#active;
+        continue;
+      }
       button.disabled = !enabled ||
         (["rename", "close", "takeover"].includes(
           button.dataset.terminalAction!,

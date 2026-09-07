@@ -18,6 +18,13 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
 - The Development component uses the package's retained terminal service for
   create, list, select, rename, close, and explicit control takeover. Activity
   loss, navigation, reload, network loss, and disposal detach the view only.
+- Keep terminal selection, New, Rename, Close, Refresh, fullscreen, and status
+  in one toolbar, with status aligned right. These five buttons use accessible
+  icon-only labels and tooltips through the host's `renderText` icon renderer.
+- Fullscreen toggles UUI's generic `uui-content-fullscreen` class on the whole
+  toolbar/terminal container. It fills the shell content below the global bar,
+  resizes the existing terminal, and restores normal layout on toggle or page
+  deactivation. Never use browser fullscreen or consume terminal Escape input.
 - Restore the bounded snapshot and acknowledge its sequence before consuming
   later output. One display queue orders restoration, writes, and resize across
   connections. Synchronize restored viewport geometry before rendering or scroll

@@ -10,17 +10,18 @@
 }
 
 .sandbox-console-status {
-  min-height: 36px;
-  border-bottom: 1px solid #30364a;
-  padding: 0.5rem 0.65rem;
-  background: #191e2e;
+  min-width: 0;
+  margin-inline-start: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
   color: #919bb5;
   font-size: 0.78rem;
 }
 
 .sandbox-console-toolbar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
   padding: 0.45rem 0.65rem;
@@ -42,12 +43,31 @@
 }
 
 .sandbox-console-toolbar select {
-  min-width: 9rem;
-  max-width: 22rem;
-  flex: 1;
+  min-width: 5rem;
+  width: clamp(5rem, 20vw, 18rem);
 }
 .sandbox-console-toolbar button {
+  flex: 0 0 auto;
+  padding: 0.25rem;
   cursor: pointer;
+}
+.sandbox-console-toolbar button .material-icon {
+  --material-icon-size: 24px;
+}
+.sandbox-console.uui-content-fullscreen {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  border: 0;
+  border-radius: 0;
+}
+.sandbox-console.uui-content-fullscreen .sandbox-console-toolbar {
+  flex: 0 0 auto;
+}
+.sandbox-console.uui-content-fullscreen .sandbox-console-viewport {
+  flex: 1;
+  min-height: 0;
+  height: 0;
 }
 .sandbox-console-toolbar :disabled {
   opacity: 0.5;

@@ -14,9 +14,12 @@
         "id": "sandbox-fields",
         "type": "detail",
         "controls": [
+          "user",
+          "sandboxId",
           "state",
           "status"
-        ]
+        ],
+        "actions": ["restart", "reset-source", "factory-reset"]
       }
     ]
   }

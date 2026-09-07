@@ -21,8 +21,13 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   invokes the typed user-scoped activation operation. Package rows open the
   public Packages program and preserve the draft message.
 - Retain the UUI Model while refreshing sandbox and activation state; preserve
-  the console across Advanced and activation pages. Keep the console and status
-  prominent; Advanced owns user help, sandbox ID, SSH, restart, and resets.
+  the console across activation pages. One field group below the terminal owns
+  user help, sandbox ID, state, last operation, restart, and resets. There is no
+  separate Advanced page.
+- Read the authenticated username from `@the8020/context`. The page subtitle
+  shows an SSH command using that username and the hostname from UUI's
+  `currentBrowser().origin`, with SSH port 22. Browser metadata is presentation
+  input, never user identity; quote shell-sensitive destination characters.
 - Confirm each reset in a dedicated modal describing its losses. Source reset
   preserves the root home directory and installed system changes; factory reset
   deletes both. Development sandbox IDs belong to the development manager and

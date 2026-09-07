@@ -104,13 +104,14 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   They use native-terminal doubles; actual browser, SSH, database deployment,
   and interactive-program qualification remain separate integration gates.
 - `deno task test:browser` supplies `browser_scenarios.ts` to the sibling UUI
-  presentation harness. It checks named controls, modified keys, Escape, Unicode
-  bracketed paste and input bounds, scroll/selection, resize, immediate scroll
-  after state restoration, navigation, reload, network loss, takeover between
-  browser tabs, detached queries/output, fixture logout/login, exit, and close.
-  It uses real Chromium and the service protocol with deterministic native PTYs
-  and authentication; it does not establish native process or agent
-  compatibility.
+  presentation harness. It checks the single toolbar, accessible icons,
+  desktop/mobile content fullscreen and restoration, named controls, modified
+  keys, Escape, Unicode bracketed paste and input bounds, scroll/selection,
+  resize, immediate scroll after state restoration, navigation, reload, network
+  loss, takeover between browser tabs, detached queries/output, fixture
+  logout/login, exit, and close. It uses real Chromium and the service protocol
+  with deterministic native PTYs and authentication; it does not establish
+  native process or agent compatibility.
 - `deno task test:native-browser` runs `native_browser_scenarios.ts` through the
   sibling UUI native harness with real users, database, service Workers, and
   gVisor PTYs. Pass its required `--source-root`, `--package-workspace`,

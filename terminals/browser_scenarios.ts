@@ -380,6 +380,79 @@ export default async function fixture(temporaryRoot: string) {
       assertEquals(terminals.size, 1);
       const first = [...terminals.keys()][0]!;
       const native = terminals.get(first)!;
+      const normal = await page.evaluate<
+        { width: number; height: number; terminalHeight: number }
+      >(`(() => {
+        window.__retainedConsole = document.querySelector('.sandbox-console');
+        return { width: innerWidth, height: innerHeight, terminalHeight: window.__retainedConsole.getBoundingClientRect().height };
+      })()`);
+      assertEquals(
+        await page.evaluate(`(() => {
+        const bar = document.querySelector('.sandbox-console-toolbar');
+        return bar.contains(document.querySelector('.sandbox-console-status')) &&
+          ['new','rename','close','refresh','fullscreen'].every(action => {
+            const button = bar.querySelector('[data-terminal-action=' + action + ']');
+            const icon = button.querySelector('.material-icon');
+            return button.textContent.trim() === '' && button.title && button.getAttribute('aria-label') && icon &&
+              parseFloat(getComputedStyle(icon, '::before').fontSize) <= icon.getBoundingClientRect().width &&
+              icon.getBoundingClientRect().width < button.getBoundingClientRect().width;
+          });
+      })()`),
+        true,
+        "one toolbar with accessible icon buttons and status",
+      );
+      const fullscreenResizeStart = native.events.length;
+      await button(page, "fullscreen");
+      for (const width of [normal.width, 375]) {
+        await page.command("Emulation.setDeviceMetricsOverride", {
+          width,
+          height: normal.height,
+          deviceScaleFactor: 1,
+          mobile: false,
+        });
+        await waitPage(
+          page,
+          `(() => {
+          const terminal = document.querySelector('.sandbox-console');
+          const rect = terminal.getBoundingClientRect();
+          const bar = terminal.querySelector('.sandbox-console-toolbar');
+          const status = terminal.querySelector('.sandbox-console-status').getBoundingClientRect();
+          const navbar = document.querySelector('.navbar').getBoundingClientRect();
+          return terminal === window.__retainedConsole && rect.left === 0 &&
+            Math.abs(rect.top - navbar.bottom) < 1 && rect.right === innerWidth && rect.bottom === innerHeight &&
+            bar.scrollWidth <= bar.clientWidth && status.top >= bar.getBoundingClientRect().top &&
+            status.bottom <= bar.getBoundingClientRect().bottom &&
+            terminal.querySelector('[data-terminal-action=fullscreen] [data-material-icon=fullscreen_exit]') &&
+            document.elementFromPoint(navbar.right - 40, navbar.top + 20).closest('.navbar');
+        })()`,
+          "fullscreen fills only shell content on desktop and mobile",
+        );
+      }
+      await until(
+        () =>
+          native.events.slice(fullscreenResizeStart).some((event) =>
+            event.size
+          ),
+        "fullscreen resizes the existing PTY",
+      );
+      await page.command("Emulation.setDeviceMetricsOverride", {
+        width: normal.width,
+        height: normal.height,
+        deviceScaleFactor: 1,
+        mobile: false,
+      });
+      await button(page, "fullscreen");
+      await waitPage(
+        page,
+        `(() => {
+        const terminal = document.querySelector('.sandbox-console');
+        return terminal === window.__retainedConsole && !terminal.classList.contains('uui-content-fullscreen') &&
+          Math.abs(terminal.getBoundingClientRect().height - ${normal.terminalHeight}) < 1 &&
+          terminal.querySelector('[data-terminal-action=fullscreen] [data-material-icon=fullscreen]');
+      })()`,
+        "fullscreen restores normal layout without replacing the terminal",
+      );
+      await ready(first);
       await page.evaluate(
         "document.querySelector('.xterm-helper-textarea').focus()",
       );
@@ -559,6 +632,7 @@ export default async function fixture(temporaryRoot: string) {
       await choose(page, first);
       await ready(first);
 
+      await button(page, "fullscreen");
       await namedButton(page, "Another screen");
       await waitPage(
         page,
@@ -571,6 +645,13 @@ export default async function fixture(temporaryRoot: string) {
       await native.output(new Uint8Array([0xf0, 0x9f]));
       await namedButton(page, "Return");
       await ready(first);
+      assertEquals(
+        await page.evaluate(
+          "document.querySelector('.sandbox-console').classList.contains('uui-content-fullscreen')",
+        ),
+        false,
+        "navigation restores the normal terminal layout",
+      );
       await native.output(new Uint8Array([0x98, 0x80]));
       await waitPage(
         page,
