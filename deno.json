@@ -20,9 +20,28 @@
     "hono": "jsr:@hono/hono@4.9.8",
     "kysely": "npm:kysely@0.29.4",
     "zod": "npm:zod@4.1.5",
-    "@the8020/context": "file:///opt/runtime/context/mod.ts"
+    "@the8020/context": "file:///opt/runtime/context/mod.ts",
+    "@xterm/addon-canvas": "npm:@xterm/addon-canvas@0.7.0",
+    "@xterm/addon-fit": "npm:@xterm/addon-fit@0.10.0",
+    "@xterm/xterm": "npm:@xterm/xterm@5.5.0"
   },
   "tasks": {
-    "check": "deno fmt --check . && deno lint . && deno check --import-map=deno.local.json programs/*/*.ts src/*.ts"
+    "check": "deno fmt --check . && deno lint . && deno check --import-map=deno.local.json programs/*/*.ts src/*.ts services/*/service.ts tables/*.ts terminals/frontend/console.ts terminals/browser_scenarios.ts terminals/native*_scenarios.ts",
+    "build": "deno run -A --import-map=deno.local.json terminals/build.ts",
+    "test": "deno test --import-map=deno.local.json terminals",
+    "test:browser": "deno run -A --import-map=deno.local.json ../uui/presentation_browser_e2e.ts --fixture=../dev-core/terminals/browser_scenarios.ts",
+    "test:native-browser": "deno run -A --import-map=deno.local.json ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_browser_scenarios.ts",
+    "test:native-resilience": "deno run -A --import-map=deno.local.json ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_resilience_scenarios.ts",
+    "bench:native-terminals": "deno run -A --import-map=deno.local.json ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_performance_scenarios.ts"
+  },
+  "fmt": {
+    "exclude": [
+      "public"
+    ]
+  },
+  "lint": {
+    "exclude": [
+      "public"
+    ]
   }
 }

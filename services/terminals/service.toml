@@ -1,0 +1,27 @@
+schema = 2
+description = "Development terminals"
+entrypoint = "service.ts"
+
+[access]
+mode = "authenticated"
+
+[access.unauthenticated]
+action = "reject"
+status = 401
+
+[lifecycle]
+default_enabled = true
+service_type = "session"
+session_keep_alive = "0s"
+
+[scaling]
+minimum_workers = 0
+maximum_workers = 8
+concurrency_per_worker = 32
+target_utilization = 0.70
+worker_keep_alive = "2m"
+
+[placement]
+sandbox_group = "uui"
+minimum_sandboxes = 0
+workers_per_sandbox = 64

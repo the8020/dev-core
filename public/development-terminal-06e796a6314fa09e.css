@@ -1,0 +1,237 @@
+.sandbox-console {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #30364a;
+  border-radius: 8px;
+  background: #111522;
+  box-shadow: 0 20px 45px rgb(10 15 30 / 24%);
+  color: #dfe5f6;
+}
+
+.sandbox-console-status {
+  min-height: 36px;
+  border-bottom: 1px solid #30364a;
+  padding: 0.5rem 0.65rem;
+  background: #191e2e;
+  color: #919bb5;
+  font-size: 0.78rem;
+}
+
+.sandbox-console-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid #30364a;
+  background: #191e2e;
+}
+
+.sandbox-console-toolbar select,
+.sandbox-console-toolbar button,
+.sandbox-terminal-dialog input,
+.sandbox-terminal-dialog button {
+  min-height: 32px;
+  border: 1px solid #48526d;
+  border-radius: 5px;
+  padding: 0.25rem 0.6rem;
+  background: #111522;
+  color: #dfe5f6;
+  font: inherit;
+}
+
+.sandbox-console-toolbar select {
+  min-width: 9rem;
+  max-width: 22rem;
+  flex: 1;
+}
+.sandbox-console-toolbar button {
+  cursor: pointer;
+}
+.sandbox-console-toolbar :disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.sandbox-console-toolbar :focus-visible {
+  outline: 2px solid #58a6ff;
+  outline-offset: 2px;
+}
+
+.sandbox-terminal-dialog {
+  width: min(26rem, calc(100vw - 2rem));
+  border: 1px solid #48526d;
+  border-radius: 10px;
+  padding: 1.2rem;
+  background: #191e2e;
+  color: #dfe5f6;
+}
+.sandbox-terminal-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+.sandbox-terminal-dialog label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  font-weight: 600;
+}
+.sandbox-terminal-dialog form > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.sandbox-console-viewport {
+  height: min(60vh, 34rem);
+  min-height: 22rem;
+  padding: 0;
+}
+
+/* Core xterm.js 5.5 styles, MIT licensed by the xterm.js authors. */
+.xterm {
+  position: relative;
+  cursor: text;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.xterm.focus,
+.xterm:focus {
+  outline: none;
+}
+.xterm .xterm-helpers {
+  position: absolute;
+  top: 0;
+  z-index: 5;
+}
+.xterm .xterm-helper-textarea {
+  position: absolute;
+  z-index: -5;
+  top: 0;
+  left: -9999em;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  opacity: 0;
+  white-space: nowrap;
+  resize: none;
+}
+.xterm .composition-view {
+  position: absolute;
+  z-index: 1;
+  display: none;
+  background: #000;
+  color: #fff;
+  white-space: nowrap;
+}
+.xterm .composition-view.active {
+  display: block;
+}
+.xterm .xterm-viewport {
+  position: absolute;
+  inset: 0;
+  overflow-y: scroll;
+  background-color: #000;
+  cursor: default;
+}
+.xterm .xterm-screen {
+  position: relative;
+}
+.xterm .xterm-screen canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.xterm .xterm-scroll-area {
+  visibility: hidden;
+}
+.xterm-char-measure-element {
+  position: absolute;
+  top: 0;
+  left: -9999em;
+  display: inline-block;
+  visibility: hidden;
+  line-height: normal;
+}
+.xterm.enable-mouse-events {
+  cursor: default;
+}
+.xterm.xterm-cursor-pointer,
+.xterm .xterm-cursor-pointer {
+  cursor: pointer;
+}
+.xterm.column-select.focus {
+  cursor: crosshair;
+}
+.xterm .xterm-accessibility:not(.debug),
+.xterm .xterm-message {
+  position: absolute;
+  z-index: 10;
+  inset: 0;
+  color: transparent;
+  pointer-events: none;
+}
+.xterm .xterm-accessibility-tree:not(.debug) *::selection {
+  color: transparent;
+}
+.xterm .xterm-accessibility-tree {
+  user-select: text;
+  white-space: pre;
+}
+.xterm .live-region {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.xterm-dim {
+  opacity: 1 !important;
+}
+.xterm-underline-1 {
+  text-decoration: underline;
+}
+.xterm-underline-2 {
+  text-decoration: double underline;
+}
+.xterm-underline-3 {
+  text-decoration: wavy underline;
+}
+.xterm-underline-4 {
+  text-decoration: dotted underline;
+}
+.xterm-underline-5 {
+  text-decoration: dashed underline;
+}
+.xterm-overline {
+  text-decoration: overline;
+}
+.xterm-strikethrough {
+  text-decoration: line-through;
+}
+.xterm-screen .xterm-decoration-container .xterm-decoration {
+  position: absolute;
+  z-index: 6;
+}
+.xterm-screen .xterm-decoration-container .xterm-decoration.xterm-decoration-top-layer {
+  z-index: 7;
+}
+.xterm-decoration-overview-ruler {
+  position: absolute;
+  z-index: 8;
+  top: 0;
+  right: 0;
+  pointer-events: none;
+}
+.xterm-decoration-top {
+  position: relative;
+  z-index: 2;
+}
+
+@media (max-width: 680px) {
+  .sandbox-console-viewport {
+    min-height: 18rem;
+  }
+}

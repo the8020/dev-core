@@ -11,21 +11,11 @@
         "customElement": "sandbox-console"
       },
       {
-        "id": "sandbox",
-        "type": "section",
-        "title": "Your development sandbox",
-        "children": [
-          {
-            "id": "sandbox-fields",
-            "type": "field-group",
-            "title": "Sandbox status",
-            "controls": [
-              "sandboxId",
-              "state",
-              "status",
-              "confirmDestructive"
-            ]
-          }
+        "id": "sandbox-fields",
+        "type": "detail",
+        "controls": [
+          "state",
+          "status"
         ]
       }
     ]

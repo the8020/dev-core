@@ -115,6 +115,14 @@ below.
   for independent package activation histories.
 - [programs/AGENTS.md](programs/AGENTS.md): Expose development sandbox
   administration and activation programs.
+- [terminals/AGENTS.md](terminals/AGENTS.md): Own terminal browser rendering,
+  display state, and package-owned terminal workflow.
+- [public/AGENTS.md](public/AGENTS.md): Publish built browser modules and styles
+  for on-demand loading by programs.
+- [services/AGENTS.md](services/AGENTS.md): Declare the authenticated retained
+  terminal service and its execution lifetime.
+- [tables/AGENTS.md](tables/AGENTS.md): Store terminal names and exact owner
+  references without terminal contents or routing credentials.
 
 # Purpose
 
@@ -126,15 +134,15 @@ below.
 # Ownership
 
 - Own `programs/development-test`, administrative development command programs,
-  its sandbox lifecycle/console screen, and small `fixtures/activation-*` text
-  and TypeScript fixtures.
+  its sandbox lifecycle/console screen, terminal code and assets, and small
+  `fixtures/activation-*` text and TypeScript fixtures.
 - Do not own development sandbox state, Git activation logic, sandbox
-  implementation, browser console rendering, or services.
+  implementation, physical PTYs, generic browser hosting, or kernel routing.
 
 # Local Contracts
 
 - The package root is its independent Git repository root.
-- Development test declares `uui = true` for Home; command entrypoints keep the
+- Development declares `uui = true` for Home; command entrypoints keep the
   non-UUI default.
 - Source checks resolve sibling `kernel` and `uui` repositories; deployed
   Workers use only the canonical runtime `@the8020/*` and `/p/*` aliases.
@@ -148,24 +156,31 @@ below.
 - Development test selects the authenticated user's single sandbox by `user_id`,
   reads its opaque `sbx-` console target from the returned sandbox record,
   automatically creates or starts it on entry, delegates lifecycle operations to
-  typed kernel commands, and provides only the declarative `sandbox-console.v1`
-  descriptor with root's home and a standard administrative `PATH` to the UUI
-  shell. The untitled terminal renders before the sandbox status fields. Its
-  description shows an SSH command for the authenticated username on localhost
-  port 22 and warns that container, proxy, or published endpoint mappings may
-  differ.
-- Its destructive-reset guidance states that source reset preserves `/root` and
-  system changes while factory reset deletes both.
+  typed kernel commands, and supplies its own terminal module and stylesheet
+  through UUI's generic custom-element wrapper. Terminal code, xterm
+  dependencies, state recovery, and browser styling belong to this package. The
+  retained client owns named-terminal controls and renders before the sandbox
+  status fields. Advanced owns sandbox identity, user help, SSH guidance,
+  restart, and resets. Each reset requires its own confirmed modal: source reset
+  preserves `/root` and system changes while factory reset deletes both.
 - Its activation screen previews every changed package with changed-file and
   added/removed-row counts plus ready/blocked state, requires one commit
   message, and invokes the typed user-scoped activation command to sync all
-  ready changes at once. It owns no Git or overlay implementation.
+  ready changes at once. Package rows open their owning administration program
+  without losing the draft message. It owns no Git or overlay implementation.
 
 - Development and activation screen loops retain UUI Model wrappers while
   refreshing business data. Activation uses full accessible count headings with
   compact short labels through shared list column metadata.
 
 # Work Guidance
+
+- Package development workflows and terminal components here, using ordinary
+  programs, services, typed kernel calls, and generic UUI hosting. Keep
+  unrelated features out of the shared shell and runtime.
+- Keep workflow metadata, display-owner execution, physical PTYs, and sandbox
+  lifetime distinct. Add kernel behavior only for a necessary native foundation
+  gap, and verify that owner plus the affected development path.
 
 - Keep examples readable as plain files so activation commits are easy to
   inspect.
@@ -180,9 +195,20 @@ below.
 
 # Verification
 
-- Package-owned `deno task check` formats, lints, and type-checks the
-  development program. Development-domain unit and real gVisor tests use
-  `the8020/dev-core` and `the8020/demo` identities to prove independent
+- Package-owned `deno task check` formats, lints, and type-checks development
+  programs, terminal service/table entrypoints, and the browser component.
+  `deno task test` checks the terminal engine, owner, recovery bounds, and
+  service protocol. `deno task test:browser` checks the real browser and
+  retained protocol with deterministic native-terminal and authentication
+  doubles; native SSH, deployment, and interactive programs require separate
+  qualification. `test:native-browser` uses the sibling UUI node harness and
+  disposable real gVisor terminals; required options are in the terminal DOX.
+  `bench:native-terminals` uses that harness for direct/retained transport,
+  recovery, slow-view, and process-tree resource measurements. The sibling UUI
+  `test:programs-browser` checks Advanced, reset confirmation, activation
+  validation, package navigation, and console DOM preservation against
+  deterministic kernel responses. Development-domain unit and real gVisor tests
+  use `the8020/dev-core` and `the8020/demo` identities to prove independent
   histories and multi-package activation without pushing remotes; the browser
   E2E covers sandbox lifecycle, the registered development console, UUI
   activation validation/statistics, independent commits, and overlay reset.

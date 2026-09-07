@@ -6,15 +6,6 @@
     "type": "stack",
     "children": [
       {
-        "id": "activation",
-        "type": "field-group",
-        "title": "Activation",
-        "controls": [
-          "message",
-          "status"
-        ]
-      },
-      {
         "id": "changed-packages",
         "type": "list",
         "title": "Changed packages",
@@ -22,10 +13,10 @@
         "key": "package",
         "display": [
           "package",
+          "ready",
           "changedFiles",
           "addedRows",
-          "removedRows",
-          "ready"
+          "removedRows"
         ],
         "headings": {
           "addedRows": "+",
@@ -43,10 +34,19 @@
           },
           "removedRows": {
             "length": "compact",
-            "shortHeading": "−",
+            "shortHeading": "\u2212",
             "heading": "Removed rows"
           }
         }
+      },
+      {
+        "id": "activation",
+        "type": "field-group",
+        "title": "Activation",
+        "controls": [
+          "message",
+          "status"
+        ]
       }
     ]
   }

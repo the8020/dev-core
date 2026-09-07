@@ -5,11 +5,17 @@ import {
   callScreen,
   field,
   Model,
+  packageAssetURL,
+  presentModal,
+  presentPage,
   sendMessage,
   z,
 } from "/p/the8020/uui/mod.ts";
+import { packageId } from "/p/the8020/packages/types/package.ts";
+import { username } from "/p/the8020/users/types/user.ts";
 import layout from "./layouts/main.json" with { type: "json" };
 import activationLayout from "./layouts/activation.json" with { type: "json" };
+import terminalAssets from "../../terminals/assets.json" with { type: "json" };
 
 interface DevelopmentSandbox {
   user_id: string;
@@ -21,7 +27,6 @@ interface DevelopmentScreenModel {
   sandboxId: string;
   state: string;
   status: string;
-  confirmDestructive: boolean;
 }
 
 interface ActivationPackagePreview {
@@ -48,7 +53,7 @@ interface ActivationRunResult extends Record<string, unknown> {
 const ActivationScreen = z.object({
   packages: field(
     z.array(z.object({
-      package: z.string(),
+      package: packageId,
       changedFiles: z.number(),
       addedRows: z.number(),
       removedRows: z.number(),
@@ -80,7 +85,6 @@ export default async function developmentTest(): Promise<void> {
   if (user === undefined) throw new Error("authenticated user is required");
   const developmentUserId = user.username;
   let status = await startDevelopmentSandbox(developmentUserId);
-  let confirmDestructive = false;
   let screenModel: Model<DevelopmentScreenModel> | undefined;
   while (true) {
     const sandboxes = await developmentSandboxes();
@@ -108,34 +112,26 @@ export default async function developmentTest(): Promise<void> {
         control: "text",
         readOnly: true,
       }),
-      confirmDestructive: field(z.boolean(), {
-        label: "Confirm destructive reset",
-        length: "short",
-        description:
-          "Required for source reset or factory reset. Source reset preserves /root and installed system changes; factory reset deletes both.",
-        control: "checkbox",
-        hidden: sandbox === undefined,
-      }),
     });
     const model: DevelopmentScreenModel = {
       sandboxId: sandbox?.sandbox_id ?? sandboxId,
       state: sandbox?.state ?? "ABSENT",
       status,
-      confirmDestructive,
     };
     screenModel ??= new Model(model);
     screenModel.data = model;
     const event = await callScreen({
       id: "development-test",
-      title: "Development test",
-      description:
-        `Connect from your own terminal with ssh ${developmentUserId}@localhost -p 22. Change the hostname or port when 80|20 is containerized, behind a proxy, or published through different port mappings.`,
+      title: "Development",
       schema: Screen,
       model: screenModel,
       layout,
       customElements: [{
         id: "sandbox-console",
-        initializer: "sandbox-console.v1",
+        module: packageAssetURL("the8020/dev-core", terminalAssets.module),
+        styles: terminalAssets.styles.map((path) =>
+          packageAssetURL("the8020/dev-core", path)
+        ),
         preserve: true,
         config: consoleConfiguration(sandboxId, running),
       }],
@@ -143,7 +139,7 @@ export default async function developmentTest(): Promise<void> {
         actions: actionsFor(sandbox),
       },
     });
-    confirmDestructive = model.confirmDestructive;
+    let action = event.action;
     if (event.action === BACK_EVENT) return;
     if (event.action === "change") continue;
     if (event.action === "refresh") {
@@ -151,12 +147,18 @@ export default async function developmentTest(): Promise<void> {
       continue;
     }
     if (event.action === "activate" && sandbox !== undefined) {
-      await activateChanges(developmentUserId);
-      status = "Activation screen closed";
+      await presentPage(() => activateChanges(developmentUserId));
       continue;
     }
+    if (action === "advanced" && sandbox !== undefined) {
+      const selected = await presentPage(() =>
+        advancedSandbox(developmentUserId, sandbox)
+      );
+      if (!selected) continue;
+      action = selected;
+    }
     try {
-      if (event.action === "start") {
+      if (action === "start") {
         if (sandbox === undefined) {
           await kernel.development.sandbox.run("create", developmentUserId);
           status = "Development sandbox created and started";
@@ -165,32 +167,28 @@ export default async function developmentTest(): Promise<void> {
           status = "Development sandbox started";
         }
       }
-      if (event.action === "stop" && sandbox !== undefined) {
+      if (action === "stop" && sandbox !== undefined) {
         await kernel.development.sandbox.run("stop", developmentUserId);
         status = "Development sandbox stopped";
       }
-      if (event.action === "restart" && sandbox !== undefined) {
+      if (action === "restart" && sandbox !== undefined) {
         await kernel.development.sandbox.run("restart", developmentUserId);
         status = "Development sandbox restarted";
       }
-      if (event.action === "reset-source" && sandbox !== undefined) {
-        requireDestructiveConfirmation(confirmDestructive);
+      if (action === "reset-source" && sandbox !== undefined) {
         await kernel.development.sandbox.run(
           "reset-source",
           developmentUserId,
           { confirm: true },
         );
-        confirmDestructive = false;
         status = "Development source reset";
       }
-      if (event.action === "factory-reset" && sandbox !== undefined) {
-        requireDestructiveConfirmation(confirmDestructive);
+      if (action === "factory-reset" && sandbox !== undefined) {
         await kernel.development.sandbox.run(
           "factory-reset",
           developmentUserId,
           { confirm: true },
         );
-        confirmDestructive = false;
         status = "Development sandbox factory reset";
       }
     } catch (error) {
@@ -202,7 +200,7 @@ export default async function developmentTest(): Promise<void> {
 
 async function activateChanges(userId: string): Promise<void> {
   let message = "";
-  let status = "Review all private package changes before activation";
+  let status = "Review the changed packages and enter a commit message.";
   let screenModel1: Model<z.infer<typeof ActivationScreen>> | undefined;
   while (true) {
     const result = {
@@ -226,7 +224,7 @@ async function activateChanges(userId: string): Promise<void> {
       id: "development-activation",
       title: "Activate development changes",
       description:
-        "Commit every changed package independently, publish the private deltas to shared sources, and reset the sandbox overlay.",
+        "Activate your changes for all ready packages. Each package gets a commit with the message below.",
       schema: ActivationScreen,
       model: screenModel1,
       layout: activationLayout,
@@ -235,7 +233,7 @@ async function activateChanges(userId: string): Promise<void> {
           ...(packages.length > 0
             ? [{
               id: "sync-all",
-              label: "Sync all changes",
+              label: "Activate all changes",
               kind: "primary" as const,
             }]
             : []),
@@ -247,6 +245,12 @@ async function activateChanges(userId: string): Promise<void> {
     status = model.status;
     if (event.action === BACK_EVENT) return;
     if (event.action === "change" || event.action === "refresh") continue;
+    if (event.action === "select" && typeof event.value === "string") {
+      const { default: packages } = await import(
+        "/p/the8020/admin-core/programs/packages/program.ts"
+      );
+      await presentPage(() => packages(event.value as string));
+    }
     if (event.action === "sync-all") {
       if (message.trim() === "") {
         status = "A commit message is required";
@@ -265,7 +269,7 @@ async function activateChanges(userId: string): Promise<void> {
           throw new Error(`Activation ${activation.activation.status}`);
         }
         message = "";
-        status = "All package changes activated and the overlay was reset";
+        status = "All package changes activated";
         sendMessage(status, "success");
       } catch (error) {
         status = error instanceof Error ? error.message : String(error);
@@ -292,11 +296,79 @@ async function startDevelopmentSandbox(userId: string): Promise<string> {
   return "Development sandbox started";
 }
 
-function requireDestructiveConfirmation(confirmed: boolean): void {
-  if (!confirmed) {
-    throw new Error(
-      "Select Confirm destructive reset before resetting the sandbox",
-    );
+async function advancedSandbox(
+  user: string,
+  sandbox: DevelopmentSandbox,
+): Promise<string | undefined> {
+  const schema = z.object({
+    user: field(username, { readOnly: true }),
+    sandboxId: field(z.string(), { label: "Sandbox ID", readOnly: true }),
+    ssh: field(z.string(), {
+      label: "SSH command",
+      readOnly: true,
+      length: "long",
+      description:
+        "Replace localhost and port 22 with your server's address and published SSH port.",
+    }),
+  });
+  const model = new Model({
+    user,
+    sandboxId: sandbox.sandbox_id,
+    ssh: `ssh ${user}@localhost -p 22`,
+  });
+  while (true) {
+    const event = await callScreen({
+      id: "development-advanced",
+      title: "Advanced development settings",
+      schema,
+      model,
+      header: {
+        actions: [
+          ...(isRunning(sandbox)
+            ? [{ id: "restart", label: "Restart sandbox" }]
+            : []),
+          { id: "reset-source", label: "Reset source", kind: "danger" },
+          { id: "factory-reset", label: "Factory reset", kind: "danger" },
+        ],
+      },
+    });
+    if (event.action === BACK_EVENT) return;
+    if (event.action === "restart") return event.action;
+    if (event.action !== "reset-source" && event.action !== "factory-reset") {
+      continue;
+    }
+    const factory = event.action === "factory-reset";
+    const confirmed = await presentModal(async () => {
+      const confirm = new Model({ confirmed: false });
+      while (true) {
+        const response = await callScreen({
+          id: "development-reset-confirm",
+          title: factory ? "Factory reset?" : "Reset source?",
+          description: factory
+            ? "This deletes your source changes, root home directory, and installed system changes."
+            : "This deletes your unactivated source changes. Your root home directory and installed system changes are kept.",
+          schema: z.object({
+            confirmed: field(z.boolean(), {
+              label: "I understand that these changes will be deleted",
+            }),
+          }),
+          model: confirm,
+          header: {
+            actions: [{
+              id: "reset",
+              label: factory ? "Factory reset" : "Reset source",
+              kind: "danger",
+            }, { id: "cancel", label: "Cancel" }],
+          },
+        });
+        if (response.action === BACK_EVENT || response.action === "cancel") {
+          return false;
+        }
+        if (response.action === "reset" && confirm.data.confirmed) return true;
+        sendMessage("Confirm deletion before resetting the sandbox.", "error");
+      }
+    });
+    if (confirmed) return event.action;
   }
 }
 
@@ -311,7 +383,6 @@ function isRunning(sandbox: DevelopmentSandbox): boolean {
 function consoleConfiguration(sandboxId: string, enabled: boolean) {
   return {
     enabled,
-    websocketPath: "/_the8020/console",
     target: {
       kind: "development",
       sandboxId,
@@ -332,18 +403,10 @@ function actionsFor(sandbox: DevelopmentSandbox | undefined) {
     ...(!running
       ? [{ id: "start", label: "Start sandbox", kind: "primary" as const }]
       : [
-        { id: "activate", label: "Activate changes", kind: "primary" as const },
+        { id: "activate", label: "Review changes", kind: "primary" as const },
         { id: "stop", label: "Stop sandbox", kind: "danger" as const },
-        { id: "restart", label: "Restart sandbox" },
       ]),
-    ...(sandbox === undefined ? [] : [
-      { id: "reset-source", label: "Reset source", kind: "danger" as const },
-      {
-        id: "factory-reset",
-        label: "Factory reset",
-        kind: "danger" as const,
-      },
-    ]),
+    ...(sandbox === undefined ? [] : [{ id: "advanced", label: "Advanced" }]),
     { id: "refresh", label: "Refresh" },
   ];
 }
