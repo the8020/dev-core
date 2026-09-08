@@ -1,5 +1,6 @@
 import type {
   kernel,
+  PersistentServiceTarget,
   TerminalAttachment,
   TerminalBatch,
   TerminalEvent,
@@ -100,9 +101,22 @@ export class TestTerminals {
   #readAfter = 0;
   #attachment = 1;
   #exited = false;
+  #owner?: PersistentServiceTarget;
   #waiters: Array<{ after: number; resolve: () => void }> = [];
 
   readonly api: typeof kernel.terminals = {
+    open: (input) => {
+      if (this.#owner) {
+        return Promise.resolve({
+          terminal: this.native.terminal,
+          owner: this.#owner,
+        });
+      }
+      this.#owner = input.owner;
+      this.native.terminal.sessionId = input.sessionId;
+      this.created++;
+      return Promise.resolve({ ...this.native, after: 0, reset: false });
+    },
     create: () => {
       this.created++;
       return Promise.resolve(this.native);
@@ -126,7 +140,10 @@ export class TestTerminals {
     },
     close: (target) => {
       const id = typeof target === "string" ? target : target.terminalId;
+      if (this.closed.includes(id)) return Promise.resolve();
       this.closed.push(id);
+      void this.#noViews.promise.catch(() => {});
+      this.#noViews.reject(new TerminalClosedError());
       this.#notify();
       return Promise.resolve();
     },
@@ -161,6 +178,7 @@ export class TestTerminals {
   }
   exit(): void {
     this.#exited = true;
+    this.native.terminal.exited = true;
     this.#notify();
   }
   expire(): void {
@@ -184,7 +202,7 @@ export class TestTerminals {
     this.#waiters = this.#waiters.filter((waiter) => waiter.after > after);
     for (;;) {
       signal?.throwIfAborted();
-      if (this.closed.length) throw new Error("Terminal gone");
+      if (this.closed.length) throw new TerminalClosedError();
       const events = this.events.filter((event) => event.sequence > after);
       if (events.length || this.#exited) {
         return {

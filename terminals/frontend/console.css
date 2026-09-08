@@ -54,6 +54,9 @@
 .sandbox-console-toolbar button .material-icon {
   --material-icon-size: 24px;
 }
+.sandbox-console-toolbar button[data-terminal-action="close"] {
+  color: #f87171;
+}
 .sandbox-console.uui-content-fullscreen {
   position: fixed;
   display: flex;
@@ -102,9 +105,13 @@
 }
 
 .sandbox-console-viewport {
+  position: relative;
+  background: #000;
   height: min(60vh, 34rem);
   min-height: 22rem;
   padding: 0;
+  overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 /* Core xterm.js 5.5 styles, MIT licensed by the xterm.js authors. */
@@ -153,6 +160,7 @@
   position: absolute;
   inset: 0;
   overflow-y: scroll;
+  overscroll-behavior: contain;
   background-color: #000;
   cursor: default;
 }
@@ -254,4 +262,23 @@
   .sandbox-console-viewport {
     min-height: 18rem;
   }
+}
+
+.sandbox-console-display,
+.sandbox-console-display > .xterm {
+  height: 100%;
+}
+.sandbox-console-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  text-align: center;
+}
+.sandbox-console-loading[hidden] {
+  display: none;
+}
+.sandbox-console:not([data-terminal-state="connected"]):not([data-terminal-state="exited"]) .sandbox-console-display {
+  visibility: hidden;
 }

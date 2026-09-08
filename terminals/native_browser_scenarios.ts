@@ -1,6 +1,7 @@
 import { assert, assertEquals } from "@std/assert";
 import type { NativeBrowserFixtureContext } from "/p/the8020/uui/browser_e2e.ts";
 import {
+  verifyNativeNamedSessions,
   verifyNativeSSH,
   verifyNativeSSHShell,
 } from "./native_ssh_scenarios.ts";
@@ -10,7 +11,6 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   const {
     page,
     click,
-    clickButton,
     clickRow,
     enterTerminal,
     waitForPage,
@@ -93,7 +93,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   await waitForScreen(page, "Development", 60_000);
   await ready();
   const first = await selected();
-  assert(/^tty-[a-z0-9]{10}$/.test(first), "native terminal identity");
+  assertEquals(first, "1", "first numeric session ID");
   const initial = await output(
     'export RETAINED_PROOF_PID=$$; printf \'\\036PID:%s:TERM:%s\\037\\n\' "$$" "$TERM"',
     "\x1ePID:",
@@ -116,7 +116,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   })()`);
   await waitForPage(
     page,
-    "document.querySelector('.sandbox-console-select').selectedOptions[0]?.text==='Native agent'",
+    "document.querySelector('.sandbox-console-select').selectedOptions[0]?.text==='[1] Native agent'",
     "retained name",
   );
   await terminalButton("new");
@@ -137,9 +137,9 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   assert(secondPID && secondPID !== pid, "independent native shell processes");
   await choose(first);
 
-  await clickButton(page, "Advanced");
-  await waitForScreen(page, "Advanced development settings");
-  await clickButton(page, "Back");
+  await click(page, "#screen-back");
+  await waitForScreen(page, "Welcome to 80|20");
+  await clickRow(page, "the8020/dev-core/development-test");
   await waitForScreen(page, "Development");
   await ready(first);
   assert((await output(
@@ -442,6 +442,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   console.log(
     "Native retained terminal checks passed: names, distinct PIDs, navigation, pixel-identical reload, network loss, detached query, real logout/login, htop, process exit, independent explicit close.",
   );
+  await verifyNativeNamedSessions(context);
 }
 
 function terminalOutput(

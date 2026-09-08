@@ -9,7 +9,11 @@ import {
 import { kernel, WorkerInvokeError } from "@the8020/kernel";
 import type { TerminalMetadataStore, TerminalRecord } from "./metadata.ts";
 import { TerminalBusyError, TerminalOwner } from "./owner.ts";
-import { TERMINAL_PROTOCOL, type TerminalItem } from "./protocol.ts";
+import {
+  SESSION_ID,
+  TERMINAL_PROTOCOL,
+  type TerminalItem,
+} from "./protocol.ts";
 
 const Target = z.object({
   targetKind: z.enum(["development", "runtime"]),
@@ -19,7 +23,8 @@ const Size = z.object({
   columns: z.number().int().min(2).max(500),
   rows: z.number().int().min(1).max(200),
 });
-const Create = Target.extend({
+const Open = Target.extend({
+  sessionId: z.string().regex(SESSION_ID),
   name: z.string().trim().min(1).max(80).optional(),
   arguments: z.array(z.string().max(8192)).min(1).max(64),
   environment: z.array(z.string().max(8192)).max(128).default([]),
@@ -34,6 +39,7 @@ interface Entry {
   completion: Promise<void>;
 }
 const owners = new Map<string, Entry>();
+const opening = new Map<string, Promise<Entry>>();
 
 interface TerminalServiceDependencies {
   terminals: typeof kernel.terminals;
@@ -57,7 +63,8 @@ export function defineTerminalService(
   const { terminals, runPersistent, completePersistent, route, invoke } =
     dependencies;
   const item = async (record: TerminalRecord): Promise<TerminalItem> => ({
-    id: record.terminalId,
+    id: record.sessionId,
+    terminalId: record.terminalId,
     name: record.name,
     route: await route(target(record)),
   });
@@ -91,8 +98,8 @@ export function defineTerminalService(
     },
   );
   service.post(
-    "/create",
-    { summary: "Create a retained terminal", body: Create },
+    "/open",
+    { summary: "Connect or create a named terminal", body: Open },
     async ({ body: input, meta }) => {
       authenticated(meta);
       if (owners.has(persistentId(meta))) {
@@ -100,64 +107,129 @@ export function defineTerminalService(
           error: "This operation requires an independent request",
         });
       }
+      const previous = await store.find(
+        meta.user.userId,
+        input.targetKind,
+        input.targetSandboxId,
+        input.sessionId,
+      );
+      if (previous && previous.nodeId !== meta.execution.nodeId) {
+        try {
+          const current = await invoke<{ exited: boolean } | null>({
+            ...target(previous),
+            function: "terminal.status",
+            input: {
+              terminalId: previous.terminalId,
+              persistentExecutionId: previous.persistentExecutionId,
+            },
+          });
+          if (current && !current.exited) {
+            return Response.json({ terminal: await item(previous) });
+          }
+        } catch (error) {
+          if (
+            !(error instanceof WorkerInvokeError) ||
+            !["target_not_found", "target_mismatch"].includes(error.code)
+          ) throw error;
+        }
+        throw new HTTPError(409, {
+          error: "Open this session on its sandbox's node",
+        });
+      }
       const ready = Promise.withResolvers<TerminalItem>();
+      const prepared = Promise.withResolvers<Entry>();
+      void prepared.promise.catch(() => {});
       const completed = Promise.withResolvers<void>();
+      const executionId = persistentId(meta);
+      opening.set(executionId, prepared.promise);
       void runPersistent(async () => {
         const existing = await store.list(
           meta.user.userId,
           input.targetKind,
           input.targetSandboxId,
         );
-        if (existing.length >= 256) {
+        if (!previous && existing.length >= 256) {
           throw new Error("Close unused terminals before creating another");
         }
-        const native = await terminals.create({
+        const native = await terminals.open({
           kind: input.targetKind,
           sandboxId: input.targetSandboxId,
+          sessionId: input.sessionId,
           arguments: input.arguments,
           environment: input.environment,
           workingDir: input.workingDir,
           size: input.size,
+          owner: { ...meta.execution, persistentExecutionId: executionId },
         });
-        const owner = new TerminalOwner(native, terminals);
+        if ("owner" in native) {
+          const current = await invoke<{ exited: boolean } | null>({
+            ...native.owner,
+            function: "terminal.status",
+            input: {
+              terminalId: native.terminal.id,
+              persistentExecutionId: native.owner.persistentExecutionId,
+            },
+          });
+          if (!current) {
+            throw new Error("Terminal owner stopped during opening");
+          }
+          ready.resolve(
+            await item(await requireRecord(store, meta, native.terminal.id)),
+          );
+          return;
+        }
+        const owner = new TerminalOwner(
+          native,
+          terminals,
+          native.after,
+          native.reset,
+        );
         const record: TerminalRecord = {
           terminalId: native.terminal.id,
-          name: input.name ?? nextName(existing),
+          sessionId: input.sessionId,
+          name: previous?.name ?? input.name ?? `Terminal ${input.sessionId}`,
           authenticatedUserId: meta.user.userId,
           targetKind: input.targetKind,
           targetSandboxId: input.targetSandboxId,
           nodeId: meta.execution.nodeId,
           ownerSandboxId: meta.execution.sandboxId,
           workerId: meta.execution.workerId,
-          persistentExecutionId: persistentId(meta),
-          createdAt: new Date(),
+          persistentExecutionId: executionId,
+          createdAt: previous?.createdAt ?? new Date(),
         };
         const entry = { record, owner, completion: completed.promise };
-        owners.set(record.persistentExecutionId, entry);
+        owners.set(executionId, entry);
         const running = owner.run();
-        // Observe early processor failures while the metadata insert is in flight.
         void running.catch(() => {});
         let accepted = false;
         try {
           await store.create(record);
-          ready.resolve(await item(record));
+          const terminal = await item(record);
+          prepared.resolve(entry);
+          ready.resolve(terminal);
           accepted = true;
           await running;
-          await store.remove(record.authenticatedUserId, record.terminalId);
         } catch (error) {
           if (!accepted) {
-            await owner.close();
+            if (native.reset) {
+              // Failed publication must not destroy a shell adopted after Worker loss.
+              await terminals.detach(native.attachmentId);
+            } else await owner.close();
             await running.catch(() => {});
             await store.remove(record.authenticatedUserId, record.terminalId);
           }
           throw error;
         } finally {
-          owners.delete(record.persistentExecutionId);
+          owners.delete(executionId);
         }
       }).catch((error) => {
+        prepared.reject(error);
         ready.reject(error);
         console.error("Terminal display owner stopped", error);
-      }).finally(() => completed.resolve());
+      }).finally(() => {
+        opening.delete(executionId);
+        completed.resolve();
+      });
       return Response.json({ terminal: await ready.promise });
     },
   );
@@ -192,7 +264,10 @@ export function defineTerminalService(
           await invoke({
             ...target(record),
             function: "terminal.close",
-            input: { terminalId: record.terminalId },
+            input: {
+              terminalId: record.terminalId,
+              persistentExecutionId: record.persistentExecutionId,
+            },
           });
         } catch (error) {
           if (
@@ -204,8 +279,8 @@ export function defineTerminalService(
             terminalId: record.terminalId,
             nodeId: record.nodeId,
           });
-          await store.remove(meta.user.userId, record.terminalId);
         }
+        await store.remove(meta.user.userId, record.terminalId);
         return Response.json({ closed: true });
       });
     },
@@ -213,8 +288,8 @@ export function defineTerminalService(
   service.get(
     "/status",
     { summary: "Check the retained terminal owner" },
-    ({ meta }) => {
-      const entry = owned(meta);
+    async ({ meta }) => {
+      const entry = await owned(meta);
       return Response.json({
         terminalId: entry.record.terminalId,
         ...entry.owner.state(),
@@ -225,7 +300,7 @@ export function defineTerminalService(
     "/snapshot",
     { summary: "Recover the current terminal display" },
     async ({ request, meta }) => {
-      const entry = owned(meta);
+      const entry = await owned(meta);
       return await entry.owner.snapshot(
         new URL(request.url).searchParams.get("view") ?? "",
         request.signal,
@@ -233,7 +308,7 @@ export function defineTerminalService(
     },
   );
   service.websocket("/connect", async ({ meta, socket }) => {
-    const entry = owned(meta);
+    const entry = await owned(meta);
     if (socket.protocol !== TERMINAL_PROTOCOL) {
       socket.close(1002, "Unsupported terminal protocol");
       return;
@@ -359,9 +434,10 @@ function persistentId(meta: RequestMetadata): string {
   if (!id) throw new Error("Persistent terminal execution is unavailable");
   return id;
 }
-function owned(meta: RequestMetadata): Entry {
+async function owned(meta: RequestMetadata): Promise<Entry> {
   authenticated(meta);
-  const entry = owners.get(persistentId(meta));
+  const entry =
+    await (opening.get(persistentId(meta)) ?? owners.get(persistentId(meta)));
   if (!entry || entry.record.authenticatedUserId !== meta.user.userId) {
     throw new HTTPError(409, {
       error: "Terminal display owner is unavailable",
@@ -386,23 +462,31 @@ function target(record: TerminalRecord) {
     persistentExecutionId: record.persistentExecutionId,
   };
 }
-function nextName(records: TerminalRecord[]): string {
-  const names = new Set(records.map((record) => record.name));
-  let ordinal = 1;
-  while (names.has(`Terminal ${ordinal}`)) ordinal++;
-  return `Terminal ${ordinal}`;
+const OwnerRequest = z.object({
+  terminalId: TerminalID,
+  persistentExecutionId: z.string().regex(/^pex-[a-z0-9]{10}$/),
+}).strict();
+async function requestedOwner(input: unknown): Promise<Entry | undefined> {
+  const request = OwnerRequest.parse(input);
+  const entry = await (opening.get(request.persistentExecutionId) ??
+    owners.get(request.persistentExecutionId));
+  if (
+    entry &&
+    (entry.record.terminalId !== request.terminalId ||
+      entry.record.authenticatedUserId !== context.userId)
+  ) {
+    throw new Error("Terminal access was denied");
+  }
+  return entry;
 }
-
 export const workerFunctions = Object.freeze({
+  "terminal.status": async (input: unknown) => {
+    const entry = await requestedOwner(input);
+    return entry?.owner.state() ?? null;
+  },
   "terminal.close": async (input: unknown): Promise<{ closed: true }> => {
-    const terminalId =
-      z.object({ terminalId: TerminalID }).strict().parse(input).terminalId;
-    const entry = [...owners.values()].find((value) =>
-      value.record.terminalId === terminalId
-    );
-    if (!entry || entry.record.authenticatedUserId !== context.userId) {
-      throw new Error("Terminal owner is unavailable");
-    }
+    const entry = await requestedOwner(input);
+    if (!entry) throw new Error("Terminal owner is unavailable");
     await entry.owner.close();
     await entry.completion;
     return { closed: true };

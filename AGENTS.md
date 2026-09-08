@@ -133,6 +133,10 @@ below.
 
 # Ownership
 
+- `src/fields.ts` owns development sandbox and activation field definitions,
+  shared labels, and help. Development sandbox IDs have no runtime-sandbox
+  navigation.
+
 - Own `programs/development-test`, administrative development command programs,
   its sandbox lifecycle/console screen, terminal code and assets, and small
   `fixtures/activation-*` text and TypeScript fixtures.
@@ -167,7 +171,8 @@ below.
   deletes both.
 - Terminal and development-sandbox idle deadlines belong to the kernel's
   existing owners and settings. The terminal service completes its retained
-  handler and removes metadata when physical expiry is reported by the SDK.
+  handler when physical expiry is reported by the SDK. Keep session names and
+  labels for connect-or-create; explicit Close removes metadata.
 - Its activation screen previews every changed package with changed-file and
   added/removed-row counts plus ready/blocked state, requires one commit
   message, and invokes the typed user-scoped activation command to sync all

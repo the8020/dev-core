@@ -1,7 +1,11 @@
 import { assertEquals } from "@std/assert";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type { RequestMetadata, WebSocketSession } from "@the8020/http";
-import type { kernel, TerminalAttachment } from "@the8020/kernel";
+import type {
+  kernel,
+  PersistentServiceTarget,
+  TerminalAttachment,
+} from "@the8020/kernel";
 import { installContextProvider } from "../../kernel/defaults/config/runtime/deno/context/runtime.ts";
 import {
   callScreen,
@@ -95,6 +99,9 @@ export default async function fixture(temporaryRoot: string) {
   });
   const records = new Map<string, TerminalRecord>();
   const terminals = new Map<string, TestTerminals>();
+  const nativeOwners = new Map<string, PersistentServiceTarget>();
+  const firstList = Promise.withResolvers<void>();
+  let loading = true;
   const attachments = new Map<string, TestTerminals>();
   const retained = new Set<string>();
   const lifetimes = new Set<Promise<void>>();
@@ -112,6 +119,31 @@ export default async function fixture(temporaryRoot: string) {
     return value;
   };
   const nativeAPI: typeof kernel.terminals = {
+    open: async (input) => {
+      const existing = [...terminals.values()].find((native) =>
+        native.native.terminal.sandboxId === input.sandboxId &&
+        native.native.terminal.sessionId === input.sessionId &&
+        !native.closed.length && !native.native.terminal.exited
+      );
+      if (existing) {
+        return {
+          terminal: existing.native.terminal,
+          owner: nativeOwners.get(existing.native.terminal.id)!,
+        };
+      }
+      const ended = [...terminals.values()].find((native) =>
+        native.native.terminal.sandboxId === input.sandboxId &&
+        native.native.terminal.sessionId === input.sessionId &&
+        native.native.terminal.exited
+      );
+      if (ended && !ended.closed.length) {
+        await ended.api.close(ended.native.terminal.id);
+      }
+      const native = await nativeAPI.create(input);
+      native.terminal.sessionId = input.sessionId;
+      nativeOwners.set(native.terminal.id, input.owner);
+      return { ...native, after: 0, reset: false };
+    },
     create: async (input) => {
       const native = new TestTerminals();
       native.native.terminal = {
@@ -176,13 +208,24 @@ export default async function fixture(temporaryRoot: string) {
           record.targetSandboxId === sandbox
         ),
       ),
+    find: async (user, kind, sandbox, sessionId) =>
+      (await store.list(user, kind, sandbox)).find((record) =>
+        record.sessionId === sessionId
+      ),
     get: (user, terminal) => {
       const record = records.get(terminal);
       return Promise.resolve(
         record?.authenticatedUserId === user ? record : undefined,
       );
     },
-    create: (record) => {
+    create: async (record) => {
+      const previous = await store.find(
+        record.authenticatedUserId,
+        record.targetKind,
+        record.targetSandboxId,
+        record.sessionId,
+      );
+      if (previous) records.delete(previous.terminalId);
       records.set(record.terminalId, record);
       return Promise.resolve();
     },
@@ -218,8 +261,8 @@ export default async function fixture(temporaryRoot: string) {
     invoke: async <Result>(
       input: { function: string; input: unknown },
     ): Promise<Result> => {
-      assertEquals(input.function, "terminal.close");
-      return await workerFunctions["terminal.close"](input.input) as Result;
+      return await workerFunctions
+        [input.function as keyof typeof workerFunctions](input.input) as Result;
     },
   });
   const metadata = (
@@ -315,6 +358,9 @@ export default async function fixture(temporaryRoot: string) {
           status: 409,
         });
       }
+      if (loading && url.pathname === `${TERMINAL_SERVICE}/list`) {
+        await firstList.promise;
+      }
       const meta = metadata(route ?? undefined);
       const logical = new Request(
         `${url.origin}${
@@ -375,8 +421,32 @@ export default async function fixture(temporaryRoot: string) {
       );
     },
     async verify(page: Browser, openPage: () => Promise<Browser>) {
-      const ready = (id?: string) => visibleReady(page, id);
+      const ready = (id?: string) =>
+        visibleReady(page, id ? records.get(id)!.sessionId : undefined);
+      await waitPage(
+        page,
+        `(() => {
+        const loader = document.querySelector('.sandbox-console-loading');
+        const display = document.querySelector('.sandbox-console-display');
+        return loader && !loader.hidden && loader.textContent === 'Loading…' && getComputedStyle(display).visibility === 'hidden' && loader.getBoundingClientRect().height === loader.parentElement.getBoundingClientRect().height;
+      })()`,
+        "full-height loading state before terminal list arrives",
+      );
+      loading = false;
+      firstList.resolve();
       await ready();
+      assertEquals(
+        await page.evaluate(
+          "document.querySelector('.sandbox-console-select').selectedOptions[0].text",
+        ),
+        "[1] Terminal 1",
+      );
+      assertEquals(
+        await page.evaluate(
+          `(() => { const viewport = document.querySelector('.sandbox-console-viewport'); const terminal = viewport.querySelector('.xterm'); return viewport.getBoundingClientRect().height === terminal.getBoundingClientRect().height; })()`,
+        ),
+        true,
+      );
       assertEquals(terminals.size, 1);
       const first = [...terminals.keys()][0]!;
       const native = terminals.get(first)!;
@@ -624,12 +694,24 @@ export default async function fixture(temporaryRoot: string) {
         () => records.get(first)?.name === "Agent",
         "terminal rename",
       );
+      assertEquals(
+        await page.evaluate(
+          "document.querySelector('.sandbox-console-select').selectedOptions[0].text",
+        ),
+        "[1] Agent",
+      );
       await button(page, "new");
       await until(() => terminals.size === 2, "second terminal");
       const second = [...terminals.keys()][1]!;
       await ready(second);
+      assertEquals(
+        await page.evaluate(
+          "document.querySelector('.sandbox-console-select').selectedOptions[0].text",
+        ),
+        "[2] Terminal 2",
+      );
       assertEquals(native.closed, []);
-      await choose(page, first);
+      await choose(page, records.get(first)!.sessionId);
       await ready(first);
 
       await button(page, "fullscreen");
@@ -695,7 +777,7 @@ export default async function fixture(temporaryRoot: string) {
           "exclusive controller",
         );
         await button(other, "takeover");
-        await visibleReady(other, first);
+        await visibleReady(other, records.get(first)!.sessionId);
         await waitPage(
           page,
           "document.querySelector('.sandbox-console')?.dataset.terminalState==='disconnected'",
@@ -739,6 +821,18 @@ export default async function fixture(temporaryRoot: string) {
         "document.querySelector('.sandbox-console')?.dataset.terminalState==='exited'",
         "process exit",
       );
+      await namedButton(page, "Another screen");
+      await namedButton(page, "Return");
+      await visibleReady(page, "1");
+      const recreated = [...terminals.keys()].at(-1)!;
+      assertEquals(terminals.size, 3);
+      assertEquals(records.get(recreated)?.sessionId, "1");
+      assertEquals(
+        await page.evaluate(
+          "document.querySelector('.sandbox-console-select').selectedOptions[0].text",
+        ),
+        "[1] Agent",
+      );
       await button(page, "close");
       await waitPage(
         page,
@@ -752,7 +846,8 @@ export default async function fixture(temporaryRoot: string) {
       assertEquals(native.closed, [first]);
       assertEquals(terminals.get(second)!.closed, []);
       assertEquals(records.size, 1);
-      assertEquals(terminals.size, 2);
+      assertEquals(terminals.size, 3);
+      assertEquals(terminals.get(recreated)!.closed, [recreated]);
       console.log(
         "Retained terminal browser checks passed: named controls, input, snapshot continuation, navigation, reload, network loss, control transfer, fixture logout/login, exit and close.",
       );
@@ -765,6 +860,7 @@ export default async function fixture(temporaryRoot: string) {
           () =>
             workerFunctions["terminal.close"]({
               terminalId: record.terminalId,
+              persistentExecutionId: record.persistentExecutionId,
             }),
         );
       }

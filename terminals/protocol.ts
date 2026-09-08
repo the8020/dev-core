@@ -3,9 +3,11 @@ export const TERMINAL_SERVICE = "/the8020/dev-core/terminals";
 export const VIEW_WINDOW_BYTES = 262_144;
 export const VIEW_QUEUE_BYTES = 1_048_576;
 export const VIEW_QUEUE_FRAMES = 512;
+export const SESSION_ID = /^[A-Za-z0-9_-]{1,40}$/;
 
 export interface TerminalItem {
   id: string;
+  terminalId: string;
   name: string;
   route: string;
 }

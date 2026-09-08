@@ -252,7 +252,7 @@ export function browserDriver() {
     mode: string;
     sandboxId: string;
     script: string;
-    terminal?: { id: string; route: string };
+    terminal?: { id: string; terminalId: string; route: string };
     socket?: WebSocket;
     ready?: Promise<void>;
     tail: string;
@@ -427,7 +427,7 @@ export function browserDriver() {
     detach(id: string) {
       return disconnect(views.get(id)!);
     },
-    async adopt(terminal: { id: string; route: string }) {
+    async adopt(terminal: { id: string; terminalId: string; route: string }) {
       const id = crypto.randomUUID();
       const view: View = {
         mode: "retained",
@@ -443,7 +443,12 @@ export function browserDriver() {
       await connect(view);
       return id;
     },
-    async open(mode: string, sandboxId: string, script: string) {
+    async open(
+      mode: string,
+      sandboxId: string,
+      script: string,
+      sessionId?: string,
+    ) {
       const id = crypto.randomUUID();
       const view: View = {
         mode,
@@ -455,7 +460,8 @@ export function browserDriver() {
         ack: true,
       };
       if (mode === "retained") {
-        view.terminal = (await post("create", {
+        view.terminal = (await post("open", {
+          sessionId: sessionId ?? id,
           targetKind: "development",
           targetSandboxId: sandboxId,
           name: "Native benchmark",
@@ -511,7 +517,9 @@ export function browserDriver() {
     async close(id: string) {
       const view = views.get(id)!;
       await disconnect(view);
-      if (view.terminal) await post("close", { terminalId: view.terminal.id });
+      if (view.terminal) {
+        await post("close", { terminalId: view.terminal.terminalId });
+      }
       views.delete(id);
     },
   };

@@ -14,6 +14,7 @@ import {
 } from "../state.ts";
 import {
   outputSequence,
+  SESSION_ID,
   TERMINAL_PROTOCOL,
   TERMINAL_SERVICE,
   type TerminalItem,
@@ -89,6 +90,7 @@ class RetainedConsole implements CustomElementInstance {
   readonly #select: HTMLSelectElement;
   readonly #status: HTMLElement;
   readonly #viewport: HTMLElement;
+  readonly #loading: HTMLElement;
   readonly #takeover: HTMLButtonElement;
   readonly #observer: ResizeObserver;
   readonly #clientId = stored("the8020.dev-core.terminal-client") ??
@@ -123,13 +125,13 @@ class RetainedConsole implements CustomElementInstance {
       <select class="sandbox-console-select" aria-label="Terminal"></select>
       <button type="button" data-terminal-action="new" aria-label="New terminal" title="New terminal"></button>
       <button type="button" data-terminal-action="rename" aria-label="Rename terminal" title="Rename terminal"></button>
-      <button type="button" data-terminal-action="close" aria-label="Close terminal" title="Close terminal"></button>
       <button type="button" data-terminal-action="refresh" aria-label="Refresh terminals" title="Refresh terminals"></button>
       <button type="button" data-terminal-action="fullscreen"></button>
+      <button type="button" data-terminal-action="close" aria-label="Close terminal" title="Close terminal"></button>
       <button type="button" data-terminal-action="takeover" hidden>Take control</button>
       <div class="sandbox-console-status" role="status" aria-live="polite"></div>
     </div>
-    <div class="sandbox-console-viewport"></div>`;
+    <div class="sandbox-console-viewport"><div class="sandbox-console-loading" role="status">Loading…</div><div class="sandbox-console-display"></div></div>`;
     for (
       const [action, icon] of Object.entries({
         new: "add",
@@ -152,12 +154,15 @@ class RetainedConsole implements CustomElementInstance {
     this.#select = this.element.querySelector("select")!;
     this.#status = this.element.querySelector(".sandbox-console-status")!;
     this.#viewport = this.element.querySelector(".sandbox-console-viewport")!;
+    this.#loading = this.element.querySelector(".sandbox-console-loading")!;
     this.#takeover = this.element.querySelector(
       '[data-terminal-action="takeover"]',
     )!;
     this.#terminal.loadAddon(this.#fit);
     installTerminalView(this.#terminal);
-    this.#terminal.open(this.#viewport);
+    this.#terminal.open(
+      this.element.querySelector(".sandbox-console-display")!,
+    );
     try {
       this.#terminal.loadAddon(new CanvasAddon());
     } catch { /* xterm's DOM renderer handles unavailable Canvas2D. */ }
@@ -253,14 +258,10 @@ class RetainedConsole implements CustomElementInstance {
   }
   #start(): void {
     if (!this.#canConnect()) return;
-    if (!this.#initialized) {
+    if (!this.#initialized || !this.#selected) {
       void this.#run(async () => {
         await this.#refresh();
-        if (!this.#initialized) {
-          // Set this before creating: losing its response must never trigger an automatic second creation.
-          this.#initialized = true;
-          if (!this.#items.length) await this.#create();
-        }
+        this.#initialized = true;
       });
     } else void this.#connect();
   }
@@ -303,9 +304,11 @@ class RetainedConsole implements CustomElementInstance {
     return body;
   }
 
-  async #refresh(): Promise<void> {
+  async #loadItems(): Promise<void> {
     const config = this.#configuration;
     if (!config) return;
+    this.#detach();
+    this.#setStatus("Loading terminals…", "connecting");
     const result = object(
       await this.#post("list", {
         targetKind: config.target.kind,
@@ -316,37 +319,39 @@ class RetainedConsole implements CustomElementInstance {
       throw new Error("Invalid terminal list");
     }
     this.#items = result.terminals.map(terminalItem);
-    const selected = this.#selected?.id ?? stored(this.#storageKey);
+  }
+
+  async #refresh(): Promise<void> {
+    await this.#loadItems();
+    const remembered = this.#selected?.id ?? stored(this.#storageKey);
+    const id = remembered && SESSION_ID.test(remembered)
+      ? remembered
+      : this.#items[0]?.id ?? "1";
     this.#choose(
-      this.#items.find((item) => item.id === selected) ?? this.#items[0],
+      this.#items.find((item) => item.id === id) ?? this.#newItem(id),
     );
-    if (this.#selected) await this.#connect();
-    else this.#setStatus("No terminals. Select New to open one.", "empty");
+    await this.#connect();
+  }
+
+  #newItem(id: string): TerminalItem {
+    if (!SESSION_ID.test(id)) {
+      throw new Error("Terminal session IDs are limited to 40 characters");
+    }
+    const item = { id, name: `Terminal ${id}`, terminalId: "", route: "" };
+    this.#items.push(item);
+    return item;
   }
 
   async #create(): Promise<void> {
-    const config = this.#configuration;
-    if (!config) return;
-    this.#setStatus("Opening terminal…", "connecting");
-    let result: unknown;
-    try {
-      result = await this.#post("create", {
-        targetKind: config.target.kind,
-        targetSandboxId: config.target.sandboxId,
-        arguments: config.arguments,
-        environment: config.environment,
-        workingDir: config.workingDirectory,
-        size: this.#size(),
-      });
-    } catch (error) {
-      if (error instanceof RequestError) throw error;
-      throw new Error(
-        "Could not confirm creation. Refresh the terminal list before creating another.",
-      );
-    }
-    const item = terminalItem(object(result).terminal);
-    this.#items.push(item);
-    this.#choose(item);
+    await this.#loadItems();
+    const next = this.#items.reduce(
+      (maximum, item) =>
+        /^\d+$/.test(item.id) && BigInt(item.id) > maximum
+          ? BigInt(item.id)
+          : maximum,
+      0n,
+    ) + 1n;
+    this.#choose(this.#newItem(String(next)));
     await this.#connect();
   }
 
@@ -355,12 +360,14 @@ class RetainedConsole implements CustomElementInstance {
       this.#detach();
       // The ordered snapshot installation clears the old display. Resetting
       // here would race a previous connection's pending xterm write callback.
-      this.#viewport.style.visibility = "hidden";
+      this.#setStatus("Loading terminal…", "connecting");
       this.#uncertainInput = false;
     }
     this.#selected = item;
     this.#select.replaceChildren(
-      ...this.#items.map((item) => new Option(item.name, item.id)),
+      ...this.#items.map((item) =>
+        new Option(`[${item.id}] ${item.name}`, item.id)
+      ),
     );
     this.#select.value = item?.id ?? "";
     if (item) {
@@ -378,11 +385,14 @@ class RetainedConsole implements CustomElementInstance {
     if (value === undefined || this.#selected?.id !== item.id) return;
     await this.#run(async () => {
       if (mode === "rename") {
-        await this.#post("rename", { terminalId: item.id, name: value });
+        await this.#post("rename", {
+          terminalId: item.terminalId,
+          name: value,
+        });
         item.name = value;
         this.#choose(item);
       } else {
-        await this.#post("close", { terminalId: item.id });
+        await this.#post("close", { terminalId: item.terminalId });
         this.#items = this.#items.filter((candidate) =>
           candidate.id !== item.id
         );
@@ -455,17 +465,27 @@ class RetainedConsole implements CustomElementInstance {
     const epoch = ++this.#connectEpoch;
     this.#setStatus("Connecting terminal…", "connecting");
     try {
-      const response = await fetch(this.#url("status"), {
-        headers: { "the8020-route": item.route },
-        credentials: "same-origin",
-        cache: "no-store",
-        signal: this.#operations.signal,
-      });
-      await requireOK(response);
-      await response.body?.cancel();
+      const config = this.#configuration!;
+      const opened = terminalItem(
+        object(
+          await this.#post("open", {
+            targetKind: config.target.kind,
+            targetSandboxId: config.target.sandboxId,
+            sessionId: item.id,
+            arguments: config.arguments,
+            environment: config.environment,
+            workingDir: config.workingDirectory,
+            size: this.#size(),
+          }),
+        ).terminal,
+      );
       if (epoch !== this.#connectEpoch || !this.#canConnect()) return;
+      this.#items = this.#items.map((candidate) =>
+        candidate.id === opened.id ? opened : candidate
+      );
+      this.#choose(opened);
       const url = this.#url("connect");
-      url.searchParams.set("route", item.route);
+      url.searchParams.set("route", opened.route);
       url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
       const socket = new WebSocket(url, TERMINAL_PROTOCOL);
       socket.binaryType = "arraybuffer";
@@ -512,7 +532,7 @@ class RetainedConsole implements CustomElementInstance {
       this.#setStatus(errorMessage(error), "error");
       if (
         !(error instanceof RequestError) ||
-        ![401, 403, 404, 409].includes(error.status)
+        ![401, 403, 400].includes(error.status)
       ) this.#retry();
     } finally {
       if (epoch === this.#connectEpoch) this.#connecting = false;
@@ -679,7 +699,6 @@ class RetainedConsole implements CustomElementInstance {
   }
   #state(connection: Connection, message: Record<string, unknown>): void {
     connection.exited = message.exited === true;
-    this.#viewport.style.visibility = "";
     this.#setStatus(
       connection.exited
         ? `Process exited${
@@ -689,6 +708,8 @@ class RetainedConsole implements CustomElementInstance {
         }`
         : this.#uncertainInput
         ? "Connected. Check your last input before continuing."
+        : message.displayReset === true
+        ? "Terminal connected. Display restarted."
         : "Terminal connected",
       connection.exited ? "exited" : "connected",
     );
@@ -840,6 +861,9 @@ class RetainedConsole implements CustomElementInstance {
     this.#status.textContent = message;
     this.#status.title = message;
     this.element.dataset.terminalState = state;
+    this.#loading.hidden = state === "connected" || state === "exited";
+    this.#loading.textContent = state === "connecting" ? "Loading…" : message;
+    this.#viewport.setAttribute("aria-busy", String(state === "connecting"));
   }
   #fullscreen(enabled: boolean): void {
     this.element.classList.toggle("uui-content-fullscreen", enabled);
@@ -869,7 +893,7 @@ class RetainedConsole implements CustomElementInstance {
       button.disabled = !enabled ||
         (["rename", "close", "takeover"].includes(
           button.dataset.terminalAction!,
-        ) && !this.#selected);
+        ) && !this.#selected?.terminalId);
     }
     this.#terminal.options.disableStdin = !this.#canConnect() ||
       !this.#connection?.ready || this.#connection.exited;
@@ -894,11 +918,18 @@ function object(value: unknown): Record<string, unknown> {
 function terminalItem(value: unknown): TerminalItem {
   const item = object(value);
   if (
-    typeof item.id !== "string" || !/^tty-[a-z0-9]{10}$/.test(item.id) ||
+    typeof item.id !== "string" || !SESSION_ID.test(item.id) ||
+    typeof item.terminalId !== "string" ||
+    !/^tty-[a-z0-9]{10}$/.test(item.terminalId) ||
     typeof item.name !== "string" || item.name.length > 80 ||
     typeof item.route !== "string" || item.route.length > 8192
   ) throw new Error("Invalid terminal record");
-  return { id: item.id, name: item.name, route: item.route };
+  return {
+    id: item.id,
+    terminalId: item.terminalId,
+    name: item.name,
+    route: item.route,
+  };
 }
 function terminalSize(value: unknown): Size {
   const size = object(value);

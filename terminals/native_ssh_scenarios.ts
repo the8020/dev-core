@@ -2,6 +2,55 @@ import { assert, assertEquals } from "@std/assert";
 import type { NativeBrowserFixtureContext } from "/p/the8020/uui/browser_e2e.ts";
 import { TerminalEngine } from "./engine.ts";
 
+export async function verifyNativeNamedSessions(
+  context: NativeBrowserFixtureContext,
+): Promise<void> {
+  const config = await context.admin(["kernel.config.get", "network.ssh_port"]);
+  const port = (config.setting as { active_value: number }).active_value;
+  const name = "N_-" + "a".repeat(37);
+  let firstPID = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const ssh = new SSHView(context, port, name);
+    try {
+      await ssh.input("printf '\\n%s:%s\\n' NAMED_PID \"$$\"\r");
+      await ssh.contains("\nNAMED_PID:");
+      const pid = /\nNAMED_PID:(\d+)/.exec(ssh.text())?.[1];
+      assert(pid);
+      if (attempt === 0) firstPID = pid;
+      else if (attempt === 1) {
+        assertEquals(
+          pid,
+          firstPID,
+          "named SSH reconnect preserves the process",
+        );
+      } else assert(pid !== firstPID, "named SSH recreates a killed process");
+    } finally {
+      await ssh.close();
+    }
+    if (attempt === 1) {
+      await context.admin([
+        "dev-core.sandbox.shell",
+        context.credentials.username,
+        "--command",
+        `kill -KILL ${firstPID}`,
+      ]);
+    }
+  }
+  const rows = (await context.admin([
+    "db.sql",
+    `SELECT "terminalId" FROM "the8020__dev_core__terminals" WHERE "sessionId" = '${name}'`,
+  ])).rows as string[][];
+  assertEquals(rows.length, 1);
+  await context.page.evaluate(
+    `fetch('/the8020/dev-core/terminals/close', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify({terminalId:${
+      JSON.stringify(rows[0]![0])
+    }})}).then(r=>{if(!r.ok)throw new Error('named session cleanup failed')})`,
+  );
+  console.log(
+    "Native SSH creates, reconnects and recreates a 40-character named session",
+  );
+}
+
 /** Real OpenSSH, users-package authentication, retained service, and native htop. */
 export async function verifyNativeSSH(
   context: NativeBrowserFixtureContext,
@@ -109,7 +158,7 @@ export class SSHView {
         "-o",
         "PubkeyAuthentication=no",
         `${context.credentials.username}@127.0.0.1`,
-        ...(terminalId ? ["the8020", `terminal-id=${terminalId}`] : []),
+        ...(terminalId ? ["the8020", "terminal-id", terminalId] : []),
       ],
       env: { SSHPASS: context.credentials.password, TERM: "xterm-256color" },
       stdin: "piped",

@@ -61,7 +61,9 @@ export default async function verify(context: NativeBrowserFixtureContext) {
       )
     })`,
   );
-  const terminal = await page.evaluate<{ id: string; route: string }>(
+  const terminal = await page.evaluate<
+    { id: string; terminalId: string; route: string }
+  >(
     `terminalBenchmark.terminal(${JSON.stringify(id)})`,
   );
   await page.evaluate(
@@ -71,7 +73,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   assert(/^\d+$/.test(pid));
   const placement = await admin([
     "db.sql",
-    `SELECT "nodeId", "workerId" FROM "the8020__dev_core__terminals" WHERE "terminalId" = '${terminal.id}'`,
+    `SELECT "nodeId", "workerId" FROM "the8020__dev_core__terminals" WHERE "terminalId" = '${terminal.terminalId}'`,
   ]);
   const row = (placement.rows as string[][])[0];
   assert(
@@ -130,6 +132,36 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     pid,
     "Worker loss retains the physical process",
   );
+  const reopened = await page.evaluate<string>(
+    `terminalBenchmark.open('retained', ${
+      JSON.stringify(sandbox.sandbox_id)
+    }, 'exit 99', ${JSON.stringify(terminal.id)})`,
+  );
+  const current = await page.evaluate<
+    { id: string; terminalId: string; route: string }
+  >(`terminalBenchmark.terminal(${JSON.stringify(reopened)})`);
+  assertEquals(current.id, terminal.id);
+  assertEquals(
+    current.terminalId,
+    terminal.terminalId,
+    "new display owner adopts the surviving shell",
+  );
+  assert(
+    current.route !== terminal.route,
+    "display replacement receives a fresh exact route",
+  );
+  await page.evaluate(
+    `terminalBenchmark.run(${JSON.stringify(reopened)}, 'after-worker-loss')`,
+  );
+  assertEquals(
+    await shell(`kill -0 ${pid}; cat /tmp/8020-resilience-pid`),
+    pid,
+  );
+  const replacement = (await admin([
+    "db.sql",
+    `SELECT "workerId" FROM "the8020__dev_core__terminals" WHERE "terminalId" = '${terminal.terminalId}'`,
+  ])).rows as string[][];
+  await admin(["worker", "kill", replacement[0]![0]!]);
   await other.evaluate(`terminalBenchmark.close(${JSON.stringify(adopted)})`);
   assertEquals(
     await shell(
@@ -140,7 +172,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   );
   const remaining = await admin([
     "db.sql",
-    `SELECT "terminalId" FROM "the8020__dev_core__terminals" WHERE "terminalId" = '${terminal.id}'`,
+    `SELECT "terminalId" FROM "the8020__dev_core__terminals" WHERE "terminalId" = '${terminal.terminalId}'`,
   ]);
   assertEquals(remaining.rows, [], "explicit cleanup removes metadata");
   console.log(

@@ -6,17 +6,26 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 
 # Ownership
 
-- Own authored table descriptors; the generic table evaluator owns deployment.
+- Own authored table descriptors and the terminal metadata migration; the
+  generic table evaluator owns schema deployment.
 
 # Local Contracts
 
-- Terminal IDs identify physical kernel-owned PTYs. Execution references
-  identify the distinct package display owner; target and execution sandbox IDs
-  have different responsibilities.
+- `sessionId` is a sandbox-scoped name of 1–40 ASCII letters, digits, `_`, or
+  `-`, unique with target kind and sandbox. `terminalId` identifies its current
+  physical kernel-owned PTY. Execution references identify the distinct package
+  display owner; target and execution sandbox IDs have different
+  responsibilities.
 - Never persist terminal contents, route tokens, or authentication credentials.
-- Creation inserts a new native identity. Rename preserves identity and owner;
-  explicit close removes its metadata. Missing owners are reported, never
-  replaced by approximate replay or a newly spawned process under the old ID.
+- Opening upserts the current physical identity and owner while preserving the
+  session name and label. Rename changes only the label; explicit Close removes
+  metadata. Physical expiry retains metadata so the session can open again.
+- Existing table deployments run
+  [terminals_session_id.sql](terminals_session_id.sql) once before updating the
+  descriptor. It preserves rows using each old `terminalId` as its initial
+  session name, then ordinary schema synchronization adds the unique index. The
+  empty SQL default permits staged column addition; every service open supplies
+  a validated nonempty ID. Fresh databases need no migration.
 
 # Work Guidance
 

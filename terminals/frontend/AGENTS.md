@@ -18,9 +18,11 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
 - The Development component uses the package's retained terminal service for
   create, list, select, rename, close, and explicit control takeover. Activity
   loss, navigation, reload, network loss, and disposal detach the view only.
-- Keep terminal selection, New, Rename, Close, Refresh, fullscreen, and status
+- Keep terminal selection, New, Rename, Refresh, fullscreen, Close, and status
   in one toolbar, with status aligned right. These five buttons use accessible
   icon-only labels and tooltips through the host's `renderText` icon renderer.
+- Close is red and last among the toolbar icons. Contain terminal scrolling so
+  reaching either scroll boundary does not scroll the surrounding page.
 - Fullscreen toggles UUI's generic `uui-content-fullscreen` class on the whole
   toolbar/terminal container. It fills the shell content below the global bar,
   resizes the existing terminal, and restores normal layout on toggle or page
@@ -32,8 +34,16 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
 - Bound pending input to 1 MiB and 512 frames, with one 64-KiB frame in flight.
   Reject an oversized paste before allocating or sending partial input. Never
   replay input whose acknowledgement was lost.
-- A view holds exclusive input and resize control. Authentication failures and
-  absent owners stop recovery; reconnect never recreates an old terminal ID.
+- Allocate New IDs as the greatest existing all-numeric ID plus one, starting at
+  `1`; ignore nonnumeric names. Render `[ID] Terminal ID` initially and
+  `[ID] Label` after rename. IDs stay fixed and obey the kernel's 40-character
+  alphanumeric/underscore/hyphen contract; allocation belongs only here.
+- Entering the screen and reconnecting call `/open` for the selected session,
+  even when its saved metadata or physical shell has disappeared. Authentication
+  and validation failures stop recovery. Input/resize control stays exclusive.
+- Show centered `Loading…` across the terminal content while listing, opening,
+  and installing the initial display. Reveal xterm only when ready and keep its
+  background stretched to the full viewport height.
 - HTTP owner requests carry `the8020-route` in the header; only browser
   WebSocket establishment carries it in `?route=`. Follow the shared router's
   existing transport contract.

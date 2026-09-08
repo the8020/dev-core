@@ -5,7 +5,7 @@ import { SSHView } from "./native_ssh_scenarios.ts";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** Real kernel deadlines, browser/SSH leases, metadata cleanup and checkpoint restore. */
+/** Real kernel deadlines, browser/SSH leases, label retention and checkpoint restore. */
 export default async function verify(context: NativeBrowserFixtureContext) {
   const { page, admin, credentials } = context;
   for (
@@ -57,7 +57,9 @@ export default async function verify(context: NativeBrowserFixtureContext) {
       JSON.stringify(sandbox.sandbox_id)
     }, ${JSON.stringify(script)})`,
   );
-  const terminal = await page.evaluate<{ id: string; route: string }>(
+  const terminal = await page.evaluate<
+    { id: string; terminalId: string; route: string }
+  >(
     `terminalBenchmark.terminal(${JSON.stringify(id)})`,
   );
   const pid = (await shell("cat /tmp/8020-idle-pid")).output;
@@ -99,11 +101,16 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   const remaining = async () =>
     (await admin([
       "db.sql",
-      `SELECT "terminalId" FROM "the8020__dev_core__terminals" WHERE "terminalId" = '${terminal.id}'`,
+      `SELECT "terminalId" FROM "the8020__dev_core__terminals" WHERE "terminalId" = '${terminal.terminalId}'`,
     ])).rows as unknown[];
   await waitUntil(
-    async () => (await remaining()).length === 0,
-    "kernel expiry must remove package metadata despite continuing PTY output",
+    async () =>
+      await page.evaluate<number>(
+        `fetch('/the8020/dev-core/terminals/status', {headers:{'the8020-route':${
+          JSON.stringify(terminal.route)
+        }}}).then(response=>response.status)`,
+      ) === 409,
+    "kernel expiry must end the display owner despite continuing PTY output",
   );
   assert(
     Date.now() - detached >= 7_500,
@@ -123,7 +130,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     "sandbox must receive its additional 2s interval",
   );
   console.log(
-    "Retained browser/SSH reattachment, output-independent 8s expiry, metadata cleanup and subsequent 2s sandbox stop passed",
+    "Retained browser/SSH reattachment, output-independent 8s expiry, label retention and subsequent 2s sandbox stop passed",
   );
 
   // Ordinary SSH has connection lifetime and starts the same sandbox on demand.
@@ -150,7 +157,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     async () => (await inspect()).state === "STOPPED",
     "ordinary SSH disconnect must start the 2s timeout",
   );
-  assertEquals(await remaining(), []);
+  assertEquals((await remaining()).length, 1);
   console.log(
     "Ordinary SSH connection lifetime and idle checkpoint restoration passed",
   );

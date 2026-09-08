@@ -11,6 +11,7 @@ const target = {
   targetSandboxId: "sbx-0000000001",
 } as const;
 const create = {
+  sessionId: "1",
   ...target,
   arguments: ["/bin/bash", "-l"],
   environment: ["TERM=xterm-256color"],
@@ -24,7 +25,7 @@ function metadata(id = "pex-0000000001", userId = "user:one"): RequestMetadata {
     serviceId: "the8020/dev-core/terminals",
     serviceGeneration: 1,
     canonicalBasePath: "/the8020/dev-core/terminals",
-    originalUrl: "https://example.test/the8020/dev-core/terminals/create",
+    originalUrl: "https://example.test/the8020/dev-core/terminals/open",
     client: { ipAddress: "127.0.0.1", networkScope: "loopback" },
     persistentExecutionId: id,
     persistentKeepAliveMilliseconds: 0,
@@ -60,8 +61,25 @@ class MemoryMetadata implements TerminalMetadataStore {
       record?.authenticatedUserId === user ? record : undefined,
     );
   }
+  async find(
+    user: string,
+    kind: TerminalRecord["targetKind"],
+    sandbox: string,
+    sessionId: string,
+  ) {
+    return (await this.list(user, kind, sandbox)).find((record) =>
+      record.sessionId === sessionId
+    );
+  }
   async create(record: TerminalRecord): Promise<void> {
     await this.beforeCreate?.();
+    const previous = await this.find(
+      record.authenticatedUserId,
+      record.targetKind,
+      record.targetSandboxId,
+      record.sessionId,
+    );
+    if (previous) this.records.delete(previous.terminalId);
     this.records.set(record.terminalId, record);
   }
   async rename(user: string, id: string, name: string): Promise<void> {
@@ -97,10 +115,8 @@ function fixture() {
     invoke: async <Result>(
       input: { function: string; input: unknown },
     ): Promise<Result> => {
-      if (input.function !== "terminal.close") {
-        throw new Error("Unexpected invocation");
-      }
-      return await workerFunctions["terminal.close"](input.input) as Result;
+      return await workerFunctions
+        [input.function as keyof typeof workerFunctions](input.input) as Result;
     },
   });
   const current = metadata();
@@ -149,7 +165,8 @@ function fixture() {
         for (const record of store.records.values()) {
           await workerFunctions["terminal.close"]({
             terminalId: record.terminalId,
-          });
+            persistentExecutionId: record.persistentExecutionId,
+          }).catch(() => {});
         }
         await Promise.allSettled(lifetimes);
       } finally {
@@ -159,17 +176,17 @@ function fixture() {
   };
 }
 
-Deno.test("kernel expiry removes terminal metadata and completes its retained handler", async () => {
+Deno.test("kernel expiry preserves the session label and completes its retained handler", async () => {
   const test = fixture();
   try {
-    const created = await test.fetch("/create", create, metadata());
+    const created = await test.fetch("/open", create, metadata());
     assertEquals(created.status, 200);
     const { terminal } = await created.json();
     test.native.expire();
     await test.finished();
-    assertEquals(test.store.records.size, 0);
+    assertEquals(test.store.records.size, 1);
     assertEquals(test.completions, 1);
-    assertEquals(test.native.closed, [terminal.id]);
+    assertEquals(test.native.closed, [terminal.terminalId]);
     assertEquals(test.native.detached, [test.native.native.attachmentId]);
   } finally {
     await test.dispose();
@@ -186,7 +203,7 @@ Deno.test("terminal establishment survives request loss and list, rename, detach
       return inserted.promise;
     };
     const request = new AbortController();
-    const creating = test.fetch("/create", create, metadata(), request);
+    const creating = test.fetch("/open", create, metadata(), request);
     await started.promise;
     request.abort();
     inserted.resolve();
@@ -197,11 +214,11 @@ Deno.test("terminal establishment survives request loss and list, rename, detach
     assertEquals(test.completions, 0);
     assertEquals(test.native.created, 1);
     assertEquals(
-      test.store.records.get(terminal.id)?.ownerSandboxId,
+      test.store.records.get(terminal.terminalId)?.ownerSandboxId,
       "sbx-0000000002",
     );
     assertEquals(
-      test.store.records.get(terminal.id)?.targetSandboxId,
+      test.store.records.get(terminal.terminalId)?.targetSandboxId,
       target.targetSandboxId,
     );
     assertEquals(
@@ -221,11 +238,11 @@ Deno.test("terminal establishment survives request loss and list, rename, detach
     );
     assertEquals((await other.json()).terminals, []);
     const rename = await test.fetch("/rename", {
-      terminalId: terminal.id,
+      terminalId: terminal.terminalId,
       name: "Agent",
     });
     assertEquals(rename.status, 200);
-    assertEquals(test.store.records.get(terminal.id)?.name, "Agent");
+    assertEquals(test.store.records.get(terminal.terminalId)?.name, "Agent");
 
     const socket = new TestSocket();
     const accepted = await test.service.connectWebSocket(
@@ -253,9 +270,11 @@ Deno.test("terminal establishment survives request loss and list, rename, detach
     assertEquals(test.native.replies.length, 1);
     assertEquals(test.native.closed, []);
 
-    const closed = await test.fetch("/close", { terminalId: terminal.id });
+    const closed = await test.fetch("/close", {
+      terminalId: terminal.terminalId,
+    });
     assertEquals(closed.status, 200);
-    assertEquals(test.native.closed, [terminal.id]);
+    assertEquals(test.native.closed, [terminal.terminalId]);
     assertEquals(test.store.records.size, 0);
     const stale = await test.service.connectWebSocket(
       new Request("https://service/connect"),
@@ -273,11 +292,85 @@ Deno.test("failed initial publication closes its PTY and removes metadata", asyn
   const test = fixture();
   try {
     test.failRoute();
-    const response = await test.fetch("/create", create, metadata());
+    const response = await test.fetch("/open", create, metadata());
     assertEquals(response.status, 500);
     assertEquals(test.native.created, 1);
     assertEquals(test.native.closed, [test.native.native.terminal.id]);
     assertEquals(test.store.records.size, 0);
+  } finally {
+    await test.dispose();
+  }
+});
+
+Deno.test("concurrent named opens share one processor and reconnect reads the saved label", async () => {
+  const test = fixture();
+  try {
+    const publishing = Promise.withResolvers<void>();
+    const entered = Promise.withResolvers<void>();
+    test.store.beforeCreate = () => {
+      entered.resolve();
+      return publishing.promise;
+    };
+    const first = test.fetch("/open", create, metadata());
+    await entered.promise;
+    const second = test.fetch("/open", create, metadata("pex-0000000003"));
+    publishing.resolve();
+    const one = (await (await first).json()).terminal;
+    const two = (await (await second).json()).terminal;
+    assertEquals(one, two);
+    assertEquals(one.id, "1");
+    assertEquals(test.native.created, 1);
+    // The real database does not mutate the display owner's in-memory record.
+    const record = test.store.records.get(one.terminalId)!;
+    test.store.records.set(one.terminalId, { ...record, name: "My terminal" });
+    const reopened = await test.fetch(
+      "/open",
+      create,
+      metadata("pex-0000000004"),
+    );
+    assertEquals((await reopened.json()).terminal, {
+      ...one,
+      name: "My terminal",
+    });
+    assertEquals(test.native.created, 1);
+  } finally {
+    await test.dispose();
+  }
+});
+
+Deno.test("stale named metadata opens a new physical terminal and preserves its label", async () => {
+  const test = fixture();
+  try {
+    const meta = metadata();
+    await test.store.create({
+      terminalId: "tty-aaaaaaaaaa",
+      sessionId: "Abc_1-test",
+      name: "My terminal",
+      authenticatedUserId: meta.user.userId,
+      ...target,
+      nodeId: meta.execution.nodeId,
+      ownerSandboxId: meta.execution.sandboxId,
+      workerId: "wrk-aaaaaaaaaa",
+      persistentExecutionId: "pex-aaaaaaaaaa",
+      createdAt: new Date(),
+    });
+    const response = await test.fetch("/open", {
+      ...create,
+      sessionId: "Abc_1-test",
+    }, meta);
+    assertEquals(response.status, 200);
+    const { terminal } = await response.json();
+    assertEquals(terminal.id, "Abc_1-test");
+    assertEquals(terminal.name, "My terminal");
+    assertEquals(terminal.terminalId, test.native.native.terminal.id);
+    assertEquals(test.store.records.size, 1);
+    for (const sessionId of ["a".repeat(41), "bad.id", "bad/id", "", "é"]) {
+      assertEquals(
+        (await test.fetch("/open", { ...create, sessionId })).status,
+        400,
+      );
+    }
+    assertEquals(test.native.created, 1);
   } finally {
     await test.dispose();
   }
@@ -288,7 +381,7 @@ Deno.test("invalid and unowned terminal requests release temporary bindings", as
   try {
     assertEquals((await test.fetch("/unknown")).status, 404);
     assertEquals(test.completions, 1);
-    assertEquals((await test.fetch("/create", {})).status, 400);
+    assertEquals((await test.fetch("/open", {})).status, 400);
     assertEquals(test.completions, 2);
     const meta = metadata();
     meta.auth.authenticated = false;
@@ -307,6 +400,7 @@ Deno.test("explicit close reaches the terminal node after its display Worker has
   const record: TerminalRecord = {
     terminalId: native.native.terminal.id,
     name: "Gone owner",
+    sessionId: "1",
     authenticatedUserId: meta.user.userId,
     ...target,
     nodeId: "nod-bbbbbbbbbb",

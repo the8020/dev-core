@@ -45,8 +45,11 @@ export class TerminalOwner {
   constructor(
     readonly native: TerminalAttachment,
     readonly terminals: NativeTerminals = kernel.terminals,
+    after = 0,
+    readonly displayReset = false,
   ) {
     this.engine = new TerminalEngine(native.terminal.size);
+    this.#sequence = after;
   }
 
   #order<T>(action: () => Promise<T> | T): Promise<T> {
@@ -198,9 +201,10 @@ export class TerminalOwner {
     }
   }
 
-  state(): { exited: boolean; exitStatus?: number } {
+  state(): { exited: boolean; exitStatus?: number; displayReset: boolean } {
     return {
       exited: this.#exited,
+      displayReset: this.displayReset,
       ...(this.#exitStatus === undefined
         ? {}
         : { exitStatus: this.#exitStatus }),

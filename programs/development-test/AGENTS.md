@@ -11,6 +11,9 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 
 # Local Contracts
 
+- Reuse package-owned development and activation fields from `src/fields.ts`;
+  keep terminal controls, layout, and presentation hints in this program.
+
 - Select the user's sandbox by username, read its `sbx-` ID from kernel state,
   and provide the package-owned terminal module and stylesheet using UUI's
   generic custom-element descriptor. UUI contains no terminal implementation.
@@ -26,8 +29,11 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   separate Advanced page.
 - Read the authenticated username from `@the8020/context`. The page subtitle
   shows an SSH command using that username and the hostname from UUI's
-  `currentBrowser().origin`, with SSH port 22. Browser metadata is presentation
-  input, never user identity; quote shell-sensitive destination characters.
+  `currentBrowser().origin`, with SSH port 22, plus
+  `ssh -t ... the8020
+  terminal-id XYZ` for a specific persistent session.
+  Browser metadata is presentation input, never user identity; quote
+  shell-sensitive destination characters.
 - Confirm each reset in a dedicated modal describing its losses. Source reset
   preserves the root home directory and installed system changes; factory reset
   deletes both. Development sandbox IDs belong to the development manager and

@@ -42,10 +42,19 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   tokens, terminal contents, or authentication credentials there.
 - Existing authenticated service admission applies to establishment and every
   reattachment. Terminal lifetime uses explicit-completion service bindings.
+- `/open` connects or creates a sandbox-scoped `sessionId` of 1–40 ASCII
+  letters, digits, `_`, or `-`. Browser and authenticated native SSH use this
+  same entry. Kernel `terminals.open` atomically returns the live display owner
+  or a new processor lease. Concurrent opens wait for that owner's metadata
+  publication. Numeric ID allocation and `[ID] Label` presentation belong to the
+  frontend.
 - Creation retains its handler independently of the establishing request, then
   publishes metadata and an exact signed route. Failure before acceptance closes
-  the new PTY and removes its metadata. Later display-owner loss remains visible
-  and never spawns a replacement under the old identity.
+  the new PTY and removes its metadata. Reopening a closed or exited shell keeps
+  the logical name and label while publishing a new physical ID. A lost display
+  Worker can be replaced without killing a surviving shell: start a fresh
+  display at the current native sequence and report the display reset. Never
+  claim recovered scrollback or replay historical query effects in that case.
 - HTTP list, rename, and close use independent temporary bindings. An unowned
   request, including validation failures and unknown paths, completes its
   binding. The service entrypoint supplies database storage; protocol tests use
@@ -84,8 +93,8 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   `terminal.idle_timeout` (36 hours by default). This package supplies no
   timeout; its canonical processor does not extend terminal lifetime.
   `TerminalClosedError` ends the display handler normally, releases
-  attachments/engine, and removes metadata through the existing service
-  completion path.
+  attachments/engine, and completes the retained binding. Keep session metadata
+  until explicit Close so a later open restores the same name and label.
 
 # Work Guidance
 
@@ -151,11 +160,12 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   from canonical query processing.
 - `test:native-resilience` uses the same disposable harness to check an exact
   terminal route through a second node, visible display-Worker loss, physical
-  process survival, and explicit orphan close from the second node.
+  process survival, named reopening with a fresh display owner, and explicit
+  orphan close from the second node.
 - `test:native-idle` uses an eight-second terminal deadline and two-second
   sandbox deadline to verify attached browser/SSH protection, repeated SSH
-  reattachment, expiry despite output, metadata cleanup, subsequent sandbox
-  stop, ordinary SSH lifetime, and restoration of private checkpointed files.
+  reattachment, expiry despite output, label retention, subsequent sandbox stop,
+  ordinary SSH lifetime, and restoration of private checkpointed files.
 
 # Child DOX Index
 

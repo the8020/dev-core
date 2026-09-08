@@ -14,6 +14,7 @@ import {
 } from "/p/the8020/uui/mod.ts";
 import { packageId } from "/p/the8020/packages/types/package.ts";
 import { username } from "/p/the8020/users/types/user.ts";
+import { developmentInfo } from "../../src/fields.ts";
 import layout from "./layouts/main.json" with { type: "json" };
 import activationLayout from "./layouts/activation.json" with { type: "json" };
 import terminalAssets from "../../terminals/assets.json" with { type: "json" };
@@ -56,27 +57,25 @@ const ActivationScreen = z.object({
   packages: field(
     z.array(z.object({
       package: packageId,
-      changedFiles: z.number(),
-      addedRows: z.number(),
-      removedRows: z.number(),
-      ready: z.string(),
+      changedFiles: developmentInfo.shape.changedFiles,
+      addedRows: developmentInfo.shape.addedRows,
+      removedRows: developmentInfo.shape.removedRows,
+      ready: developmentInfo.shape.ready,
     })),
     {
       label: "Changed packages",
+      description:
+        "Review changed files and line counts for each package before activation.",
       control: "list",
       readOnly: true,
     },
   ),
-  message: field(z.string(), {
-    label: "Commit message",
-    description:
-      "Required. The same message is used for every changed package in this activation.",
+  message: field(developmentInfo.shape.message, {
     control: "textarea",
     length: "long",
     rowSpan: 2,
   }),
-  status: field(z.string(), {
-    label: "Activation status",
+  status: field(developmentInfo.shape.activationStatus, {
     length: "long",
     readOnly: true,
   }),
@@ -96,20 +95,17 @@ export default async function developmentTest(): Promise<void> {
     const sandboxId = sandbox?.sandbox_id ?? "";
     const Screen = z.object({
       user: field(username, { readOnly: true }),
-      sandboxId: field(z.string(), {
-        label: "Sandbox ID",
+      sandboxId: field(developmentInfo.shape.sandboxId, {
         length: "long",
         control: "text",
         readOnly: true,
       }),
-      state: field(z.string(), {
-        label: "State",
+      state: field(developmentInfo.shape.state, {
         length: "short",
         control: "text",
         readOnly: true,
       }),
-      status: field(z.string(), {
-        label: "Last operation",
+      status: field(developmentInfo.shape.status, {
         length: "long",
         control: "text",
         readOnly: true,
@@ -325,9 +321,7 @@ async function confirmReset(factory: boolean): Promise<boolean> {
           ? "This deletes your source changes, root home directory, and installed system changes."
           : "This deletes your unactivated source changes. Your root home directory and installed system changes are kept.",
         schema: z.object({
-          confirmed: field(z.boolean(), {
-            label: "I understand that these changes will be deleted",
-          }),
+          confirmed: developmentInfo.shape.confirmed,
         }),
         model: confirm,
         header: {
@@ -361,7 +355,7 @@ function sshHint(user: string): string | undefined {
       ...Array.from(command.matchAll(/`+/g), (match) => match[0].length),
     ),
   );
-  return `SSH: ${fence} ${command} ${fence}`;
+  return `SSH: ${fence} ${command} ${fence} or ${fence} ssh -t -p 22 -- ${argument} the8020 terminal-id XYZ ${fence} for a specific persistent session.`;
 }
 
 async function developmentSandboxes(): Promise<DevelopmentSandbox[]> {

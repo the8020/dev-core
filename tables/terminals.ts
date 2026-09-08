@@ -8,6 +8,7 @@ import {
 
 const Terminals = table("the8020__dev_core__terminals", {
   terminalId: t.text().primaryKey(),
+  sessionId: t.text().default(""),
   name: t.text(),
   authenticatedUserId: t.text(),
   targetKind: t.enum(["development", "runtime"] as const),
@@ -20,6 +21,9 @@ const Terminals = table("the8020__dev_core__terminals", {
 }, {
   indexes: [{
     columns: ["authenticatedUserId", "targetKind", "targetSandboxId"],
+  }, {
+    columns: ["targetKind", "targetSandboxId", "sessionId"],
+    unique: true,
   }],
 });
 
