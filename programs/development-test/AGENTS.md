@@ -20,6 +20,8 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 - The package terminal component owns named-terminal controls and retained
   attachments independently of the screen. Leaving the screen detaches its view;
   the component's explicit Close action terminates the selected process.
+- Page Refresh advances the terminal component's `refresh` revision so it
+  reloads the shared session list and reconnects the selected terminal.
 - Activation previews all changed packages, requires a commit message, and
   invokes the typed user-scoped activation operation. Package rows open the
   public Packages program and preserve the draft message.

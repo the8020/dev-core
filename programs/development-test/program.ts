@@ -85,6 +85,7 @@ export default async function developmentTest(): Promise<void> {
   if (!context.authenticated) throw new Error("authenticated user is required");
   const developmentUserId = context.username;
   let status = await startDevelopmentSandbox(developmentUserId);
+  let terminalRefresh = 0;
   let screenModel: Model<DevelopmentScreenModel> | undefined;
   while (true) {
     const sandboxes = await developmentSandboxes();
@@ -146,7 +147,10 @@ export default async function developmentTest(): Promise<void> {
           packageAssetURL("the8020/dev-core", path)
         ),
         preserve: true,
-        config: consoleConfiguration(sandboxId, running),
+        config: {
+          ...consoleConfiguration(sandboxId, running),
+          refresh: terminalRefresh,
+        },
       }],
       header: {
         actions: actions.filter((action) =>
@@ -158,6 +162,7 @@ export default async function developmentTest(): Promise<void> {
     if (event.action === BACK_EVENT) return;
     if (event.action === "change") continue;
     if (event.action === "refresh") {
+      terminalRefresh++;
       status = "Refreshed";
       continue;
     }

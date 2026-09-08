@@ -41,6 +41,13 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
 - Entering the screen and reconnecting call `/open` for the selected session,
   even when its saved metadata or physical shell has disappeared. Authentication
   and validation failures stop recovery. Input/resize control stays exclusive.
+- Re-entering the screen, terminal Refresh, and a changed program `refresh`
+  revision reload the shared list and attempt ordinary control again. Switching
+  terminals also attempts a fresh connection; previous control denial is not
+  retained across attempts. Never take another client's control implicitly.
+- Put Take control below the control-unavailable message in the terminal
+  content, outside the toolbar. Hide it while connecting and after successful
+  recovery.
 - Show centered `Loading…` across the terminal content while listing, opening,
   and installing the initial display. Reveal xterm only when ready and keep its
   background stretched to the full viewport height.

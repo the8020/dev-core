@@ -31,6 +31,7 @@
 
 .sandbox-console-toolbar select,
 .sandbox-console-toolbar button,
+.sandbox-console-loading button,
 .sandbox-terminal-dialog input,
 .sandbox-terminal-dialog button {
   min-height: 32px;
@@ -72,11 +73,13 @@
   min-height: 0;
   height: 0;
 }
-.sandbox-console-toolbar :disabled {
+.sandbox-console-toolbar :disabled,
+.sandbox-console-loading :disabled {
   opacity: 0.5;
   cursor: default;
 }
-.sandbox-console-toolbar :focus-visible {
+.sandbox-console-toolbar :focus-visible,
+.sandbox-console-loading :focus-visible {
   outline: 2px solid #58a6ff;
   outline-offset: 2px;
 }
@@ -278,6 +281,10 @@
 }
 .sandbox-console-loading[hidden] {
   display: none;
+}
+.sandbox-console-loading button {
+  margin-top: 0.75rem;
+  cursor: pointer;
 }
 .sandbox-console:not([data-terminal-state="connected"]):not([data-terminal-state="exited"]) .sandbox-console-display {
   visibility: hidden;

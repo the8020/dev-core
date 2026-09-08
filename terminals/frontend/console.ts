@@ -91,6 +91,7 @@ class RetainedConsole implements CustomElementInstance {
   readonly #status: HTMLElement;
   readonly #viewport: HTMLElement;
   readonly #loading: HTMLElement;
+  readonly #loadingMessage: HTMLElement;
   readonly #takeover: HTMLButtonElement;
   readonly #observer: ResizeObserver;
   readonly #clientId = stored("the8020.dev-core.terminal-client") ??
@@ -109,6 +110,7 @@ class RetainedConsole implements CustomElementInstance {
   #pageHidden = false;
   #disposed = false;
   #initialized = false;
+  #refreshRevision: unknown;
   #busy = false;
   #uncertainInput = false;
   #connecting = false;
@@ -128,10 +130,12 @@ class RetainedConsole implements CustomElementInstance {
       <button type="button" data-terminal-action="refresh" aria-label="Refresh terminals" title="Refresh terminals"></button>
       <button type="button" data-terminal-action="fullscreen"></button>
       <button type="button" data-terminal-action="close" aria-label="Close terminal" title="Close terminal"></button>
-      <button type="button" data-terminal-action="takeover" hidden>Take control</button>
       <div class="sandbox-console-status" role="status" aria-live="polite"></div>
     </div>
-    <div class="sandbox-console-viewport"><div class="sandbox-console-loading" role="status">Loading…</div><div class="sandbox-console-display"></div></div>`;
+    <div class="sandbox-console-viewport"><div class="sandbox-console-loading"><div>
+      <div class="sandbox-console-message" role="status">Loading…</div>
+      <button type="button" data-terminal-action="takeover" hidden>Take control</button>
+    </div></div><div class="sandbox-console-display"></div></div>`;
     for (
       const [action, icon] of Object.entries({
         new: "add",
@@ -155,6 +159,9 @@ class RetainedConsole implements CustomElementInstance {
     this.#status = this.element.querySelector(".sandbox-console-status")!;
     this.#viewport = this.element.querySelector(".sandbox-console-viewport")!;
     this.#loading = this.element.querySelector(".sandbox-console-loading")!;
+    this.#loadingMessage = this.element.querySelector(
+      ".sandbox-console-message",
+    )!;
     this.#takeover = this.element.querySelector(
       '[data-terminal-action="takeover"]',
     )!;
@@ -171,7 +178,9 @@ class RetainedConsole implements CustomElementInstance {
     this.#terminal.onSelectionChange(() =>
       this.element.dataset.hasSelection = String(this.#terminal.hasSelection())
     );
-    this.#viewport.addEventListener("click", () => this.#terminal.focus());
+    this.#viewport.addEventListener("click", () => {
+      if (this.#connection?.ready) this.#terminal.focus();
+    });
     this.#observer = new ResizeObserver(() => this.#resize());
     this.#observer.observe(this.#viewport);
     this.#select.onchange = () => {
@@ -198,6 +207,7 @@ class RetainedConsole implements CustomElementInstance {
     addEventListener("online", () => void this.#connect(), options);
     addEventListener("pagehide", () => {
       this.#pageHidden = true;
+      this.#initialized = false;
       this.#detach();
     }, options);
     addEventListener("pageshow", () => {
@@ -211,6 +221,10 @@ class RetainedConsole implements CustomElementInstance {
     const parsed = configuration(config);
     const signature = JSON.stringify(parsed);
     this.#enabled = config.enabled === true && parsed !== undefined;
+    if (config.refresh !== this.#refreshRevision) {
+      this.#refreshRevision = config.refresh;
+      this.#initialized = false;
+    }
     if (signature !== this.#signature) {
       this.#detach();
       this.#operations.abort();
@@ -246,6 +260,7 @@ class RetainedConsole implements CustomElementInstance {
     this.#active = active;
     if (active) this.#start();
     else {
+      this.#initialized = false;
       this.#fullscreen(false);
       this.#detach();
     }
@@ -261,7 +276,7 @@ class RetainedConsole implements CustomElementInstance {
     if (!this.#initialized || !this.#selected) {
       void this.#run(async () => {
         await this.#refresh();
-        this.#initialized = true;
+        this.#initialized = this.#canConnect();
       });
     } else void this.#connect();
   }
@@ -862,7 +877,14 @@ class RetainedConsole implements CustomElementInstance {
     this.#status.title = message;
     this.element.dataset.terminalState = state;
     this.#loading.hidden = state === "connected" || state === "exited";
-    this.#loading.textContent = state === "connecting" ? "Loading…" : message;
+    this.#loadingMessage.textContent = state === "connecting"
+      ? "Loading…"
+      : message;
+    if (
+      state === "connecting" || state === "recovering" || state === "connected"
+    ) {
+      this.#takeover.hidden = true;
+    }
     this.#viewport.setAttribute("aria-busy", String(state === "connecting"));
   }
   #fullscreen(enabled: boolean): void {
@@ -883,7 +905,7 @@ class RetainedConsole implements CustomElementInstance {
     this.#select.disabled = !enabled || !this.#items.length;
     for (
       const button of this.element.querySelectorAll<HTMLButtonElement>(
-        ".sandbox-console-toolbar button",
+        ".sandbox-console-toolbar button, .sandbox-console-loading button",
       )
     ) {
       if (button.dataset.terminalAction === "fullscreen") {

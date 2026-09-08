@@ -301,8 +301,9 @@ export default async function fixture(temporaryRoot: string) {
 
   return {
     async run() {
+      let refresh = 0;
       while (true) {
-        await callScreen({
+        const event = await callScreen({
           id: "retained-terminal-fixture",
           title: "Development terminals",
           schema: z.object({}),
@@ -311,7 +312,7 @@ export default async function fixture(temporaryRoot: string) {
             id: "terminal",
             module: packageAssetURL("the8020/dev-core", "terminal.js"),
             styles: [packageAssetURL("the8020/dev-core", "terminal.css")],
-            config,
+            config: { ...config, refresh },
             preserve: true,
           }],
           layout: {
@@ -323,8 +324,17 @@ export default async function fixture(temporaryRoot: string) {
               customElement: "terminal",
             },
           },
-          header: { actions: [{ id: "away", label: "Another screen" }] },
+          header: {
+            actions: [
+              { id: "away", label: "Another screen" },
+              { id: "refresh", label: "Refresh" },
+            ],
+          },
         });
+        if (event.action === "refresh") {
+          refresh++;
+          continue;
+        }
         await presentPage(async () => {
           await callScreen({
             id: "terminal-away",
@@ -428,7 +438,7 @@ export default async function fixture(temporaryRoot: string) {
         `(() => {
         const loader = document.querySelector('.sandbox-console-loading');
         const display = document.querySelector('.sandbox-console-display');
-        return loader && !loader.hidden && loader.textContent === 'Loading…' && getComputedStyle(display).visibility === 'hidden' && loader.getBoundingClientRect().height === loader.parentElement.getBoundingClientRect().height;
+        return loader && !loader.hidden && loader.querySelector('.sandbox-console-message').textContent === 'Loading…' && getComputedStyle(display).visibility === 'hidden' && loader.getBoundingClientRect().height === loader.parentElement.getBoundingClientRect().height;
       })()`,
         "full-height loading state before terminal list arrives",
       );
@@ -450,6 +460,33 @@ export default async function fixture(temporaryRoot: string) {
       assertEquals(terminals.size, 1);
       const first = [...terminals.keys()][0]!;
       const native = terminals.get(first)!;
+      // A session discovered through shared metadata, outside this component.
+      const external = "tty-9999999999";
+      records.set(external, {
+        ...records.get(first)!,
+        terminalId: external,
+        sessionId: "ssh-added",
+        name: "SSH terminal",
+      });
+      try {
+        await namedButton(page, "Refresh");
+        await waitPage(
+          page,
+          "Boolean(document.querySelector('.sandbox-console-select option[value=ssh-added]'))",
+          "page Refresh reloads the shared terminal list",
+        );
+        await ready(first);
+        await namedButton(page, "Another screen");
+      } finally {
+        records.delete(external);
+      }
+      await namedButton(page, "Return");
+      await waitPage(
+        page,
+        "!document.querySelector('.sandbox-console-select option[value=ssh-added]')",
+        "re-entry reloads the shared terminal list",
+      );
+      await ready(first);
       const normal = await page.evaluate<
         { width: number; height: number; terminalHeight: number }
       >(`(() => {
@@ -776,12 +813,71 @@ export default async function fixture(temporaryRoot: string) {
           "Boolean(document.querySelector('[data-terminal-action=takeover]:not([hidden])'))",
           "exclusive controller",
         );
+        assertEquals(
+          await other.evaluate(`(() => {
+            const button = document.querySelector('[data-terminal-action=takeover]');
+            const message = document.querySelector('.sandbox-console-message');
+            return !!button.closest('.sandbox-console-loading') &&
+              button.getBoundingClientRect().height > 0 &&
+              button.getBoundingClientRect().top >= message.getBoundingClientRect().bottom;
+          })()`),
+          true,
+          "Take control is below the message in the terminal content",
+        );
         await button(other, "takeover");
         await visibleReady(other, records.get(first)!.sessionId);
         await waitPage(
           page,
           "document.querySelector('.sandbox-console')?.dataset.terminalState==='disconnected'",
           "control transfer",
+        );
+        await button(page, "refresh");
+        await waitPage(
+          page,
+          "Boolean(document.querySelector('[data-terminal-action=takeover]:not([hidden])'))",
+          "refresh does not steal active control",
+        );
+        let detached = native.detached.length;
+        await namedButton(other, "Another screen");
+        await until(
+          () => native.detached.length > detached,
+          "other view released",
+        );
+        await button(page, "refresh");
+        await ready(first);
+
+        await namedButton(other, "Return");
+        await waitPage(
+          other,
+          "Boolean(document.querySelector('[data-terminal-action=takeover]:not([hidden])'))",
+          "re-entry attempts ordinary control",
+        );
+        await choose(page, records.get(second)!.sessionId);
+        await ready(second);
+        await button(other, "refresh");
+        await visibleReady(other, records.get(first)!.sessionId);
+        await choose(page, records.get(first)!.sessionId);
+        await waitPage(
+          page,
+          "Boolean(document.querySelector('[data-terminal-action=takeover]:not([hidden])'))",
+          "selecting an occupied terminal waits for control",
+        );
+        detached = native.detached.length;
+        await namedButton(other, "Another screen");
+        await until(
+          () => native.detached.length > detached,
+          "other view released again",
+        );
+        await choose(page, records.get(second)!.sessionId);
+        await ready(second);
+        await choose(page, records.get(first)!.sessionId);
+        await ready(first);
+        // Both fixture tabs share a UUI continuation; restore it before reload.
+        await namedButton(other, "Return");
+        await waitPage(
+          other,
+          "Boolean(document.querySelector('[data-terminal-action=takeover]:not([hidden])'))",
+          "return preserves the other client's control",
         );
       } finally {
         await other.command("Page.close").catch(() => {});
