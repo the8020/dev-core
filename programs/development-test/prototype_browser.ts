@@ -51,7 +51,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     peer,
   );
   const sharedHead = await shell(
-    `git -C /workspace/shared-git/${packageID} rev-parse HEAD`,
+    `git -C /workspace/git/shared/${packageID} rev-parse HEAD`,
     peer,
   );
   const privateCommit = (await shell(
@@ -60,7 +60,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   )).trim();
   assertEquals(
     await shell(
-      `git -C /workspace/shared-git/${packageID} rev-parse HEAD`,
+      `git -C /workspace/git/shared/${packageID} rev-parse HEAD`,
       peer,
     ),
     sharedHead,
