@@ -178,6 +178,11 @@ below.
   message, and invokes the typed user-scoped activation command to sync all
   ready changes at once. Package rows open their owning administration program
   without losing the draft message. It owns no Git or overlay implementation.
+- Activation conflicts open the existing code editor with file selection,
+  annotated versions, save/delete actions, and continuation. The kernel helper
+  owns native Git operations; the UUI and sandbox terminal resolve the same
+  retained attempt. Finish this prototype, including package deletions, before
+  optimizing the filesystem or activation costs further.
 
 - Development and activation screen loops retain UUI Model wrappers while
   refreshing business data. Activation uses full accessible count headings with

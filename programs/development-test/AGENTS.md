@@ -25,6 +25,17 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 - Activation previews all changed packages, requires a commit message, and
   invokes the typed user-scoped activation operation. Package rows open the
   public Packages program and preserve the draft message.
+- `conflicts.ts` presents the activation owner's retained Git worktrees using a
+  file selector, `codeEditor()` line markers, and labelled
+  original/private/shared versions. Save resolution, side selection, and
+  deletion update that same native index through the sandbox shell and platform
+  `activation-conflicts.ts` helper. Continue commits resolved indexes and
+  retries ordinary activation.
+- Reopening activation discovers pending conflicts through sandbox inspection.
+  Terminal changes are picked up by Refresh from Git; stale saves fail without
+  overwriting the terminal's file. Confirm discarding an unsaved editor draft
+  before switching files or refreshing. Binary, linked, and files over 48 KiB
+  use side selection/deletion or ordinary terminal Git.
 - Retain the UUI Model while refreshing sandbox and activation state; preserve
   the console across activation pages. One field group below the terminal owns
   user help, sandbox ID, state, last operation, restart, and resets. There is no
@@ -50,6 +61,21 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   activation validation, package navigation, and console DOM preservation.
 - Kernel development tests and the sibling UUI browser E2E cover sandbox
   lifecycle, activation validation, independent commits, and overlay reset.
+- `prototype_browser.ts` runs through the sibling UUI native harness using the
+  separate prototype kernel with two development sandboxes: new packages become
+  visible without restarting, one developer's activation preserves the other's
+  edits and live untouched files, and further publication during UUI resolution
+  survives terminal takeover and continuation. Package deletion removes shared
+  source files from the peer's view while both runtimes remain alive. A private
+  native Git commit in that later-published package remains readable after
+  shared deletion and an explicit peer restart. Build and invocation are in the
+  kernel analysis `PROTOTYPE.md`.
+- `prototype_concurrency.ts` uses the same disposable native harness separately
+  from the UI scenario. It holds a real pre-activation hook, requires another
+  package to publish while that hook waits, checks prompt overlap rejection and
+  health availability, then resolves the retried overlap through ordinary Git.
+  It writes the scoped `prototype-concurrency-results.json` in kernel analysis;
+  the manual review instance and its pending conflicts remain untouched.
 
 # Child DOX Index
 

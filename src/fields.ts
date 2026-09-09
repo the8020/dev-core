@@ -49,3 +49,23 @@ export const developmentInfo = z.object({
       "Confirm only after reviewing which changes this reset deletes. Cancel to keep them.",
   }),
 });
+
+export const conflictInfo = z.object({
+  path: field(z.string(), {
+    label: "File",
+    description: "The conflicting file within this package.",
+  }),
+  kind: field(z.string(), {
+    label: "Conflict",
+    description: "Which versions changed or deleted this file.",
+  }),
+  content: field(z.string(), {
+    label: "File contents",
+    description:
+      "Resolve the Git-marked sections, remove the markers, and save. Use Delete file to resolve a deletion.",
+  }),
+  status: field(z.string(), {
+    label: "Resolution status",
+    description: "Resolve every file before continuing activation.",
+  }),
+});

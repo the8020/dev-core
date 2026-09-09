@@ -18,6 +18,7 @@ import { developmentInfo } from "../../src/fields.ts";
 import layout from "./layouts/main.json" with { type: "json" };
 import activationLayout from "./layouts/activation.json" with { type: "json" };
 import terminalAssets from "../../terminals/assets.json" with { type: "json" };
+import { type ConflictPackage, resolveConflicts } from "./conflicts.ts";
 
 interface DevelopmentSandbox {
   user_id: string;
@@ -50,6 +51,8 @@ interface ActivationRunResult extends Record<string, unknown> {
   activation: {
     success: boolean;
     status: string;
+    error?: string;
+    packages: ConflictPackage[];
   };
 }
 
@@ -222,8 +225,16 @@ async function activateChanges(userId: string): Promise<void> {
   let status = "Review the changed packages and enter a commit message.";
   let screenModel1: Model<z.infer<typeof ActivationScreen>> | undefined;
   while (true) {
+    const inspected = await kernel.development.sandbox.run("inspect", userId);
+    const pending = (inspected.sandbox as {
+      last_activation_result?: ActivationRunResult["activation"];
+    }).last_activation_result;
+    const conflicted = pending?.status === "conflicted" &&
+      pending.packages?.some((item) => item.conflict_worktree);
     const result = {
-      preview: await kernel.development.activate.preview({ user_id: userId }),
+      preview: conflicted
+        ? { packages: [] }
+        : await kernel.development.activate.preview({ user_id: userId }),
     } as ActivationPreviewResult;
     const packages = result.preview.packages.map((item) => ({
       package: item.package_id,
@@ -235,7 +246,9 @@ async function activateChanges(userId: string): Promise<void> {
     const model: z.infer<typeof ActivationScreen> = {
       packages,
       message,
-      status: packages.length === 0 ? "No private changes" : status,
+      status: !conflicted && packages.length === 0
+        ? "No private changes"
+        : status,
     };
     screenModel1 ??= new Model(model);
     screenModel1.data = model;
@@ -249,6 +262,13 @@ async function activateChanges(userId: string): Promise<void> {
       layout: activationLayout,
       header: {
         actions: [
+          ...(conflicted
+            ? [{
+              id: "resolve",
+              label: "Resolve conflicts",
+              kind: "primary" as const,
+            }]
+            : []),
           ...(packages.length > 0
             ? [{
               id: "sync-all",
@@ -270,22 +290,37 @@ async function activateChanges(userId: string): Promise<void> {
       );
       await presentPage(() => packages(event.value as string));
     }
-    if (event.action === "sync-all") {
+    if (event.action === "sync-all" || event.action === "resolve") {
       if (message.trim() === "") {
         status = "A commit message is required";
         sendMessage(status, "error");
         continue;
       }
       try {
-        const activation = {
-          activation: await kernel.development.activate.run({
+        if (
+          event.action === "resolve" && pending &&
+          !(await presentPage(() => resolveConflicts(userId, pending.packages)))
+        ) continue;
+        let activation: ActivationRunResult["activation"];
+        while (true) {
+          activation = await kernel.development.activate.run({
             user_id: userId,
             message: message.trim(),
             metadata: JSON.stringify({ client: "uui" }),
-          }),
-        } as ActivationRunResult;
-        if (!activation.activation.success) {
-          throw new Error(`Activation ${activation.activation.status}`);
+          }) as ActivationRunResult["activation"];
+          if (
+            activation.status === "conflicted" &&
+            activation.packages?.some((item) => item.conflict_worktree) &&
+            await presentPage(() =>
+              resolveConflicts(userId, activation.packages)
+            )
+          ) continue;
+          break;
+        }
+        if (!activation.success) {
+          throw new Error(
+            activation.error ?? `Activation ${activation.status}`,
+          );
         }
         message = "";
         status = "All package changes activated";
