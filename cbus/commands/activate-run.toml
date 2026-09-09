@@ -1,6 +1,6 @@
 version = 1
 command = "dev-core.activate.run"
-program = "activate-run"
+program = "the8020/dev-core/activate-run"
 summary = "Activate package changes"
 usage = "<user-id> --message <message> [options]"
 mutates_state = true

@@ -12,6 +12,7 @@
         "bind": "packages",
         "key": "package",
         "display": [
+          "change",
           "package",
           "ready",
           "changedFiles",
@@ -23,6 +24,9 @@
           "removedRows": "-"
         },
         "columnOptions": {
+          "change": {
+            "length": "short"
+          },
           "changedFiles": {
             "length": "compact",
             "shortHeading": "Files"

@@ -1,6 +1,6 @@
 version = 1
 command = "dev-core.activate.preview"
-program = "activate-preview"
+program = "the8020/dev-core/activate-preview"
 summary = "Preview package activation"
 usage = "<user-id> [options]"
 mutates_state = false

@@ -15,6 +15,11 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   it independently; never import it into the UUI shell.
 - Keep terminal CSS and dependency versions here. Use the matching headless
   version for retained display recovery.
+- Encode Shift+Enter as `CSI 13;2u` through xterm's public input API and custom
+  key handler so applications can distinguish it from Enter. Consume only that
+  exact chord outside composition, once per keydown; other keys keep xterm's
+  encoding. UUI shortcuts must not reinterpret consumed terminal keys. This is
+  one explicit key mapping, not negotiated enhanced-keyboard mode support.
 - The Development component uses the package's retained terminal service for
   create, list, select, rename, close, and explicit control takeover. Activity
   loss, navigation, reload, network loss, and disposal detach the view only.
@@ -41,6 +46,9 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
 - Entering the screen and reconnecting call `/open` for the selected session,
   even when its saved metadata or physical shell has disappeared. Authentication
   and validation failures stop recovery. Input/resize control stays exclusive.
+- Retried HTTP failures keep their failure status visible alongside
+  reconnecting; never replace a known HTTP error with a generic disconnection
+  message.
 - Re-entering the screen, terminal Refresh, and a changed program `refresh`
   revision reload the shared list and attempt ordinary control again. Switching
   terminals also attempts a fresh connection; previous control denial is not
@@ -65,6 +73,8 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   programs/browser tests. The package browser fixture exercises real Chromium
   and the retained service protocol with native-terminal doubles; native SSH,
   database/runtime deployment, and htop remain separate qualification gates.
+- The browser test checks distinct Enter, Shift+Enter, and Alt+Enter bytes at
+  the native-terminal boundary alongside Ctrl+A, Escape, and bracketed paste.
 
 # Child DOX Index
 

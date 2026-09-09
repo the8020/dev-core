@@ -111,6 +111,8 @@ export default async function fixture(temporaryRoot: string) {
   let bindingOrdinal = 0;
   let requestOrdinal = 0;
   let authenticated = true;
+  let openError: string | undefined;
+  let openAttempts = 0;
   const id = (prefix: string, n: number) =>
     `${prefix}-${String(n).padStart(10, "0")}`;
   const attach = (native: TestTerminals, inner: TerminalAttachment) => {
@@ -120,6 +122,8 @@ export default async function fixture(temporaryRoot: string) {
   };
   const nativeAPI: typeof kernel.terminals = {
     open: async (input) => {
+      openAttempts++;
+      if (openError) throw new Error(openError);
       const existing = [...terminals.values()].find((native) =>
         native.native.terminal.sandboxId === input.sandboxId &&
         native.native.terminal.sessionId === input.sessionId &&
@@ -586,6 +590,18 @@ export default async function fixture(temporaryRoot: string) {
         () => textInput(native).includes("\u0001"),
         "modified key input",
       );
+      for (
+        const [modifiers, expected] of [
+          [0, "\r"],
+          [8, "\u001b[13;2u"],
+          [1, "\u001b\r"],
+        ] as const
+      ) {
+        const before = textInput(native).length;
+        await key(page, "Enter", "Enter", 13, modifiers);
+        await until(() => textInput(native).length > before, "Enter input");
+        assertEquals(textInput(native).slice(before), expected);
+      }
       await key(page, "Escape", "Escape", 27);
       await until(() => textInput(native).endsWith("\u001b"), "Escape input");
       assertEquals(
@@ -731,11 +747,10 @@ export default async function fixture(temporaryRoot: string) {
         () => records.get(first)?.name === "Agent",
         "terminal rename",
       );
-      assertEquals(
-        await page.evaluate(
-          "document.querySelector('.sandbox-console-select').selectedOptions[0].text",
-        ),
-        "[1] Agent",
+      await waitPage(
+        page,
+        "document.querySelector('.sandbox-console-select').selectedOptions[0].text === '[1] Agent'",
+        "terminal rename reaches the browser",
       );
       await button(page, "new");
       await until(() => terminals.size === 2, "second terminal");
@@ -944,6 +959,32 @@ export default async function fixture(temporaryRoot: string) {
       assertEquals(records.size, 1);
       assertEquals(terminals.size, 3);
       assertEquals(terminals.get(recreated)!.closed, [recreated]);
+      openError = "development sandbox is not running";
+      const attempts = openAttempts;
+      await button(page, "new");
+      await until(() => openAttempts >= attempts + 2, "failed open retries");
+      await waitPage(
+        page,
+        "document.querySelector('.sandbox-console-status').textContent === 'Terminal request failed (500). Reconnecting…'",
+        "recovery preserves the HTTP failure",
+      );
+      assertEquals(
+        records.size,
+        1,
+        "failed opens do not create terminal names",
+      );
+      openError = undefined;
+      await visibleReady(page, "3");
+      for (const id of ["4", "5"]) {
+        await button(page, "new");
+        await visibleReady(page, id);
+      }
+      assertEquals([...records.values()].map((record) => record.sessionId), [
+        "2",
+        "3",
+        "4",
+        "5",
+      ]);
       console.log(
         "Retained terminal browser checks passed: named controls, input, snapshot continuation, navigation, reload, network loss, control transfer, fixture logout/login, exit and close.",
       );
@@ -1029,6 +1070,7 @@ async function key(
   key: string,
   code: string,
   windowsVirtualKeyCode: number,
+  modifiers = 0,
 ): Promise<void> {
   for (const type of ["keyDown", "keyUp"]) {
     await page.command("Input.dispatchKeyEvent", {
@@ -1036,6 +1078,7 @@ async function key(
       key,
       code,
       windowsVirtualKeyCode,
+      modifiers,
     });
   }
 }

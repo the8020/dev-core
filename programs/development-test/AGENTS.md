@@ -30,6 +30,10 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   current changes; file contents load only on file selection through the same
   preview operation with `packages` and `file`. The native owner supplies the
   per-path original comparison and explicit binary/large-file notices.
+- Package rows also show added/modified/deleted state. Moves use matching
+  deletion/addition rows and diffs. Do not repeat a +/- legend in the editor.
+  Preview failures stay on activation with an actionable error and Refresh;
+  preserve the commit-message draft and hide activation until preview succeeds.
 - `conflicts.ts` presents the activation owner's retained Git worktrees using a
   file selector, `codeEditor()` line markers, and labelled
   original/private/shared versions. Save resolution, side selection, and

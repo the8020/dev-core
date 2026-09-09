@@ -12,7 +12,8 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 # Local Contracts
 
 - Each declaration supplies the complete public name in `command` and references
-  an ordinary same-package program in `program`.
+  an ordinary program by its full `namespace/package/program` ID in `program`.
+  Short names are invalid; the target may belong to another package.
 - Keep declarations flat. Filenames do not define command identity, and
   duplicate public names are invalid.
 

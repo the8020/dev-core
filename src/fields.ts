@@ -1,5 +1,11 @@
 import { field, z } from "/p/the8020/db/fields.ts";
 
+export const activationChange = field(z.string(), {
+  label: "Change",
+  description:
+    "Added, modified, or deleted. Moves appear as deletions and additions.",
+});
+
 export const developmentInfo = z.object({
   sandboxId: field(z.string(), {
     label: "Sandbox ID",
@@ -76,12 +82,8 @@ export const activationFileInfo = z.object({
     description:
       "Changed filename within this package. Open it to review the diff.",
   }),
-  change: field(z.string(), {
-    label: "Change",
-    description: "Whether the file was added, modified, or deleted.",
-  }),
+  change: activationChange,
   diff: field(z.string(), {
     label: "Changes",
-    description: "Removed lines begin with − and added lines begin with +.",
   }),
 });

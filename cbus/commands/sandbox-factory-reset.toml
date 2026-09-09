@@ -1,6 +1,6 @@
 version = 1
 command = "dev-core.sandbox.factory-reset"
-program = "sandbox-factory-reset"
+program = "the8020/dev-core/sandbox-factory-reset"
 summary = "Factory reset a development sandbox"
 usage = "<user-id> --confirm"
 mutates_state = true

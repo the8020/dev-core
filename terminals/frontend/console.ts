@@ -175,6 +175,19 @@ class RetainedConsole implements CustomElementInstance {
     } catch { /* xterm's DOM renderer handles unavailable Canvas2D. */ }
     this.#terminal.onData((value) => this.#input(value));
     this.#terminal.onBinary((value) => this.#input(value, true));
+    this.#terminal.attachCustomKeyEventHandler((event) => {
+      if (
+        event.key !== "Enter" || !event.shiftKey || event.altKey ||
+        event.ctrlKey || event.metaKey || event.isComposing ||
+        event.keyCode === 229
+      ) return true;
+      // xterm 5.5 otherwise encodes Shift+Enter as plain Enter.
+      // ponytail: CSI-u for this key only; broader modes need shared engine support.
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.type === "keydown") this.#terminal.input("\u001b[13;2u");
+      return false;
+    });
     this.#terminal.onSelectionChange(() =>
       this.element.dataset.hasSelection = String(this.#terminal.hasSelection())
     );
@@ -548,7 +561,7 @@ class RetainedConsole implements CustomElementInstance {
       if (
         !(error instanceof RequestError) ||
         ![401, 403, 400].includes(error.status)
-      ) this.#retry();
+      ) this.#retry(`${errorMessage(error)} Reconnecting…`);
     } finally {
       if (epoch === this.#connectEpoch) this.#connecting = false;
     }
@@ -842,9 +855,9 @@ class RetainedConsole implements CustomElementInstance {
     this.#setStatus(message, "error");
     this.#detach();
   }
-  #retry(): void {
+  #retry(message = "Terminal disconnected; reconnecting…"): void {
     if (!this.#canConnect() || this.#reconnect) return;
-    this.#setStatus("Terminal disconnected; reconnecting…", "disconnected");
+    this.#setStatus(message, "disconnected");
     this.#reconnect = setTimeout(() => {
       this.#reconnect = undefined;
       void this.#connect();

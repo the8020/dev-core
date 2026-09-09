@@ -1,6 +1,6 @@
 version = 1
 command = "dev-core.sandbox.list"
-program = "sandbox-list"
+program = "the8020/dev-core/sandbox-list"
 summary = "List development sandboxes"
 mutates_state = false
 restart_behavior = "none"

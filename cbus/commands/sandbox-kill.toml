@@ -1,6 +1,6 @@
 version = 1
 command = "dev-core.sandbox.kill"
-program = "sandbox-kill"
+program = "the8020/dev-core/sandbox-kill"
 summary = "Kill a development sandbox"
 usage = "<user-id>"
 mutates_state = true

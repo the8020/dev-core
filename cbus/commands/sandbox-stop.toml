@@ -1,6 +1,6 @@
 version = 1
 command = "dev-core.sandbox.stop"
-program = "sandbox-stop"
+program = "the8020/dev-core/sandbox-stop"
 summary = "Stop a development sandbox"
 usage = "<user-id>"
 mutates_state = true

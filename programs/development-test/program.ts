@@ -14,13 +14,14 @@ import {
 } from "/p/the8020/uui/mod.ts";
 import { packageId } from "/p/the8020/packages/types/package.ts";
 import { username } from "/p/the8020/users/types/user.ts";
-import { developmentInfo } from "../../src/fields.ts";
+import { activationChange, developmentInfo } from "../../src/fields.ts";
 import layout from "./layouts/main.json" with { type: "json" };
 import activationLayout from "./layouts/activation.json" with { type: "json" };
 import terminalAssets from "../../terminals/assets.json" with { type: "json" };
 import { type ConflictPackage, resolveConflicts } from "./conflicts.ts";
 import {
   type ActivationPackagePreview,
+  changeLabel,
   reviewPackageChanges,
 } from "./changes.ts";
 
@@ -56,6 +57,7 @@ const ActivationScreen = z.object({
   packages: field(
     z.array(z.object({
       package: packageId,
+      change: activationChange,
       changedFiles: developmentInfo.shape.changedFiles,
       addedRows: developmentInfo.shape.addedRows,
       removedRows: developmentInfo.shape.removedRows,
@@ -221,19 +223,29 @@ async function activateChanges(userId: string): Promise<void> {
   let status = "Review the changed packages and enter a commit message.";
   let screenModel1: Model<z.infer<typeof ActivationScreen>> | undefined;
   while (true) {
-    const inspected = await kernel.development.sandbox.run("inspect", userId);
-    const pending = (inspected.sandbox as {
-      last_activation_result?: ActivationRunResult["activation"];
-    }).last_activation_result;
-    const conflicted = pending?.status === "conflicted" &&
-      pending.packages?.some((item) => item.conflict_worktree);
-    const result = {
-      preview: conflicted
-        ? { packages: [] }
-        : await kernel.development.activate.preview({ user_id: userId }),
-    } as ActivationPreviewResult;
+    let pending: ActivationRunResult["activation"] | undefined;
+    let conflicted = false;
+    let previewError = "";
+    const result: ActivationPreviewResult = { preview: { packages: [] } };
+    try {
+      const inspected = await kernel.development.sandbox.run("inspect", userId);
+      pending = (inspected.sandbox as {
+        last_activation_result?: ActivationRunResult["activation"];
+      }).last_activation_result;
+      conflicted = pending?.status === "conflicted" &&
+        !!pending.packages?.some((item) => item.conflict_worktree);
+      if (!conflicted) {
+        result.preview = await kernel.development.activate.preview({
+          user_id: userId,
+        }) as ActivationPreviewResult["preview"];
+      }
+    } catch (error) {
+      previewError = error instanceof Error ? error.message : String(error);
+      sendMessage(previewError, "error");
+    }
     const packages = result.preview.packages.map((item) => ({
       package: item.package_id,
+      change: changeLabel(item.change),
       changedFiles: item.changed_files,
       addedRows: item.added_rows,
       removedRows: item.removed_rows,
@@ -242,9 +254,8 @@ async function activateChanges(userId: string): Promise<void> {
     const model: z.infer<typeof ActivationScreen> = {
       packages,
       message,
-      status: !conflicted && packages.length === 0
-        ? "No private changes"
-        : status,
+      status: previewError ||
+        (!conflicted && packages.length === 0 ? "No private changes" : status),
     };
     screenModel1 ??= new Model(model);
     screenModel1.data = model;
@@ -277,7 +288,7 @@ async function activateChanges(userId: string): Promise<void> {
       },
     });
     message = model.message;
-    status = model.status;
+    if (!previewError) status = model.status;
     if (event.action === BACK_EVENT) return;
     if (event.action === "change" || event.action === "refresh") continue;
     if (event.action === "select" && typeof event.value === "string") {

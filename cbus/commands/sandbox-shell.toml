@@ -1,6 +1,6 @@
 version = 1
 command = "dev-core.sandbox.shell"
-program = "sandbox-shell"
+program = "the8020/dev-core/sandbox-shell"
 summary = "Execute inside a development sandbox"
 usage = "<user-id> [--command <command>]"
 mutates_state = true

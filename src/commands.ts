@@ -44,6 +44,7 @@ export function sandboxAction(action: string, args: string[]) {
 
 function activationInput(args: string[], requireMessage: boolean) {
   const parsed = parseCommandArguments(args, {
+    booleans: requireMessage ? ["defer-overlay-reset"] : [],
     values: [
       ...(!requireMessage ? ["file"] : []),
       "message",
@@ -63,6 +64,9 @@ function activationInput(args: string[], requireMessage: boolean) {
   return {
     user_id: requiredCommandArgument(parsed.positionals, 0, "user ID"),
     ...(!requireMessage ? { file: parsed.options.file } : {}),
+    ...(requireMessage
+      ? { defer_overlay_reset: parsed.options["defer-overlay-reset"] }
+      : {}),
     message: parsed.options.message,
     packages: parsed.options.packages,
     package_messages: parsed.options["package-messages"],

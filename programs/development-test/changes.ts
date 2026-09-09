@@ -14,6 +14,7 @@ import { activationFileInfo } from "../../src/fields.ts";
 
 export interface ActivationPackagePreview {
   package_id: string;
+  change: string;
   changed_files: number;
   added_rows: number;
   removed_rows: number;
@@ -25,10 +26,9 @@ export interface ActivationPackagePreview {
   }[];
 }
 
-function changeLabel(change: string): string {
+export function changeLabel(change: string): string {
   if (change === "added") return "[[icon=add color=success]] Added";
   if (change === "deleted") return "[[icon=remove color=error]] Deleted";
-  if (change === "renamed") return "[[icon=edit]] Renamed";
   return "[[icon=edit]] Modified";
 }
 
@@ -137,9 +137,7 @@ async function reviewFileChange(user: string, id: string, path: string) {
     const event = await callScreen({
       id: "development-file-change",
       title: path,
-      description: `${id}. ${
-        notice || "Removed lines are red (−); added lines are green (+)."
-      }`,
+      description: notice ? `${id}. ${notice}` : id,
       schema: z.object({
         content: field(activationFileInfo.shape.diff, {
           custom: codeEditor({ language: "text", syntaxCheck: false, markers }),
