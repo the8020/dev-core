@@ -69,3 +69,19 @@ export const conflictInfo = z.object({
     description: "Resolve every file before continuing activation.",
   }),
 });
+
+export const activationFileInfo = z.object({
+  path: field(z.string(), {
+    label: "File",
+    description:
+      "Changed filename within this package. Open it to review the diff.",
+  }),
+  change: field(z.string(), {
+    label: "Change",
+    description: "Whether the file was added, modified, or deleted.",
+  }),
+  diff: field(z.string(), {
+    label: "Changes",
+    description: "Removed lines begin with − and added lines begin with +.",
+  }),
+});

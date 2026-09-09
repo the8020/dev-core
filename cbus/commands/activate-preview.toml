@@ -7,3 +7,5 @@ mutates_state = false
 restart_behavior = "none"
 [[examples]]
 command = "dev-core.activate.preview alice"
+[[examples]]
+command = "dev-core.activate.preview alice --packages the8020/dev-core --file fixtures/activation-a/src/message.ts"

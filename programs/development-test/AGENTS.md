@@ -23,8 +23,13 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 - Page Refresh advances the terminal component's `refresh` revision so it
   reloads the shared session list and reconnects the selected terminal.
 - Activation previews all changed packages, requires a commit message, and
-  invokes the typed user-scoped activation operation. Package rows open the
-  public Packages program and preserve the draft message.
+  invokes the typed user-scoped activation operation. `changes.ts` opens a
+  package's changed filenames with labelled edit/add/remove icons, then opens
+  the selected file's read-only diff in `codeEditor()` with green additions and
+  red removals. Back preserves the list and commit-message draft. Refresh reads
+  current changes; file contents load only on file selection through the same
+  preview operation with `packages` and `file`. The native owner supplies the
+  per-path original comparison and explicit binary/large-file notices.
 - `conflicts.ts` presents the activation owner's retained Git worktrees using a
   file selector, `codeEditor()` line markers, and labelled
   original/private/shared versions. Save resolution, side selection, and
@@ -58,7 +63,8 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 
 - Run `deno task check` from the dev-core root.
 - Run sibling UUI `deno task test:programs-browser` for reset confirmation,
-  activation validation, package navigation, and console DOM preservation.
+  activation validation, changed-file icons, lazy diff loading, added/modified/
+  deleted/binary views, draft retention, and console DOM preservation.
 - Kernel development tests and the sibling UUI browser E2E cover sandbox
   lifecycle, activation validation, independent commits, and overlay reset.
 - `prototype_browser.ts` runs through the sibling UUI native harness using the

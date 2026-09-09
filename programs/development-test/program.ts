@@ -19,6 +19,10 @@ import layout from "./layouts/main.json" with { type: "json" };
 import activationLayout from "./layouts/activation.json" with { type: "json" };
 import terminalAssets from "../../terminals/assets.json" with { type: "json" };
 import { type ConflictPackage, resolveConflicts } from "./conflicts.ts";
+import {
+  type ActivationPackagePreview,
+  reviewPackageChanges,
+} from "./changes.ts";
 
 interface DevelopmentSandbox {
   user_id: string;
@@ -31,14 +35,6 @@ interface DevelopmentScreenModel {
   sandboxId: string;
   state: string;
   status: string;
-}
-
-interface ActivationPackagePreview {
-  package_id: string;
-  changed_files: number;
-  added_rows: number;
-  removed_rows: number;
-  activation_ready: boolean;
 }
 
 interface ActivationPreviewResult extends Record<string, unknown> {
@@ -285,10 +281,12 @@ async function activateChanges(userId: string): Promise<void> {
     if (event.action === BACK_EVENT) return;
     if (event.action === "change" || event.action === "refresh") continue;
     if (event.action === "select" && typeof event.value === "string") {
-      const { default: packages } = await import(
-        "/p/the8020/admin-core/programs/packages/program.ts"
+      const selected = result.preview.packages.find((item) =>
+        item.package_id === event.value
       );
-      await presentPage(() => packages(event.value as string));
+      if (selected) {
+        await presentPage(() => reviewPackageChanges(userId, selected));
+      }
     }
     if (event.action === "sync-all" || event.action === "resolve") {
       if (message.trim() === "") {

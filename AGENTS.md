@@ -176,8 +176,10 @@ below.
 - Its activation screen previews every changed package with changed-file and
   added/removed-row counts plus ready/blocked state, requires one commit
   message, and invokes the typed user-scoped activation command to sync all
-  ready changes at once. Package rows open their owning administration program
-  without losing the draft message. It owns no Git or overlay implementation.
+  ready changes at once. Package rows open changed filenames with
+  edit/add/remove icons; selecting a file loads its read-only Git diff in the
+  existing code editor. Returning preserves the draft message. It owns no Git or
+  overlay implementation.
 - Activation conflicts open the existing code editor with file selection,
   annotated versions, save/delete actions, and continuation. The kernel helper
   owns native Git operations; the UUI and sandbox terminal resolve the same
@@ -223,10 +225,10 @@ below.
   `bench:native-terminals` uses that harness for direct/retained transport,
   recovery, slow-view, and process-tree resource measurements. The sibling UUI
   `test:programs-browser` checks the combined settings group, SSH subtitle,
-  reset confirmation, activation validation, package navigation, and console DOM
-  preservation against deterministic kernel responses. Development-domain unit
-  and real gVisor tests use `the8020/dev-core` and `the8020/demo` identities to
-  prove independent histories and multi-package activation without pushing
-  remotes; the browser E2E covers sandbox lifecycle, the registered development
-  console, UUI activation validation/statistics, independent commits, and
-  overlay reset.
+  reset confirmation, activation validation, file/diff navigation, and console
+  DOM preservation against deterministic kernel responses. Development-domain
+  unit and real gVisor tests use `the8020/dev-core` and `the8020/demo`
+  identities to prove independent histories and multi-package activation without
+  pushing remotes; the browser E2E covers sandbox lifecycle, the registered
+  development console, UUI activation validation/statistics, independent
+  commits, and overlay reset.
