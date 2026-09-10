@@ -95,6 +95,55 @@ Deno.test("new native shells restore startup text without filling unused rows", 
   }
 });
 
+Deno.test("native startup clears stale cells without scrolling the client's viewport", async () => {
+  const source = new TerminalEngine({ columns: 80, rows: 40 });
+  const client = new TerminalEngine({ columns: 80, rows: 40 });
+  const display = new NativeTerminalDisplay(source);
+  const clears: number[] = [];
+  const handler = client.terminal.parser.registerCsiHandler(
+    { final: "J" },
+    (params) => {
+      clears.push(Number(params[0] ?? 0));
+      return false;
+    },
+  );
+  try {
+    await client.apply({
+      sequence: 1,
+      data: encoder.encode("local output\r\n".repeat(45) + "SSH password: "),
+    });
+    const history = lines(client, true).slice(
+      0,
+      client.terminal.buffer.normal.baseY,
+    );
+    await source.apply({
+      sequence: 1,
+      data: encoder.encode("root@development:/workspace# "),
+    });
+    await client.apply({
+      sequence: 2,
+      data: encoder.encode(display.initial()),
+    });
+    // ED 2 scrolls the viewport into history in Warp; ED 0 at home erases in place.
+    assertEquals(clears, [0]);
+    assertEquals(lines(client), lines(source));
+    assertEquals(
+      lines(client, true).slice(0, client.terminal.buffer.normal.baseY),
+      history,
+    );
+    assertEquals(client.terminal.buffer.normal.cursorY, 0);
+    assertEquals(
+      client.terminal.buffer.normal.cursorX,
+      source.terminal.buffer.normal.cursorX,
+    );
+  } finally {
+    handler.dispose();
+    display.close();
+    await source.close();
+    await client.close();
+  }
+});
+
 Deno.test("native display recovers history and continues partial parser state without answering queries", async () => {
   const source = new TerminalEngine({ columns: 40, rows: 8 });
   const client = new TerminalEngine({ columns: 40, rows: 8 });

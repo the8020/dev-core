@@ -112,8 +112,10 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   history, cursor appearance, and keyboard/mouse modes.
 - Native attachment without scrollback or an alternate screen restores startup
   content and the cursor without emitting blank newlines or painting unused
-  trailing rows. Preserve attributed rows and content below the cursor; normal
-  history and full-screen application recovery keep the complete projection.
+  trailing rows. Clear the client's viewport in place with ED 0 from home; ED 2
+  can scroll a screenful of blank rows into history in native terminals.
+  Preserve attributed rows and content below the cursor; normal history and
+  full-screen application recovery keep the complete projection.
 - The kernel expires terminals with no browser/SSH attachments using
   `terminal.idle_timeout` (36 hours by default). This package supplies no
   timeout; its canonical processor does not extend terminal lifetime.

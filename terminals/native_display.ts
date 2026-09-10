@@ -37,7 +37,8 @@ export class NativeTerminalDisplay {
     this.#historyBytes = 0;
     this.#overflow = false;
     const t = this.engine.terminal, normal = t.buffer.normal;
-    let result = beginUpdate + prepare + "\x1b[?1049l\x1b[H\x1b[2J";
+    // ED 0 at home clears in place; ED 2 scrolls the viewport in terminals such as Warp.
+    let result = beginUpdate + prepare + "\x1b[?1049l\x1b[H\x1b[J";
     if (normal.baseY > 0 || t.buffer.active.type === "alternate") {
       for (let index = 0; index < normal.baseY + t.rows; index++) {
         if (index) result += "\r\n";
