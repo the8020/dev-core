@@ -466,6 +466,76 @@ export default async function fixture(temporaryRoot: string) {
       assertEquals(terminals.size, 1);
       const first = [...terminals.keys()][0]!;
       const native = terminals.get(first)!;
+      await page.evaluate(`(() => {
+        const open = window.open, confirm = window.confirm;
+        globalThis.__terminalLinkOpens = [];
+        globalThis.__terminalLinkConfirms = 0;
+        window.open = (...args) => { globalThis.__terminalLinkOpens.push(args); return null; };
+        window.confirm = () => { globalThis.__terminalLinkConfirms++; return false; };
+        globalThis.__restoreTerminalLinks = () => { window.open = open; window.confirm = confirm; };
+      })()`);
+      try {
+        const links = [
+          "https://example.test/device",
+          "http://example.test/",
+          "javascript:void(0)",
+        ];
+        await native.output(
+          "\x1b[?1049h\x1b[2J\x1b[H" +
+            links.map((uri, index) =>
+              `\x1b]8;;${uri}\x1b\\TerminalLink${index}\x1b]8;;\x1b\\`
+            ).join("\r\n"),
+        );
+        await waitPage(
+          page,
+          `Number(document.querySelector('.sandbox-console').dataset.outputSequence) === ${native.events.length} && document.querySelector('.xterm-rows').textContent.includes('TerminalLink2')`,
+          "terminal hyperlink output",
+        );
+        const opened: string[][] = [];
+        for (const [index, uri] of links.entries()) {
+          const point = await page.evaluate<{ x: number; y: number }>(`(() => {
+            const bounds = document.querySelectorAll('.xterm-rows > div')[${index}].getBoundingClientRect();
+            return {x: bounds.left + 5, y: bounds.top + bounds.height / 2};
+          })()`);
+          await page.command("Input.dispatchMouseEvent", {
+            type: "mouseMoved",
+            x: 0,
+            y: 0,
+          });
+          await page.command("Input.dispatchMouseEvent", {
+            type: "mouseMoved",
+            ...point,
+          });
+          const allowed = uri.startsWith("http");
+          await waitPage(
+            page,
+            `!!document.querySelector('.xterm-cursor-pointer') === ${allowed}`,
+            `only HTTP/HTTPS terminal links activate: ${uri}`,
+          );
+          for (const type of ["mousePressed", "mouseReleased"]) {
+            await page.command("Input.dispatchMouseEvent", {
+              type,
+              ...point,
+              button: "left",
+              clickCount: 1,
+            });
+          }
+          if (allowed) opened.push([uri, "_blank", "noopener,noreferrer"]);
+          assertEquals(
+            await page.evaluate("globalThis.__terminalLinkOpens"),
+            opened,
+            "clicked terminal links open directly in an isolated tab",
+          );
+          assertEquals(
+            await page.evaluate("globalThis.__terminalLinkConfirms"),
+            0,
+            "terminal links require no confirmation",
+          );
+        }
+      } finally {
+        await page.evaluate("globalThis.__restoreTerminalLinks()");
+        await native.output("\x1b[?1049l");
+      }
       await page.evaluate("globalThis.__terminalForTest.focus()");
       const rows = await page.evaluate<number>(
         "globalThis.__terminalForTest.rows",

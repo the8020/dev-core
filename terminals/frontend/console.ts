@@ -76,6 +76,11 @@ class RetainedConsole implements CustomElementInstance {
     convertEol: false,
     allowProposedApi: true,
     disableStdin: true,
+    linkHandler: {
+      activate: (_event, uri) => {
+        globalThis.open(uri, "_blank", "noopener,noreferrer");
+      },
+    },
     fontFamily:
       "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
     fontSize: 14,

@@ -21,6 +21,9 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   `state.ts` authorizes only xterm's generated styles with the shell's page
   nonce and applies RGB/selection styles through CSSOM; keep the shell CSP
   intact.
+- Clicked terminal hyperlinks open directly in a new tab through xterm's public
+  `linkHandler`, without a confirmation dialog. Keep its default HTTP/HTTPS
+  protocol filtering and open with `noopener,noreferrer`.
 - Encode Shift+Enter as `CSI 13;2u` through xterm's public input API and custom
   key handler so applications can distinguish it from Enter. Consume only that
   exact chord outside composition, once per keydown; other keys keep xterm's
@@ -84,6 +87,8 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   database/runtime deployment, and htop remain separate qualification gates.
 - The browser test checks distinct Enter, Shift+Enter, and Alt+Enter bytes at
   the native-terminal boundary alongside Ctrl+A, Escape, and bracketed paste.
+- It clicks OSC 8 links through the rendered terminal, checks direct HTTP/HTTPS
+  opening without confirmation, and verifies that script URLs stay inactive.
 - It also holds an xterm write pending while a control-transfer notice and close
   arrive, verifying that Take control remains available.
 - The native browser fixture checks actual indexed/RGB colors, cell spacing,
