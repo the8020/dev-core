@@ -9,8 +9,7 @@
     "kysely": "npm:kysely@0.29.4",
     "zod": "npm:zod@4.1.5",
     "@the8020/context": "../kernel/defaults/config/runtime/deno/context/mod.ts",
-    "@xterm/addon-canvas": "npm:@xterm/addon-canvas@0.7.0",
-    "@xterm/addon-fit": "npm:@xterm/addon-fit@0.10.0",
-    "@xterm/xterm": "npm:@xterm/xterm@5.5.0"
+    "@xterm/addon-fit": "npm:@xterm/addon-fit@0.11.0",
+    "@xterm/xterm": "npm:@xterm/xterm@6.0.0"
   }
 }

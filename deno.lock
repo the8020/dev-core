@@ -7,10 +7,9 @@
     "jsr:@std/internal@^1.0.10": "1.0.14",
     "jsr:@std/toml@1.0.11": "1.0.11",
     "npm:@noble/hashes@2.4.0": "2.4.0",
-    "npm:@xterm/addon-canvas@0.7.0": "0.7.0_@xterm+xterm@5.5.0",
-    "npm:@xterm/addon-fit@0.10.0": "0.10.0_@xterm+xterm@5.5.0",
-    "npm:@xterm/headless@5.5.0": "5.5.0",
-    "npm:@xterm/xterm@5.5.0": "5.5.0",
+    "npm:@xterm/addon-fit@0.11.0": "0.11.0",
+    "npm:@xterm/headless@6.0.0": "6.0.0",
+    "npm:@xterm/xterm@6.0.0": "6.0.0",
     "npm:kysely@0.29.4": "0.29.4",
     "npm:smol-toml@1.8.0": "1.8.0",
     "npm:zod@4.1.5": "4.1.5"
@@ -42,23 +41,14 @@
     "@noble/hashes@2.4.0": {
       "integrity": "sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA=="
     },
-    "@xterm/addon-canvas@0.7.0_@xterm+xterm@5.5.0": {
-      "integrity": "sha512-LF5LYcfvefJuJ7QotNRdRSPc9YASAVDeoT5uyXS/nZshZXjYplGXRECBGiznwvhNL2I8bq1Lf5MzRwstsYQ2Iw==",
-      "dependencies": [
-        "@xterm/xterm"
-      ]
+    "@xterm/addon-fit@0.11.0": {
+      "integrity": "sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g=="
     },
-    "@xterm/addon-fit@0.10.0_@xterm+xterm@5.5.0": {
-      "integrity": "sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ==",
-      "dependencies": [
-        "@xterm/xterm"
-      ]
+    "@xterm/headless@6.0.0": {
+      "integrity": "sha512-5Yj1QINYCyzrZtf8OFIHi47iQtI+0qYFPHmouEfG8dHNxbZ9Tb9YGSuLcsEwj9Z+OL75GJqPyJbyoFer80a2Hw=="
     },
-    "@xterm/headless@5.5.0": {
-      "integrity": "sha512-5xXB7kdQlFBP82ViMJTwwEc3gKCLGKR/eoxQm4zge7GPBl86tCdI0IdPJjoKd8mUSFXz5V7i/25sfsEkP4j46g=="
-    },
-    "@xterm/xterm@5.5.0": {
-      "integrity": "sha512-hqJHYaQb5OptNunnyAnkHyM8aCjZ1MEIDTQu1iIbbTD/xops91NB5yq1ZK/dC2JDbVWtF23zUtl9JE2NqwT87A=="
+    "@xterm/xterm@6.0.0": {
+      "integrity": "sha512-TQwDdQGtwwDt+2cgKDLn0IRaSxYu1tSUjgKarSDkUM0ZNiSRXFpjxEsvc/Zgc5kq5omJ+V0a8/kIM2WD3sMOYg=="
     },
     "kysely@0.29.4": {
       "integrity": "sha512-y5mVgQNkMbs1eK9Xyc0pmNdabN2wHhRYY/5r4W5HrUT1rYCEPeVNSj1RUJeSDKT3U0p+mXCvLgkrFuIafYI6BA=="
@@ -74,9 +64,8 @@
     "dependencies": [
       "jsr:@hono/hono@4.9.8",
       "jsr:@std/assert@1.0.14",
-      "npm:@xterm/addon-canvas@0.7.0",
-      "npm:@xterm/addon-fit@0.10.0",
-      "npm:@xterm/xterm@5.5.0",
+      "npm:@xterm/addon-fit@0.11.0",
+      "npm:@xterm/xterm@6.0.0",
       "npm:kysely@0.29.4",
       "npm:zod@4.1.5"
     ]

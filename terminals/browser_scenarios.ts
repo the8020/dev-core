@@ -51,12 +51,12 @@ export default async function fixture(temporaryRoot: string) {
     globalThis.__testRestoreScroll = () => {
       const terminal = globalThis.__terminalForTest;
       restoreTerminal(terminal, captureTerminal(terminal));
-      const viewport = terminal.element.querySelector('.xterm-viewport');
-      // Deliver scroll before reset's next animation frame, including the
-      // event following an internal scrollTop change.
-      viewport.dispatchEvent(new Event('scroll'));
-      viewport.dispatchEvent(new Event('scroll'));
-      return Number.isInteger(terminal.buffer.active.viewportY);
+      // Exercise the restored scroll range before the next animation frame.
+      const before = terminal.buffer.active.viewportY;
+      terminal.scrollLines(-1);
+      const moved = terminal.buffer.active.viewportY === before - 1;
+      terminal.scrollLines(1);
+      return moved && terminal.buffer.active.viewportY === before;
     };
     export default mount;
   `,
@@ -466,6 +466,59 @@ export default async function fixture(temporaryRoot: string) {
       assertEquals(terminals.size, 1);
       const first = [...terminals.keys()][0]!;
       const native = terminals.get(first)!;
+      await page.evaluate("globalThis.__terminalForTest.focus()");
+      const rows = await page.evaluate<number>(
+        "globalThis.__terminalForTest.rows",
+      );
+      await native.output(
+        `\x1b[?1049h\x1b[H\x1b[2JWorking\x1b[${rows};3H\x1b[?25h`,
+      );
+      await waitPage(
+        page,
+        "document.querySelector('.xterm-rows').textContent.includes('Working') && !!document.querySelector('.xterm-cursor')",
+        "initial rendered composer cursor",
+      );
+      const painted = await page.evaluate<string>(
+        "document.querySelector('.xterm-rows').innerHTML",
+      );
+      const replies = native.replies.length;
+      await native.output(
+        `\x1b[?2026h\x1b[2;1HUpdating\x1b[${rows - 5};1H\x1b[K\x1b[6n`,
+      );
+      await waitPage(
+        page,
+        `Number(document.querySelector('.sandbox-console').dataset.outputSequence) === ${native.events.length}`,
+        "incomplete redraw parsed by the browser",
+      );
+      assertEquals(
+        await page.evaluate(
+          `new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(document.querySelector('.xterm-rows').innerHTML))))`,
+        ),
+        painted,
+        "the screen and cursor stay painted at the last completed frame",
+      );
+      assertEquals(
+        native.replies.length,
+        replies + 1,
+        "queries keep draining inside a redraw",
+      );
+      await native.output(`\x1b[${rows};3H\x1b[?2026`);
+      await waitPage(
+        page,
+        `Number(document.querySelector('.sandbox-console').dataset.outputSequence) === ${native.events.length}`,
+        "split end marker parsed",
+      );
+      assertEquals(
+        await page.evaluate("document.querySelector('.xterm-rows').innerHTML"),
+        painted,
+      );
+      await native.output("l");
+      await waitPage(
+        page,
+        "document.querySelector('.xterm-rows').textContent.includes('Updating')",
+        "completed redraw rendered",
+      );
+      await native.output("\x1b[?1049l");
       // A session discovered through shared metadata, outside this component.
       const external = "tty-9999999999";
       records.set(external, {
@@ -665,7 +718,7 @@ export default async function fixture(temporaryRoot: string) {
       );
       await waitPage(
         page,
-        "document.querySelector('.xterm-viewport').scrollTop > 100",
+        "globalThis.__terminalForTest.buffer.active.viewportY > 0",
         "scrollback output",
       );
       assertEquals(
@@ -676,9 +729,9 @@ export default async function fixture(temporaryRoot: string) {
       const viewport = await page.evaluate<
         { x: number; y: number; top: number }
       >(`(() => {
-        const viewport = document.querySelector('.xterm-viewport');
+        const viewport = document.querySelector('.xterm-screen');
         const bounds = viewport.getBoundingClientRect();
-        return {x: bounds.left + 60, y: bounds.top + 35, top: viewport.scrollTop};
+        return {x: bounds.left + 60, y: bounds.top + 35, top: globalThis.__terminalForTest.buffer.active.viewportY};
       })()`);
       await page.command("Input.dispatchMouseEvent", {
         type: "mouseWheel",
@@ -689,7 +742,7 @@ export default async function fixture(temporaryRoot: string) {
       });
       await waitPage(
         page,
-        `document.querySelector('.xterm-viewport').scrollTop < ${viewport.top}`,
+        `globalThis.__terminalForTest.buffer.active.viewportY < ${viewport.top}`,
         "terminal wheel scroll",
       );
       await page.command("Input.dispatchMouseEvent", {
@@ -794,8 +847,15 @@ export default async function fixture(temporaryRoot: string) {
         `Number(document.querySelector('.sandbox-console').dataset.outputSequence)===${native.events.length}`,
         "snapshot continuation",
       );
+      await native.output("\x1b[?2026h\r\nRedraw recovered through snapshot");
       await page.command("Page.reload");
       await ready(first);
+      await native.output("\x1b[?2026l");
+      await waitPage(
+        page,
+        "document.querySelector('.xterm-rows').textContent.includes('Redraw recovered through snapshot')",
+        "reconnect during a synchronized redraw",
+      );
       assertEquals(terminals.size, 2);
 
       await page.command("Network.enable");

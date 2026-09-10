@@ -1,6 +1,6 @@
 // Package runtime imports retain explicit versions under the generic import map.
 // deno-lint-ignore no-import-prefix
-import headless from "npm:@xterm/headless@5.5.0";
+import headless from "npm:@xterm/headless@6.0.0";
 import type { TerminalEvent, TerminalSize } from "@the8020/kernel";
 import {
   captureTerminal,

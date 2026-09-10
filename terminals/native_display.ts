@@ -2,7 +2,9 @@ import type { TerminalEngine } from "./engine.ts";
 import { MAX_SNAPSHOT_BYTES, nativeDisplaySource } from "./state.ts";
 
 const prepare = "\x1b[?25l\x1b[?6l\x1b[?7l\x1b[4l\x1b[r\x1b(B\x0f";
-export const nativeDisplayCleanup =
+const beginUpdate = "\x1b[?2026h";
+const endUpdate = "\x1b[?2026l";
+export const nativeDisplayCleanup = endUpdate +
   "\x1b[0m\x1b[?1049l\x1b[?25h\x1b[?7h\x1b[?1l\x1b>\x1b[?2004l\x1b[?1004l\x1b[?9l\x1b[?1000l\x1b[?1002l\x1b[?1003l\x1b[?1006l\x1b[?1016l\x1b[0 q\r\n";
 const maximumDelta = 1 << 20;
 
@@ -28,8 +30,12 @@ export class NativeTerminalDisplay {
   }
 
   initial(): string {
+    // Recovery includes rows committed while waiting for a synchronized redraw.
+    this.#history = [];
+    this.#historyBytes = 0;
+    this.#overflow = false;
     const t = this.engine.terminal, normal = t.buffer.normal;
-    let result = prepare + "\x1b[?1049l\x1b[H\x1b[2J";
+    let result = beginUpdate + prepare + "\x1b[?1049l\x1b[H\x1b[2J";
     if (normal.baseY > 0 || t.buffer.active.type === "alternate") {
       for (let index = 0; index < normal.baseY + t.rows; index++) {
         if (index) result += "\r\n";
@@ -54,7 +60,7 @@ export class NativeTerminalDisplay {
         this.#rows[y] = this.#source.line(normal, y);
       }
     }
-    result += this.update();
+    result += this.#update(false) + endUpdate;
     if (result.length * 3 > MAX_SNAPSHOT_BYTES) {
       throw new Error("Native terminal recovery exceeds its byte limit");
     }
@@ -62,6 +68,10 @@ export class NativeTerminalDisplay {
   }
 
   update(force = false): string {
+    return beginUpdate + this.#update(force) + endUpdate;
+  }
+
+  #update(force: boolean): string {
     if (this.#overflow) throw new Error("Native terminal view fell behind");
     const t = this.engine.terminal, active = t.buffer.active;
     const alternate = active.type === "alternate";

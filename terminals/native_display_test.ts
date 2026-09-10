@@ -1,7 +1,9 @@
 import { assertEquals } from "@std/assert";
 import { TerminalEngine } from "./engine.ts";
 import { NativeTerminalDisplay } from "./native_display.ts";
+import { NativeTerminalView } from "./native_view.ts";
 import { captureTerminal } from "./state.ts";
+import { TestTerminals } from "./test_support.ts";
 
 const encoder = new TextEncoder();
 function lines(engine: TerminalEngine, history = false): string[] {
@@ -180,5 +182,119 @@ Deno.test("native projection preserves RGB, styled Unicode and hyperlinks withou
     display?.close();
     await source.close();
     await client.close();
+  }
+});
+
+Deno.test("native views publish completed redraws and defer recovery across split DEC 2026 sequences", async () => {
+  const source = new TerminalEngine({ columns: 80, rows: 24 });
+  const client = new TerminalEngine({ columns: 80, rows: 24 });
+  const writes: string[] = [];
+  const native = new TestTerminals();
+  let view: NativeTerminalView | undefined;
+  let sequence = 0;
+  const output = async (text: string) => {
+    await source.apply({ sequence: ++sequence, data: encoder.encode(text) });
+    view?.update();
+  };
+  try {
+    await output("\x1b[?2026h\x1b[20;1HWorking\x1b[19;1H");
+    view = new NativeTerminalView(
+      new NativeTerminalDisplay(source),
+      "processor",
+      "view",
+      {
+        ...native.api,
+        writeView: (_processor, _view, data) => {
+          writes.push(new TextDecoder().decode(data));
+          return Promise.resolve();
+        },
+      },
+      new AbortController().signal,
+      () => {},
+    );
+    assertEquals(
+      writes,
+      [],
+      "initial recovery must wait for the composer cursor",
+    );
+    // History arriving before initial recovery must be restored exactly once.
+    await output("\x1b[24;1H" + "history\r\n".repeat(30));
+    await output("\x1b[24;3H\x1b[5 q\x1b[?2026l");
+    await client.apply({ sequence: 1, data: encoder.encode(writes.join("")) });
+    assertEquals(lines(client, true), lines(source, true));
+    assertEquals(client.terminal.buffer.active.cursorX, 2);
+    assertEquals(client.terminal.buffer.active.cursorY, 23);
+    assertEquals(captureTerminal(client.terminal).decModes.cursorStyle, "bar");
+    const before = writes.length;
+    for (const byte of "\x1b[?2026h\x1b[19;1H\x1b[K") await output(byte);
+    // The incomplete BSU prefix may produce harmless updates. Once recognized,
+    // the real temporary cursor position must never reach the native client.
+    const drawing = writes.length;
+    await output("\x1b[?25h\x1b[?2026$p\x1b[6n");
+    assertEquals(writes.length, drawing);
+    for (const frame of writes.slice(before)) {
+      await client.apply({ sequence: ++sequence, data: encoder.encode(frame) });
+      assertEquals(client.terminal.buffer.active.cursorY, 23);
+    }
+    await output("\x1b[24;3H\x1b[?2026");
+    assertEquals(writes.length, drawing);
+    await output("l");
+    assertEquals(writes.length, drawing + 1);
+    for (const frame of writes) {
+      assertEquals(frame.startsWith("\x1b[?2026h"), true);
+      assertEquals(frame.endsWith("\x1b[?2026l"), true);
+      assertEquals(frame.includes("\x1b[?2026$p"), false);
+    }
+    await client.apply({
+      sequence: ++sequence,
+      data: encoder.encode(writes.at(-1)!),
+    });
+    assertEquals(client.terminal.buffer.active.cursorY, 23);
+    assertEquals(lines(client, true), lines(source, true));
+  } finally {
+    view?.close();
+    await source.close();
+    await client.close();
+  }
+});
+
+Deno.test("native synchronized redraws have a deadline and flush on exit", async () => {
+  const source = new TerminalEngine({ columns: 80, rows: 24 });
+  const writes: string[] = [];
+  const native = new TestTerminals();
+  const view = new NativeTerminalView(
+    new NativeTerminalDisplay(source),
+    "processor",
+    "view",
+    {
+      ...native.api,
+      writeView: (_processor, _view, data) => {
+        writes.push(new TextDecoder().decode(data));
+        return Promise.resolve();
+      },
+    },
+    new AbortController().signal,
+    () => {},
+  );
+  try {
+    await source.apply({
+      sequence: 1,
+      data: encoder.encode("\x1b[?2026hstalled"),
+    });
+    view.update();
+    const before = writes.length;
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    assertEquals(
+      writes.length,
+      before + 1,
+      "a missing end marker cannot freeze the view",
+    );
+    await source.apply({ sequence: 2, data: encoder.encode("final output") });
+    view.update();
+    view.finish();
+    assertEquals(writes.at(-1)!.includes("final output"), true);
+  } finally {
+    view.close();
+    await source.close();
   }
 });

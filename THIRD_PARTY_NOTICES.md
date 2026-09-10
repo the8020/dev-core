@@ -1,9 +1,8 @@
 # Third-party notices
 
-The optional development terminal uses `@xterm/xterm` 5.5.0,
-`@xterm/addon-canvas` 0.7.0, `@xterm/addon-fit` 0.10.0, and the matching
-`@xterm/headless` 5.5.0 engine. Its browser bundle and essential copied styles
-are distributed under the MIT license.
+The optional development terminal uses `@xterm/xterm` 6.0.0, `@xterm/addon-fit`
+0.11.0, and the matching `@xterm/headless` 6.0.0 engine. Its browser bundle and
+copied styles are distributed under the MIT license.
 
 Copyright (c) 2017-2019, The xterm.js authors
 (https://github.com/xtermjs/xterm.js)
@@ -13,6 +12,8 @@ Copyright (c) 2014-2016, SourceLair Private Company (https://www.sourcelair.com)
 Copyright (c) 2012-2013, Christopher Jeffrey (https://github.com/chjj/)
 
 Copyright (c) 2019, The xterm.js authors (https://github.com/xtermjs/xterm.js)
+
+Copyright (c) Microsoft Corporation. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in

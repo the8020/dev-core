@@ -86,6 +86,38 @@ Deno.test("batched native reads preserve byte, query, resize and snapshot orderi
   }
 });
 
+Deno.test("snapshots continue synchronized redraws, queries and application cursor styles", async () => {
+  const owner = new TerminalEngine({ columns: 80, rows: 24 });
+  const view = new TerminalEngine({ columns: 80, rows: 24 });
+  try {
+    installTerminalView(view.terminal);
+    await owner.apply({
+      sequence: 1,
+      data: encode("\x1b[?2026h\x1b[19;1H\x1b[5 q"),
+    });
+    const snapshot = await owner.capture();
+    restoreTerminal(view.terminal, snapshot);
+    assertEquals(view.terminal.modes.synchronizedOutputMode, true);
+    assertEquals(await view.capture(), snapshot);
+    const query = { sequence: 2, data: encode("\x1b[?2026$p\x1b[6n") };
+    assertEquals(
+      new TextDecoder().decode(await owner.apply(query)),
+      "\x1b[?2026;1$y\x1b[19;1R",
+    );
+    assertEquals(await view.apply(query), undefined);
+    const end = { sequence: 3, data: encode("\x1b[24;3H\x1b[?2026l") };
+    await owner.apply(end);
+    await view.apply(end);
+    assertEquals(view.terminal.modes.synchronizedOutputMode, false);
+    assertEquals(await view.capture(), await owner.capture());
+    await owner.apply({ sequence: 4, data: encode("\x1b[0 q") });
+    assertEquals((await owner.capture()).decModes.cursorStyle, undefined);
+  } finally {
+    await owner.close();
+    await view.close();
+  }
+});
+
 Deno.test("terminal state rejects hostile object keys and impossible allocation shapes", async () => {
   const owner = new TerminalEngine({ columns: 80, rows: 24 });
   try {

@@ -1,4 +1,4 @@
-// Shared state boundary for the pinned xterm 5.5 engine. Private engine fields
+// Shared state boundary for the pinned xterm 6.0 engine. Private engine fields
 // are confined here; browser and headless continuation tests qualify this format.
 // Snapshots transfer data and never replay historical VT commands.
 // deno-lint-ignore-file no-explicit-any
@@ -225,12 +225,14 @@ export function nativeDisplaySource(terminal: any) {
       if (c.coreMouseService.activeEncoding === "SGR_PIXELS") {
         out += "\x1b[?1016h";
       }
-      const style = terminal.options.cursorStyle === "underline"
+      const cursorStyle = modes.cursorStyle ?? terminal.options.cursorStyle;
+      const cursorBlink = modes.cursorBlink ?? terminal.options.cursorBlink;
+      const style = cursorStyle === "underline"
         ? 3
-        : terminal.options.cursorStyle === "bar"
+        : cursorStyle === "bar"
         ? 5
         : 1;
-      return out + `\x1b[${style + (terminal.options.cursorBlink ? 0 : 1)} q`;
+      return out + `\x1b[${style + (cursorBlink ? 0 : 1)} q`;
     },
     /** Capture a committed scrollback row before the ring buffer can recycle it. */
     observeHistory(callback: (row: string) => void): () => void {
@@ -410,7 +412,7 @@ export function captureTerminal(terminal: any) {
   }
   const charset = c._charsetService;
   const snapshot = {
-    version: "the8020.xterm-5.5.0.1",
+    version: "the8020.xterm-6.0.0.1",
     cols: terminal.cols,
     rows: terminal.rows,
     scrollback: terminal.options.scrollback,
@@ -473,7 +475,7 @@ export function captureTerminal(terminal: any) {
 
 export function restoreTerminal(terminal: any, snapshot: any) {
   validateSnapshot(snapshot);
-  if (snapshot.version !== "the8020.xterm-5.5.0.1") {
+  if (snapshot.version !== "the8020.xterm-6.0.0.1") {
     throw new Error("unknown state version");
   }
   terminal.options.scrollback = snapshot.scrollback;
@@ -546,10 +548,8 @@ export function restoreTerminal(terminal: any, snapshot: any) {
       marker.onDispose(() => links._removeMarkerFromLink(entry, marker));
     }
   }
-  // reset() defers viewport measurement to an animation frame. A scroll event
-  // before that frame can divide by its zero row height and corrupt ydisp.
-  // Install the restored geometry in the viewport before exposing the display.
-  c.viewport?.syncScrollArea(true);
+  // Install the restored scroll range before input or rendering sees the view.
+  c._viewport?._sync();
   terminal.refresh?.(0, terminal.rows - 1);
 }
 
@@ -593,7 +593,7 @@ export function validateSnapshot(snapshot: any): void {
   const integer = (n: any, min: number, max: number): boolean =>
     Number.isSafeInteger(n) && n >= min && n <= max;
   if (
-    snapshot?.version !== "the8020.xterm-5.5.0.1" ||
+    snapshot?.version !== "the8020.xterm-6.0.0.1" ||
     !integer(snapshot.cols, 2, 500) || !integer(snapshot.rows, 1, 200) ||
     !integer(
       snapshot.scrollback,

@@ -108,6 +108,24 @@ export async function verifyNativeSSHShell(
     );
     await ssh.contains(`SSH_QUERY:0:142:${pid}`);
     assertEquals(ssh.queryReplies, 0);
+    // Advance a split application redraw through real SSH/PTY input. The view
+    // must keep the composer cursor while the application paints rows above it.
+    await ssh.input(
+      "printf '\\033[?1049h\\033[2J\\033[HWorking\\033[24;3H'; read -r -s -n 1; printf '\\033[?2026h\\033[2;1HPartial redraw\\033[19;1H'; read -r -s -n 1; printf '\\033[2;1HComplete redraw\\033[24;3H\\033[?2026l'; read -r -s -n 1; printf '\\033[?1049l\\r\\nSSH_FRAME_DONE\\r\\n'\r",
+    );
+    await ssh.contains("Working");
+    await ssh.input("a");
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    assert(!ssh.text().includes("Partial redraw"));
+    assertEquals(ssh.engine.terminal.buffer.active.cursorY, 23);
+    assertEquals(ssh.engine.terminal.buffer.active.cursorX, 2);
+    await ssh.input("b");
+    await ssh.contains("Complete redraw");
+    assertEquals(ssh.engine.terminal.buffer.active.cursorY, 23);
+    assertEquals(ssh.engine.terminal.buffer.active.cursorX, 2);
+    assertEquals(ssh.engine.terminal.modes.synchronizedOutputMode, false);
+    await ssh.input("c");
+    await ssh.contains("SSH_FRAME_DONE");
     await reclaim();
     await Promise.race([
       ssh.child.status,

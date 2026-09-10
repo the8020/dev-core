@@ -22,10 +22,18 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 
 # Local Contracts
 
-- Keep xterm browser and headless versions identical. State transfer preserves
-  parser continuation, both buffers, modes, Unicode, links, palette, and cursor
-  without replaying historical terminal output. Changes to private engine data
-  require continuation and real-browser qualification.
+- Keep xterm browser and headless pinned together at 6.0.0. State transfer
+  preserves parser continuation, both buffers, modes, Unicode, links, palette,
+  and cursor without replaying historical terminal output. Changes to private
+  engine data require continuation and real-browser qualification.
+- Upgrades and rollbacks apply to new display owners. Snapshots are tied to the
+  engine version, and reconnecting can retain an existing terminal's old Worker.
+  Qualify the selected version with a fresh named session.
+- Preserve DEC 2026 synchronized redraw state through recovery. Native views
+  defer projection until the application completes its frame, with a one-second
+  rendering deadline and a final flush on process exit. Wrap each native
+  projection, including initial history, in synchronized-output markers; query
+  processing continues while rendering is deferred.
 - One canonical headless interpreter answers process queries, including while
   detached. Views never duplicate those responses. Historical snapshots never
   execute clipboard or notification effects.
@@ -128,6 +136,9 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   logout/login, exit, and close. It uses real Chromium and the service protocol
   with deterministic native PTYs and authentication; it does not establish
   native process or agent compatibility.
+- Engine and browser regressions cover split synchronized redraw markers,
+  cursor/style recovery, query replies during redraws, and reload mid-frame.
+  Native view tests cover deferred initial history, timeout, and exit flushing.
 - `deno task test:native-browser` runs `native_browser_scenarios.ts` through the
   sibling UUI native harness with real users, database, service Workers, and
   gVisor PTYs. Pass its required `--source-root`, `--package-workspace`,
@@ -164,7 +175,9 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   takeover of an active browser, and explicit browser takeover revoking SSH
   without changing the shell PID. Native display regressions also cover split
   parser/Unicode continuation, scrollback, alternate buffers, RGB, styled text,
-  hyperlinks, and blocked-view isolation from canonical query processing.
+  hyperlinks, and blocked-view isolation from canonical query processing. The
+  real SSH shell check also holds a split synchronized redraw open and verifies
+  that the displayed cursor stays at its completed-frame position.
 - `test:native-resilience` uses the same disposable harness to check an exact
   terminal route through a second node, visible display-Worker loss, physical
   process survival, named reopening with a fresh display owner, and explicit

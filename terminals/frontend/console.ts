@@ -1,4 +1,3 @@
-import { CanvasAddon } from "@xterm/addon-canvas";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import type {
@@ -170,9 +169,6 @@ class RetainedConsole implements CustomElementInstance {
     this.#terminal.open(
       this.element.querySelector(".sandbox-console-display")!,
     );
-    try {
-      this.#terminal.loadAddon(new CanvasAddon());
-    } catch { /* xterm's DOM renderer handles unavailable Canvas2D. */ }
     this.#terminal.onData((value) => this.#input(value));
     this.#terminal.onBinary((value) => this.#input(value, true));
     this.#terminal.attachCustomKeyEventHandler((event) => {
@@ -181,7 +177,7 @@ class RetainedConsole implements CustomElementInstance {
         event.ctrlKey || event.metaKey || event.isComposing ||
         event.keyCode === 229
       ) return true;
-      // xterm 5.5 otherwise encodes Shift+Enter as plain Enter.
+      // xterm otherwise encodes Shift+Enter as plain Enter.
       // ponytail: CSI-u for this key only; broader modes need shared engine support.
       event.preventDefault();
       event.stopPropagation();

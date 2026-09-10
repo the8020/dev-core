@@ -188,7 +188,6 @@ export class TerminalOwner {
               request.viewId,
               this.terminals,
               this.#stop.signal,
-              display.initial(),
               release,
             );
           } catch (error) {

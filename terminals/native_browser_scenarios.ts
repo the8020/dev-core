@@ -152,10 +152,14 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     "printf '\\033[2J\\033[H\\033[32mNative α😀 display\\033[0m\\r\\n\\033[?25l\\036PAINTED\\037\\n'",
     "\x1ePAINTED\x1f",
   );
-  const beforeReload = await canvasPixels(page);
+  const beforeReload = await displayPixels(page);
   await page.command("Page.reload");
   await ready(first);
-  assertEquals(await canvasPixels(page), beforeReload, "fresh browser display");
+  assertEquals(
+    await displayPixels(page),
+    beforeReload,
+    "fresh browser display",
+  );
   assertEquals(
     await page.evaluate(
       "document.querySelector('.sandbox-console-select').options.length",
@@ -479,12 +483,26 @@ async function terminalMessage(
   }
 }
 
-async function canvasPixels(page: NativeBrowserFixtureContext["page"]) {
-  return await page.evaluate<string>(`(async () => {
+async function displayPixels(page: NativeBrowserFixtureContext["page"]) {
+  const clip = await page.evaluate<Record<string, number>>(`(async () => {
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-    const canvas=document.querySelector('.xterm-text-layer');
-    const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
-    return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', pixels)),
-      byte=>byte.toString(16).padStart(2,'0')).join('');
+    const {x,y,width,height}=document.querySelector('.xterm-screen').getBoundingClientRect();
+    return {x,y,width,height,scale:1};
   })()`);
+  const pixels = await page.command<{ data: string }>(
+    "Page.captureScreenshot",
+    {
+      format: "png",
+      clip,
+    },
+  );
+  return Array.from(
+    new Uint8Array(
+      await crypto.subtle.digest(
+        "SHA-256",
+        new TextEncoder().encode(pixels.data),
+      ),
+    ),
+    (byte) => byte.toString(16).padStart(2, "0"),
+  ).join("");
 }

@@ -6,8 +6,8 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
 
 # Ownership
 
-- Own xterm, Canvas/Fit addons, terminal styling, browser input/resize, and
-  console transport. UUI owns only the wrapper and module lifecycle.
+- Own xterm's DOM renderer, Fit addon, terminal styling, browser input/resize,
+  and console transport. UUI owns only the wrapper and module lifecycle.
 
 # Local Contracts
 
@@ -15,6 +15,8 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   it independently; never import it into the UUI shell.
 - Keep terminal CSS and dependency versions here. Use the matching headless
   version for retained display recovery.
+- Use xterm's synchronized-output support to paint completed application frames.
+  Keep the matching upstream CSS, including its viewport scrollbar styles.
 - Encode Shift+Enter as `CSI 13;2u` through xterm's public input API and custom
   key handler so applications can distinguish it from Enter. Consume only that
   exact chord outside composition, once per keydown; other keys keep xterm's

@@ -16,6 +16,8 @@ export class NativeTerminalView {
   #sending = false;
   #ended = false;
   #closed = false;
+  #initial = true;
+  #redrawTimer?: ReturnType<typeof setTimeout>;
 
   constructor(
     readonly display: NativeTerminalDisplay,
@@ -23,12 +25,10 @@ export class NativeTerminalView {
     readonly id: string,
     readonly native: typeof kernel.terminals,
     signal: AbortSignal,
-    initial: string,
     readonly releaseSnapshot: () => void,
   ) {
     this.#signal = AbortSignal.any([signal, this.#stop.signal]);
-    // Initial recovery is separately bounded by the display snapshot limit.
-    void this.#send(encoder.encode(initial));
+    this.update();
   }
 
   get closed(): boolean {
@@ -37,8 +37,23 @@ export class NativeTerminalView {
 
   update(): void {
     if (this.#closed) return;
+    if (this.display.engine.terminal.modes.synchronizedOutputMode) {
+      // Match xterm's one-second render deadline for an unfinished DEC 2026 frame.
+      this.#redrawTimer ??= setTimeout(() => this.#render(), 1000);
+      return;
+    }
+    this.#render();
+  }
+
+  #render(): void {
+    clearTimeout(this.#redrawTimer);
+    this.#redrawTimer = undefined;
     try {
-      this.#enqueue(this.display.update());
+      if (this.#initial) {
+        this.#initial = false;
+        // Initial recovery is separately bounded by the display snapshot limit.
+        void this.#send(encoder.encode(this.display.initial()));
+      } else this.#enqueue(this.display.update());
     } catch {
       this.close();
     }
@@ -46,6 +61,8 @@ export class NativeTerminalView {
 
   finish(): void {
     if (this.#ended || this.#closed) return;
+    if (this.#redrawTimer !== undefined) this.#render();
+    if (this.#closed) return;
     this.#enqueue(nativeDisplayCleanup);
     this.#ended = true;
     if (!this.#sending) void this.#send();
@@ -105,6 +122,7 @@ export class NativeTerminalView {
   close(): void {
     if (this.#closed) return;
     this.#closed = true;
+    clearTimeout(this.#redrawTimer);
     this.#stop.abort();
     this.releaseSnapshot();
     this.#queue.length = 0;
