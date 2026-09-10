@@ -3,7 +3,7 @@ import {
   nativeDisplayCleanup,
   NativeTerminalDisplay,
 } from "./native_display.ts";
-import { endSynchronizedOutput } from "./state.ts";
+import { endSynchronizedOutput, onSynchronizedOutputEnd } from "./state.ts";
 
 const encoder = new TextEncoder();
 const deltaLimit = 1 << 20;
@@ -13,6 +13,7 @@ export class NativeTerminalView {
   readonly #stop = new AbortController();
   readonly #signal: AbortSignal;
   readonly #queue: Uint8Array[] = [];
+  readonly #unobserve: () => void;
   #bytes = 0;
   #sending = false;
   #ended = false;
@@ -29,6 +30,10 @@ export class NativeTerminalView {
     readonly releaseSnapshot: () => void,
   ) {
     this.#signal = AbortSignal.any([signal, this.#stop.signal]);
+    this.#unobserve = onSynchronizedOutputEnd(
+      display.engine.terminal,
+      () => this.update(),
+    );
     this.update();
   }
 
@@ -73,6 +78,7 @@ export class NativeTerminalView {
   }
 
   #enqueue(text: string): void {
+    if (!text) return;
     const data = encoder.encode(text);
     if (
       this.#bytes + data.byteLength > deltaLimit || this.#queue.length >= 512
@@ -126,6 +132,7 @@ export class NativeTerminalView {
   close(): void {
     if (this.#closed) return;
     this.#closed = true;
+    this.#unobserve();
     clearTimeout(this.#redrawTimer);
     this.#stop.abort();
     this.releaseSnapshot();

@@ -97,3 +97,85 @@ both SSH paths. Clicking different rows 80 ms apart opened the second folder;
 350-ms spacing only selected it. This reproduces MC's time-based double-click
 handling without a lost or duplicated input event. These checks do not establish
 Warp's pixel-to-cell mouse mapping or rendering performance.
+
+## Extended latency comparison — 2026-09-10
+
+**A redraw scheduling regression is reproducible in 0.6.8.** Ordinary output
+throughput and input latency remain similar to 0.6.5, but adjacent synchronized
+frames cause repeated one-second pauses over retained SSH and continuous
+rendering starvation in the browser. The earlier short, separated-frame tests
+did not cover this case.
+
+The comparison uses released dev-core commits `a6f9143` (0.6.5, xterm 5.5.0) and
+`37638bf` (0.6.8, xterm 6.0.0), the same fixed kernel binaries and materialized
+runtime image, real authenticated OpenSSH/gVisor sessions, and Chromium. Both
+SSH clients use the same xterm 6 headless parser so changing the client parser
+does not confound the server comparison. Browser runs use each release's actual
+terminal component and renderer, with the existing public `Terminal.open` test
+hook to observe `onWriteParsed` and `onRender`. Final measurements use 80×24
+cells on both releases.
+
+| Measurement                                              | 0.6.5 / xterm 5.5 |     0.6.8 / xterm 6 |
+| -------------------------------------------------------- | ----------------: | ------------------: |
+| Retained SSH throughput, median of 12 × 128 KiB          |        1.30 MiB/s |          1.27 MiB/s |
+| SSH idle input/display median                            |          11.12 ms |            11.07 ms |
+| SSH full-screen 60-Hz input/display median               |          10.15 ms |            10.03 ms |
+| SSH full-screen 60-Hz input/display p95                  |          15.37 ms |            15.14 ms |
+| SSH adjacent-frame input/display median                  |           9.16 ms |       **987.23 ms** |
+| SSH adjacent-frame input/display maximum                 |          16.31 ms |     **1,008.68 ms** |
+| Browser throughput through renderer, median of 3 × 2 MiB |        4.02 MiB/s |          4.13 MiB/s |
+| Browser idle input/render median                         |            6.9 ms |              6.9 ms |
+| Browser ordinary 60-Hz input/render median               |           13.5 ms |             13.7 ms |
+| Browser adjacent-frame rendering over about 6.4 s        | 381 frame updates | **0 frame updates** |
+| Browser adjacent-frame inputs received and parsed        |           200/200 |             200/200 |
+
+SSH throughput warms up with two MiB before collecting the 12 samples; browser
+throughput uses one two-MiB warm-up before three samples. SSH small bursts allow
+both releases to complete; the older release's two-MiB native projection
+overflow is documented above. Interactive tests normally collect 200 inputs per
+workload. The SSH starvation case stops after 12 seconds, collecting 12 delayed
+replies in 0.6.8 versus 200 ordinary replies in 0.6.5. Every input, including
+mouse press/release coordinates, reached the physical PTY exactly once and in
+order. Browser inputs are sent every 25 ms independently of rendering.
+
+In the failing case, the application closes each completed frame and opens its
+next frame in the same write (`CSI ? 2026 l`, then `CSI ? 2026 h`), at 60 Hz.
+The workload is only a few kilobytes per second. The 0.6.8 producer's longest
+frame interval was 20.54 ms, but SSH display updates were approximately 1,017 ms
+apart. In the browser, all 200 acknowledgements were parsed with a 6.7-ms median
+and 13.9-ms maximum, while rendering stayed frozen for the entire 6.39-second
+observation. The same browser failure occurred in a separate run at the default
+viewport size; 0.6.5 rendered normally in both runs.
+
+`owner.ts` calls the native view once after applying a complete native batch.
+`NativeTerminalView.update()` checks only the final synchronized-output mode.
+When a completed frame and the next begin marker occur in that batch, the mode
+is already active again and the view waits for its one-second deadline. In the
+browser, xterm 6 checks the current mode again when the deferred render runs;
+repeated end/begin transitions prevent the pending render from executing. See
+the pinned upstream
+[RenderService implementation](https://github.com/xtermjs/xterm.js/blob/6.0.0/src/browser/services/RenderService.ts)
+and
+[synchronized-output contract](https://github.com/contour-terminal/vt-extensions/blob/master/synchronized-output.md).
+
+The required repair is to preserve completed-frame boundaries and ensure pending
+rendering can make progress when another frame immediately begins. Merely
+increasing transport buffers or shortening the fallback timer would not repair
+that contract. This investigation changes no runtime code and publishes no
+release.
+
+Limitations: this compares complete terminal implementations around the upgrade,
+including the renderer and synchronization changes. The common kernel is a fixed
+local build containing concurrent development changes, not a capture of the
+deployed machine; its SHA-256 is recorded with the results. Runs are sequential
+on a shared Linux arm64 host. Small throughput differences are not controlled
+statistical claims. SSH excludes Warp's GPU rendering and WAN latency; browser
+`onRender` measures renderer completion, not physical display scanout. The
+synthetic case proves a regression but does not establish that every reported
+live pause has this cause.
+
+[Raw results](native-ssh-performance-results.json), under `extendedComparison`,
+retain the SSH samples, browser results, versions, common binary fingerprints,
+and local runner locations. Existing parent DOX contracts remain unchanged: this
+adds measurements to the already-owned performance artifacts without changing
+ownership or runtime behavior.
