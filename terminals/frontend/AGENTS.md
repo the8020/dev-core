@@ -36,6 +36,9 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   later output. One display queue orders restoration, writes, and resize across
   connections. Synchronize restored viewport geometry before rendering or scroll
   events; terminal selection must not reset over pending write callbacks.
+- Handle bounded terminal error/control-denial notices immediately, before the
+  display queue, and detach without replaying pending input. A following socket
+  close must not discard the notice or its Take control action.
 - Bound pending input to 1 MiB and 512 frames, with one 64-KiB frame in flight.
   Reject an oversized paste before allocating or sending partial input. Never
   replay input whose acknowledgement was lost.
@@ -75,6 +78,8 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   database/runtime deployment, and htop remain separate qualification gates.
 - The browser test checks distinct Enter, Shift+Enter, and Alt+Enter bytes at
   the native-terminal boundary alongside Ctrl+A, Escape, and bracketed paste.
+- It also holds an xterm write pending while a control-transfer notice and close
+  arrive, verifying that Take control remains available.
 
 # Child DOX Index
 

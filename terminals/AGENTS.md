@@ -64,10 +64,13 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   metadata only after that close succeeds. An unavailable node leaves metadata
   intact for a later explicit close; it never selects another process or node.
 - Each browser view obtains exclusive input/resize control. The same client may
-  replace its prior connection; a different client requires explicit takeover.
-  Output send failure and view overflow close only that view. Native input
-  acknowledgement means consumption; canonical query replies mean bounded
-  admission so the interpreter can continue draining output.
+  replace its prior connection; a different client requires explicit takeover. A
+  new SSH attachment takes precedence; the previous browser receives a control
+  transfer notice and can explicitly Take control again without restarting the
+  process or automatically competing with SSH. Output send failure and view
+  overflow close only that view. Native input acknowledgement means consumption;
+  canonical query replies mean bounded admission so the interpreter can continue
+  draining output.
 - Snapshot capture and event sequencing share one ordered queue. HTTP delivers
   gzip JSON with a sequence boundary; the WebSocket queues only later events
   until the view acknowledges the snapshot. A view has a 256-KiB/64-frame send
@@ -89,6 +92,10 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   Overflow or transport failure releases only the view. Native clients recover
   normal history and current cells, then receive changed rows, committed
   history, cursor appearance, and keyboard/mouse modes.
+- Native attachment without scrollback or an alternate screen restores startup
+  content and the cursor without emitting blank newlines or painting unused
+  trailing rows. Preserve attributed rows and content below the cursor; normal
+  history and full-screen application recovery keep the complete projection.
 - The kernel expires terminals with no browser/SSH attachments using
   `terminal.idle_timeout` (36 hours by default). This package supplies no
   timeout; its canonical processor does not extend terminal lifetime.
@@ -153,11 +160,11 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 - The native fixture uses OpenSSH with real password authentication to attach
   twice to the browser's running htop, checks function/search/scroll keys and
   query-free rendering, then returns to the browser with the same processes. It
-  also checks one native query answer during SSH attachment and explicit browser
-  takeover revoking SSH without changing the shell PID. Native display
-  regressions also cover split parser/Unicode continuation, scrollback,
-  alternate buffers, RGB, styled text, hyperlinks, and blocked-view isolation
-  from canonical query processing.
+  also checks one native query answer during SSH attachment, automatic SSH
+  takeover of an active browser, and explicit browser takeover revoking SSH
+  without changing the shell PID. Native display regressions also cover split
+  parser/Unicode continuation, scrollback, alternate buffers, RGB, styled text,
+  hyperlinks, and blocked-view isolation from canonical query processing.
 - `test:native-resilience` uses the same disposable harness to check an exact
   terminal route through a second node, visible display-Worker loss, physical
   process survival, named reopening with a fresh display owner, and explicit

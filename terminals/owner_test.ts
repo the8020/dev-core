@@ -177,10 +177,11 @@ Deno.test("lost output fails the display owner explicitly and a later close stil
   assertEquals(native.closed, [native.native.terminal.id]);
 });
 
-Deno.test("a blocked native display cannot block canonical output or detached query replies", async () => {
+Deno.test("native takeover releases the browser and a blocked view cannot stall canonical output", async () => {
   const native = new TestTerminals();
   const started = Promise.withResolvers<void>();
   const closed = Promise.withResolvers<void>();
+  const attachNative = Promise.withResolvers<void>();
   let requested = false;
   const untilAbort = (signal?: AbortSignal) =>
     new Promise<never>((_resolve, reject) => {
@@ -194,11 +195,11 @@ Deno.test("a blocked native display cannot block canonical output or detached qu
     nextView: (_id, signal) => {
       if (requested) return untilAbort(signal);
       requested = true;
-      return Promise.resolve({
+      return attachNative.promise.then(() => ({
         viewId: "att-0000000999",
         sequence: 0,
         size: native.native.terminal.size,
-      });
+      }));
     },
     writeView: (_processor, _view, _data, signal) => {
       started.resolve();
@@ -211,7 +212,21 @@ Deno.test("a blocked native display cannot block canonical output or detached qu
   });
   const running = owner.run();
   try {
+    const socket = new TestSocket();
+    const browser = await owner.attach(socket, "browser", false);
+    attachNative.resolve();
     await started.promise;
+    assert(browser.closed, "SSH takeover must notify the previous browser");
+    assertEquals(
+      socket.closed?.code,
+      1000,
+      "the browser must not reconnect automatically",
+    );
+    assertEquals(
+      socket.messages("error")[0]?.busy,
+      true,
+      "the browser can explicitly reclaim control",
+    );
     for (let i = 0; i < 600; i++) await native.output(`line ${i}\r\n`);
     await closed.promise;
     await native.output("\x1b[6n");

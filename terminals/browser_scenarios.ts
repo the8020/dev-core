@@ -106,6 +106,7 @@ export default async function fixture(temporaryRoot: string) {
   const retained = new Set<string>();
   const lifetimes = new Set<Promise<void>>();
   const sockets = new Set<TestSocket>();
+  let currentSocket: WebSocket;
   let ordinal = 0;
   let attachmentOrdinal = 0;
   let bindingOrdinal = 0;
@@ -386,6 +387,7 @@ export default async function fixture(temporaryRoot: string) {
         const { socket, response } = Deno.upgradeWebSocket(request, {
           protocol: TERMINAL_PROTOCOL,
         });
+        currentSocket = socket;
         const incoming = new TestSocket();
         sockets.add(incoming);
         const adapter: WebSocketSession = {
@@ -820,6 +822,39 @@ export default async function fixture(temporaryRoot: string) {
       await ready(first);
       assertEquals(native.closed, []);
       assertEquals(native.replies.length, beforeQuery + 1);
+
+      // A final control notice must not wait behind an unfinished xterm write.
+      await page.evaluate(`(() => {
+        const terminal = globalThis.__terminalForTest;
+        const write = terminal.write.bind(terminal);
+        terminal.write = (data, callback) => {
+          terminal.write = write;
+          write(data, () => { globalThis.__finishTerminalWrite = callback; });
+        };
+      })()`);
+      await native.output("\r\noutput before control transfer");
+      await waitPage(
+        page,
+        "typeof globalThis.__finishTerminalWrite==='function'",
+        "pending terminal write",
+      );
+      try {
+        currentSocket!.send(JSON.stringify({
+          type: "error",
+          message: "Terminal control transferred to another connection",
+          busy: true,
+        }));
+        currentSocket!.close(1000, "Terminal control transferred");
+        await waitPage(
+          page,
+          "!document.querySelector('[data-terminal-action=takeover]').hidden",
+          "control notice ahead of queued output",
+        );
+      } finally {
+        await page.evaluate("globalThis.__finishTerminalWrite()");
+      }
+      await button(page, "refresh");
+      await ready(first);
 
       const other = await openPage();
       try {

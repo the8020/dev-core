@@ -30,14 +30,35 @@ export class NativeTerminalDisplay {
   initial(): string {
     const t = this.engine.terminal, normal = t.buffer.normal;
     let result = prepare + "\x1b[?1049l\x1b[H\x1b[2J";
-    for (let index = 0; index < normal.baseY + t.rows; index++) {
-      if (index) result += "\r\n";
-      result += this.#source.line(normal, index);
-      if (result.length * 3 > MAX_SNAPSHOT_BYTES) {
-        throw new Error("Native terminal recovery exceeds its byte limit");
+    if (normal.baseY > 0 || t.buffer.active.type === "alternate") {
+      for (let index = 0; index < normal.baseY + t.rows; index++) {
+        if (index) result += "\r\n";
+        result += this.#source.line(normal, index);
+        if (result.length * 3 > MAX_SNAPSHOT_BYTES) {
+          throw new Error("Native terminal recovery exceeds its byte limit");
+        }
+      }
+    } else {
+      // The cleared screen already contains unused rows. Do not scroll a fresh
+      // shell through a screenful of blank lines or move below its last content.
+      this.#columns = t.cols;
+      this.#height = t.rows;
+      for (let y = t.rows - 1; y > normal.cursorY; y--) {
+        const line = normal.getLine(y);
+        let blank = true;
+        for (let x = 0; x < t.cols && blank; x++) {
+          const cell = line?.getCell(x);
+          blank = !cell || (!cell.getChars() && cell.isAttributeDefault());
+        }
+        if (!blank) break;
+        this.#rows[y] = this.#source.line(normal, y);
       }
     }
-    return result + this.update(true);
+    result += this.update();
+    if (result.length * 3 > MAX_SNAPSHOT_BYTES) {
+      throw new Error("Native terminal recovery exceeds its byte limit");
+    }
+    return result;
   }
 
   update(force = false): string {

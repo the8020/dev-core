@@ -173,6 +173,12 @@ export class TerminalOwner {
         );
         await this.#order(() => {
           this.#stop.signal.throwIfAborted();
+          this.#view?.send(JSON.stringify({
+            type: "error",
+            message: "Terminal control transferred to another connection",
+            busy: true,
+          }));
+          this.#view?.close(1000, "Terminal control transferred");
           this.#nativeView?.close();
           const display = new NativeTerminalDisplay(this.engine);
           try {

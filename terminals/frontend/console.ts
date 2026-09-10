@@ -574,6 +574,30 @@ class RetainedConsole implements CustomElementInstance {
       : data instanceof ArrayBuffer
       ? data.byteLength
       : Infinity;
+    if (typeof data === "string") {
+      try {
+        if (data.length > 4096) throw new Error("Invalid terminal message");
+        const message = object(JSON.parse(data));
+        // A final notice must survive close even while display recovery or an
+        // xterm write is pending. Stop the connection and its queued output now.
+        if (message.type === "error") {
+          connection.stopped = true;
+          this.#takeover.hidden = message.busy !== true;
+          this.#setStatus(
+            typeof message.message === "string"
+              ? message.message.slice(0, 500)
+              : "Terminal is unavailable",
+            "error",
+          );
+          this.#detach();
+          return;
+        }
+        data = message;
+      } catch (error) {
+        this.#fail(connection, errorMessage(error));
+        return;
+      }
+    }
     if (
       bytes > 65_544 || (connection.queuedBytes += bytes) > VIEW_QUEUE_BYTES ||
       ++connection.queuedFrames > VIEW_QUEUE_FRAMES
@@ -610,10 +634,7 @@ class RetainedConsole implements CustomElementInstance {
       this.#ack(connection, sequence);
       return;
     }
-    if (typeof data !== "string" || data.length > 4096) {
-      throw new Error("Invalid terminal message");
-    }
-    const message = object(JSON.parse(data));
+    const message = object(data);
     switch (message.type) {
       case "snapshot": {
         if (
@@ -686,16 +707,6 @@ class RetainedConsole implements CustomElementInstance {
         break;
       case "pong":
         connection.awaitingPong = false;
-        break;
-      case "error":
-        connection.stopped = true;
-        this.#takeover.hidden = message.busy !== true;
-        this.#setStatus(
-          typeof message.message === "string"
-            ? message.message.slice(0, 500)
-            : "Terminal is unavailable",
-          "error",
-        );
         break;
       default:
         throw new Error("Unknown terminal message");

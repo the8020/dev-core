@@ -13,6 +13,58 @@ function lines(engine: TerminalEngine, history = false): string[] {
   );
 }
 
+Deno.test("new native shells restore startup text without filling unused rows", async () => {
+  for (
+    const startup of [
+      "",
+      "root@development:/workspace# ",
+      "Welcome\r\nroot@development:/workspace# ",
+    ]
+  ) {
+    const source = new TerminalEngine({ columns: 80, rows: 40 });
+    const client = new TerminalEngine({ columns: 80, rows: 40 });
+    let display: NativeTerminalDisplay | undefined;
+    try {
+      await source.apply({ sequence: 1, data: encoder.encode(startup) });
+      display = new NativeTerminalDisplay(source);
+      const initial = display.initial();
+      assertEquals(
+        initial.includes("\n"),
+        false,
+        "unused rows must not become newlines",
+      );
+      // deno-lint-ignore no-control-regex
+      const cursorRows = [...initial.matchAll(/\x1b\[(\d+);\d+H/g)].map((
+        match,
+      ) => Number(match[1]));
+      assertEquals(
+        Math.max(...cursorRows),
+        source.terminal.buffer.active.cursorY + 1,
+      );
+      await client.apply({ sequence: 1, data: encoder.encode(initial) });
+      assertEquals(lines(client, true), lines(source, true));
+      assertEquals(
+        client.terminal.buffer.active.cursorX,
+        source.terminal.buffer.active.cursorX,
+      );
+      for (
+        const [index, text] of ["echo hello", "\r\nhello\r\nroot# "].entries()
+      ) {
+        await source.apply({ sequence: index + 2, data: encoder.encode(text) });
+        await client.apply({
+          sequence: index + 2,
+          data: encoder.encode(display.update()),
+        });
+        assertEquals(lines(client, true), lines(source, true));
+      }
+    } finally {
+      display?.close();
+      await source.close();
+      await client.close();
+    }
+  }
+});
+
 Deno.test("native display recovers history and continues partial parser state without answering queries", async () => {
   const source = new TerminalEngine({ columns: 40, rows: 8 });
   const client = new TerminalEngine({ columns: 40, rows: 8 });
@@ -96,7 +148,7 @@ Deno.test("native projection preserves RGB, styled Unicode and hyperlinks withou
     await source.apply({
       sequence: 1,
       data: encoder.encode(
-        "\x1b[1;38;2;0;0;3mA\x1b[0;4:3;58:2::12:34:56m界\x1b[0m\x1b]8;;https://example.test/link\x1b\\linked\x1b]8;;\x1b\\\x1b]52;c;aGlzdG9yeQ==\x07",
+        "\x1b[1;38;2;0;0;3mA\x1b[0;4:3;58:2::12:34:56m界\x1b[0m\x1b]8;;https://example.test/link\x1b\\linked\x1b]8;;\x1b\\\x1b]52;c;aGlzdG9yeQ==\x07\x1b[4;1Hbelow cursor\x1b[6;1H\x1b[44m\x1b[2K\x1b[0m\x1b[1;1H",
       ),
     });
     display = new NativeTerminalDisplay(source);
@@ -111,6 +163,11 @@ Deno.test("native projection preserves RGB, styled Unicode and hyperlinks withou
     assertEquals(
       client.terminal.buffer.active.getLine(0)?.getCell(0)?.getFgColor(),
       3,
+    );
+    assertEquals(
+      client.terminal.buffer.active.getLine(5)?.getCell(0)?.getBgColor(),
+      0x3465a4,
+      "blank rows with a background must still be restored",
     );
     const snapshot = captureTerminal(client.terminal);
     assertEquals(

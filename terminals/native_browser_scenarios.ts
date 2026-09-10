@@ -399,13 +399,8 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     `Native htop PID ${htopPID}: rendering, function keys, search editing, scrolling, resize, switch and reload checked`,
   );
 
-  await choose(second);
+  // SSH must take over the browser's currently attached shell.
   await verifyNativeSSHShell(context, first, pid, async () => {
-    await page.evaluate(`(() => {
-      const e=document.querySelector('.sandbox-console-select');
-      e.value=${JSON.stringify(first)};
-      e.dispatchEvent(new Event('change',{bubbles:true}));
-    })()`);
     await waitForPage(
       page,
       "!document.querySelector('[data-terminal-action=takeover]').hidden",
