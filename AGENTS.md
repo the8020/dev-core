@@ -157,10 +157,10 @@ below.
   `dev-core.*` commands to non-discoverable ordinary programs whose default
   exports parse raw string arguments, report intentional input errors
   structurally, and call typed kernel development operations.
-- `dev-core.activate.run --defer-overlay-reset` carries the sandbox helper's
-  response-before-reset instruction through its ordinary program and kernel
-  call. The helper ingress owns the subsequent reset; ordinary UUI activation
-  leaves this option unset.
+- `dev-core.activate.run --defer-overlay-reset` carries the legacy helper option
+  through the ordinary program/kernel call for baseline checks. Installed
+  activation preserves the running sandbox and never requests that reset; UUI
+  and CLI use the same activation owner.
 - Development test selects the authenticated user's single sandbox by `user_id`,
   reads its opaque `sbx-` console target from the returned sandbox record,
   automatically creates or starts it on entry, delegates lifecycle operations to

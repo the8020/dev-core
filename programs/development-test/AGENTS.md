@@ -71,15 +71,15 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   deleted/binary views, draft retention, and console DOM preservation.
 - Kernel development tests and the sibling UUI browser E2E cover sandbox
   lifecycle, activation validation, independent commits, and overlay reset.
-- `prototype_browser.ts` runs through the sibling UUI native harness using the
-  separate prototype kernel with two development sandboxes: new packages become
-  visible without restarting, one developer's activation preserves the other's
-  edits and live untouched files, and further publication during UUI resolution
-  survives terminal takeover and continuation. Package deletion removes shared
-  source files from the peer's view while both runtimes remain alive. A private
-  native Git commit in that later-published package remains readable after
-  shared deletion and an explicit peer restart. Build and invocation are in the
-  kernel analysis `PROTOTYPE.md`.
+- `activation_processes.ts` uses the ordinary installer-built kernel through the
+  existing native harness, including after relocating its binary directory. CLI
+  activation and the UUI's command path preserve a running process's PID and
+  start time. Startup refuses to ignore a legacy checkpoint with private work.
+- `prototype_browser.ts` uses two development sandboxes to check live shared
+  files, new packages, UUI conflict resolution, CLI takeover, continuation and
+  deletion. It also checks retained private Git history after shared deletion
+  and an explicit restart. Build and invocation are in kernel analysis
+  `PROTOTYPE.md`.
 - `prototype_concurrency.ts` uses the same disposable native harness separately
   from the UI scenario. It holds a real pre-activation hook, requires another
   package to publish while that hook waits, checks prompt overlap rejection and
