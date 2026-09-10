@@ -1,9 +1,14 @@
-import { field, z } from "/p/the8020/db/fields.ts";
+import { choiceHelp, field, z } from "/p/the8020/db/fields.ts";
 
 export const activationChange = field(z.string(), {
   label: "Change",
   description:
     "Added, modified, or deleted. Moves appear as deletions and additions.",
+  valueHelp: choiceHelp(z.string(), [
+    { value: "[[icon=add color=success]] Added", label: "Added" },
+    { value: "[[icon=edit]] Modified", label: "Modified" },
+    { value: "[[icon=remove color=error]] Deleted", label: "Deleted" },
+  ]),
 });
 
 export const developmentInfo = z.object({
@@ -16,6 +21,20 @@ export const developmentInfo = z.object({
     label: "State",
     description:
       "The current state of your development sandbox. Ready and conflicted sandboxes can be used in the terminal.",
+    valueHelp: choiceHelp(z.string(), [
+      "ABSENT",
+      "CREATING",
+      "STARTING",
+      "READY",
+      "BUSY",
+      "ACTIVATING",
+      "CONFLICTED",
+      "STOPPING",
+      "STOPPED",
+      "FAILED",
+      "RESETTING",
+      "DELETING",
+    ]),
   }),
   status: field(z.string(), {
     label: "Last operation",
@@ -38,6 +57,7 @@ export const developmentInfo = z.object({
     label: "Activation readiness",
     description:
       "Ready packages can be activated. Resolve blocked package changes before activating.",
+    valueHelp: choiceHelp(z.string(), ["Ready", "Blocked"]),
   }),
   message: field(z.string(), {
     label: "Commit message",
@@ -64,6 +84,12 @@ export const conflictInfo = z.object({
   kind: field(z.string(), {
     label: "Conflict",
     description: "Which versions changed or deleted this file.",
+    valueHelp: choiceHelp(z.string(), [
+      "Both changed",
+      "Deleted upstream",
+      "Deleted by you",
+      "Added upstream",
+    ]),
   }),
   content: field(z.string(), {
     label: "File contents",

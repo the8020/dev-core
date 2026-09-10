@@ -135,7 +135,9 @@ below.
 
 - `src/fields.ts` owns development sandbox and activation field definitions,
   shared labels, and help. Development sandbox IDs have no runtime-sandbox
-  navigation.
+  navigation. Sandbox states, activation readiness/change kinds, and conflict
+  kinds offer known choices; last-operation and resolution messages remain
+  unrestricted diagnostic text.
 
 - Own `programs/development-test`, administrative development command programs,
   its sandbox lifecycle/console screen, terminal code and assets, and small
