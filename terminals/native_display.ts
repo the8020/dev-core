@@ -1,6 +1,7 @@
 import type { TerminalEngine } from "./engine.ts";
 import { MAX_SNAPSHOT_BYTES, nativeDisplaySource } from "./state.ts";
 
+const encoder = new TextEncoder();
 const prepare = "\x1b[?25l\x1b[?6l\x1b[?7l\x1b[4l\x1b[r\x1b(B\x0f";
 const beginUpdate = "\x1b[?2026h";
 const endUpdate = "\x1b[?2026l";
@@ -23,7 +24,7 @@ export class NativeTerminalDisplay {
   constructor(readonly engine: TerminalEngine) {
     this.#source = nativeDisplaySource(engine.terminal);
     this.#unobserve = this.#source.observeHistory((row) => {
-      this.#historyBytes += row.length * 3;
+      this.#historyBytes += encoder.encode(row).byteLength;
       if (this.#historyBytes > maximumDelta) this.#overflow = true;
       else this.#history.push(row);
     });

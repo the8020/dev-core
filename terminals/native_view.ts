@@ -3,6 +3,7 @@ import {
   nativeDisplayCleanup,
   NativeTerminalDisplay,
 } from "./native_display.ts";
+import { endSynchronizedOutput } from "./state.ts";
 
 const encoder = new TextEncoder();
 const deltaLimit = 1 << 20;
@@ -39,7 +40,10 @@ export class NativeTerminalView {
     if (this.#closed) return;
     if (this.display.engine.terminal.modes.synchronizedOutputMode) {
       // Match xterm's one-second render deadline for an unfinished DEC 2026 frame.
-      this.#redrawTimer ??= setTimeout(() => this.#render(), 1000);
+      this.#redrawTimer ??= setTimeout(() => {
+        endSynchronizedOutput(this.display.engine.terminal);
+        this.#render();
+      }, 1000);
       return;
     }
     this.#render();

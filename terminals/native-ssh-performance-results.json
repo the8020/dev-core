@@ -1,0 +1,575 @@
+{
+  "baselineVersion": "0.6.5",
+  "correctedVersion": "0.6.7",
+  "baseline": {
+    "recordedAt": "2026-09-10T14:32:11.206Z",
+    "scope": "Loopback OpenSSH through real gVisor PTY; direct connection versus retained canonical interpreter and native projection. Includes client headless parsing, excludes Warp/browser GUI paint and WAN latency. Throughput uses source payload bytes; projected SSH bytes can differ. Latency ends at parsed acknowledgement, not the polling interval.",
+    "sourceBytes": 2097152,
+    "columns": 80,
+    "rows": 24,
+    "measurements": [
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 0,
+        "elapsedMs": 118.10654099999374,
+        "MiBPerSecond": 16.933863129562877,
+        "sshBytes": 2097245
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 1,
+        "elapsedMs": 123.90454199999658,
+        "MiBPerSecond": 16.141458317162055,
+        "sshBytes": 2097245
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 2,
+        "elapsedMs": 131.80616700000246,
+        "MiBPerSecond": 15.173796837593816,
+        "sshBytes": 2097245
+      },
+      {
+        "mode": "direct",
+        "operation": "click-input-during-60hz-redraw",
+        "clickPairs": 40,
+        "medianMs": 2.997624999996333,
+        "p95Ms": 6.11579100000381,
+        "maxMs": 7.217457999999169,
+        "maxIntervalErrorMs": 0.6112100000009661,
+        "exactInput": true
+      },
+      {
+        "mode": "direct",
+        "operation": "redraw-timeout-recovery",
+        "elapsedMs": 5.978458999998111
+      },
+      {
+        "mode": "direct",
+        "operation": "midnight-commander",
+        "fileMenuCells": 4,
+        "separatedClicksSelect": true,
+        "fastClicksOnDifferentRowsOpen": true
+      }
+    ],
+    "passed": false,
+    "failure": "Retained SSH disconnected during the initial unthrottled 2 MiB payload; the completion marker was not delivered."
+  },
+  "corrected": {
+    "recordedAt": "2026-09-10T14:34:13.549Z",
+    "scope": "Loopback OpenSSH through real gVisor PTY; direct connection versus retained canonical interpreter and native projection. Includes client headless parsing, excludes Warp/browser GUI paint and WAN latency. Throughput uses source payload bytes; projected SSH bytes can differ. Latency ends at parsed acknowledgement, not the polling interval.",
+    "sourceBytes": 2097152,
+    "columns": 80,
+    "rows": 24,
+    "measurements": [
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 0,
+        "elapsedMs": 117.45366700000159,
+        "MiBPerSecond": 17.027991131174925,
+        "sshBytes": 2097245
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 1,
+        "elapsedMs": 120.29412500000035,
+        "MiBPerSecond": 16.625915854161576,
+        "sshBytes": 2097245
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 2,
+        "elapsedMs": 123.32754199999908,
+        "MiBPerSecond": 16.21697771289413,
+        "sshBytes": 2097245
+      },
+      {
+        "mode": "direct",
+        "operation": "click-input-during-60hz-redraw",
+        "clickPairs": 40,
+        "medianMs": 4.624374999999418,
+        "p95Ms": 6.748417000002519,
+        "maxMs": 8.23320799999783,
+        "maxIntervalErrorMs": 0.5386680000003139,
+        "exactInput": true
+      },
+      {
+        "mode": "direct",
+        "operation": "redraw-timeout-recovery",
+        "elapsedMs": 7.94470800000272
+      },
+      {
+        "mode": "direct",
+        "operation": "midnight-commander",
+        "fileMenuCells": 4,
+        "separatedClicksSelect": true,
+        "fastClicksOnDifferentRowsOpen": true
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 0,
+        "elapsedMs": 1182.302917999994,
+        "MiBPerSecond": 1.6916138576256226,
+        "sshBytes": 3435917
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 1,
+        "elapsedMs": 1162.2874589999992,
+        "MiBPerSecond": 1.720744712947988,
+        "sshBytes": 3435995
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 2,
+        "elapsedMs": 1187.310583999999,
+        "MiBPerSecond": 1.6844792145809777,
+        "sshBytes": 3435927
+      },
+      {
+        "mode": "retained",
+        "operation": "click-input-during-60hz-redraw",
+        "clickPairs": 40,
+        "medianMs": 9.067457999997714,
+        "p95Ms": 13.900125000000116,
+        "maxMs": 15.011916000003112,
+        "maxIntervalErrorMs": 0.3596659999964231,
+        "exactInput": true
+      },
+      {
+        "mode": "retained",
+        "operation": "redraw-timeout-recovery",
+        "elapsedMs": 17.20524999999907
+      },
+      {
+        "mode": "retained",
+        "operation": "midnight-commander",
+        "fileMenuCells": 4,
+        "separatedClicksSelect": true,
+        "fastClicksOnDifferentRowsOpen": true
+      }
+    ],
+    "passed": true
+  },
+  "initialSmallBaseline": {
+    "recordedAt": "2026-09-10T14:38:31.338Z",
+    "scope": "Loopback OpenSSH through real gVisor PTY; direct connection versus retained canonical interpreter and native projection. Includes client headless parsing, excludes Warp/browser GUI paint and WAN latency. Throughput uses source payload bytes; projected SSH bytes can differ. Latency ends at parsed acknowledgement, not the polling interval.",
+    "sourceBytes": 131072,
+    "columns": 80,
+    "rows": 24,
+    "measurements": [
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 0,
+        "elapsedMs": 16.04412500000035,
+        "MiBPerSecond": 7.791013844631432,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 1,
+        "elapsedMs": 16.887874999993073,
+        "MiBPerSecond": 7.401760138563986,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 2,
+        "elapsedMs": 22.67545799999789,
+        "MiBPerSecond": 5.512567816712308,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "click-input-during-60hz-redraw",
+        "clickPairs": 40,
+        "medianMs": 4.232499999998254,
+        "p95Ms": 6.093791999999667,
+        "maxMs": 7.891750000002503,
+        "maxIntervalErrorMs": 0.8018320000027614,
+        "exactInput": true
+      },
+      {
+        "mode": "direct",
+        "operation": "redraw-timeout-recovery",
+        "elapsedMs": 7.275042000001122
+      },
+      {
+        "mode": "direct",
+        "operation": "midnight-commander",
+        "fileMenuCells": 4,
+        "separatedClicksSelect": true,
+        "fastClicksOnDifferentRowsOpen": true
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 0,
+        "elapsedMs": 127.65741600000183,
+        "MiBPerSecond": 0.979183222696582,
+        "sshBytes": 219367
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 1,
+        "elapsedMs": 157.26658399999724,
+        "MiBPerSecond": 0.794828734882435,
+        "sshBytes": 219365
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 2,
+        "elapsedMs": 111.26224999999977,
+        "MiBPerSecond": 1.12347179748747,
+        "sshBytes": 219365
+      },
+      {
+        "mode": "retained",
+        "operation": "click-input-during-60hz-redraw",
+        "clickPairs": 40,
+        "medianMs": 8.581042000005255,
+        "p95Ms": 13.218708000000333,
+        "maxMs": 15.2689160000009,
+        "maxIntervalErrorMs": 0.26228800000285446,
+        "exactInput": true
+      },
+      {
+        "mode": "retained",
+        "operation": "redraw-timeout-recovery",
+        "elapsedMs": 12.005833000002895
+      },
+      {
+        "mode": "retained",
+        "operation": "midnight-commander",
+        "fileMenuCells": 4,
+        "separatedClicksSelect": true,
+        "fastClicksOnDifferentRowsOpen": true
+      }
+    ],
+    "passed": true,
+    "warmupBytes": 131072
+  },
+  "initialSmallCorrected": {
+    "recordedAt": "2026-09-10T14:39:53.193Z",
+    "scope": "Loopback OpenSSH through real gVisor PTY; direct connection versus retained canonical interpreter and native projection. Includes client headless parsing, excludes Warp/browser GUI paint and WAN latency. Throughput uses source payload bytes; projected SSH bytes can differ. Latency ends at parsed acknowledgement, not the polling interval.",
+    "sourceBytes": 131072,
+    "columns": 80,
+    "rows": 24,
+    "measurements": [
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 0,
+        "elapsedMs": 15.63916700000118,
+        "MiBPerSecond": 7.992753066706851,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 1,
+        "elapsedMs": 14.647083000003477,
+        "MiBPerSecond": 8.534122459739617,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 2,
+        "elapsedMs": 21.648791999999958,
+        "MiBPerSecond": 5.77399422563625,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "click-input-during-60hz-redraw",
+        "clickPairs": 40,
+        "medianMs": 3.8589590000046883,
+        "p95Ms": 6.943041999998968,
+        "maxMs": 8.692708999995375,
+        "maxIntervalErrorMs": 0.5632940000012212,
+        "exactInput": true
+      },
+      {
+        "mode": "direct",
+        "operation": "redraw-timeout-recovery",
+        "elapsedMs": 7.686583000002429
+      },
+      {
+        "mode": "direct",
+        "operation": "midnight-commander",
+        "fileMenuCells": 4,
+        "separatedClicksSelect": true,
+        "fastClicksOnDifferentRowsOpen": true
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 0,
+        "elapsedMs": 331.02929199999926,
+        "MiBPerSecond": 0.37761008775018096,
+        "sshBytes": 222486
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 1,
+        "elapsedMs": 226.50000100000034,
+        "MiBPerSecond": 0.5518763772544081,
+        "sshBytes": 222484
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 2,
+        "elapsedMs": 136.31487500000367,
+        "MiBPerSecond": 0.9169945686411453,
+        "sshBytes": 222484
+      },
+      {
+        "mode": "retained",
+        "operation": "click-input-during-60hz-redraw",
+        "clickPairs": 40,
+        "medianMs": 9.017790999998397,
+        "p95Ms": 15.059790999999677,
+        "maxMs": 15.183541999998852,
+        "maxIntervalErrorMs": 0.20550199999806296,
+        "exactInput": true
+      },
+      {
+        "mode": "retained",
+        "operation": "redraw-timeout-recovery",
+        "elapsedMs": 25.11216599999898
+      },
+      {
+        "mode": "retained",
+        "operation": "midnight-commander",
+        "fileMenuCells": 4,
+        "separatedClicksSelect": true,
+        "fastClicksOnDifferentRowsOpen": true
+      }
+    ],
+    "passed": true,
+    "warmupBytes": 131072
+  },
+  "warmSmallBaseline": {
+    "recordedAt": "2026-09-10T14:41:55.025Z",
+    "scope": "Loopback OpenSSH through real gVisor PTY; direct connection versus retained canonical interpreter and native projection. Includes client headless parsing, excludes Warp/browser GUI paint and WAN latency. Throughput uses source payload bytes; projected SSH bytes can differ. Latency ends at parsed acknowledgement, not the polling interval.",
+    "sourceBytes": 131072,
+    "columns": 80,
+    "rows": 24,
+    "measurements": [
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 0,
+        "elapsedMs": 15.244332999995095,
+        "MiBPerSecond": 8.199768399184157,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 1,
+        "elapsedMs": 15.528042000005371,
+        "MiBPerSecond": 8.04995246663789,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 2,
+        "elapsedMs": 17.872292000000016,
+        "MiBPerSecond": 6.994066569637509,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "click-input-during-60hz-redraw",
+        "clickPairs": 40,
+        "medianMs": 5.976416999998037,
+        "p95Ms": 7.587416000002122,
+        "maxMs": 8.115750000004482,
+        "maxIntervalErrorMs": 0.612793999998928,
+        "exactInput": true
+      },
+      {
+        "mode": "direct",
+        "operation": "redraw-timeout-recovery",
+        "elapsedMs": 4.150042000001122
+      },
+      {
+        "mode": "direct",
+        "operation": "midnight-commander",
+        "fileMenuCells": 4,
+        "separatedClicksSelect": true,
+        "fastClicksOnDifferentRowsOpen": true
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 0,
+        "elapsedMs": 128.0973329999979,
+        "MiBPerSecond": 0.975820472390335,
+        "sshBytes": 216465
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 1,
+        "elapsedMs": 103.21879099999933,
+        "MiBPerSecond": 1.2110198035549633,
+        "sshBytes": 219365
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 2,
+        "elapsedMs": 108.49987499999406,
+        "MiBPerSecond": 1.1520750599943719,
+        "sshBytes": 219365
+      },
+      {
+        "mode": "retained",
+        "operation": "click-input-during-60hz-redraw",
+        "clickPairs": 40,
+        "medianMs": 9.665832999999111,
+        "p95Ms": 13.133084000000963,
+        "maxMs": 15.261624999999185,
+        "maxIntervalErrorMs": 0.39524800000245364,
+        "exactInput": true
+      },
+      {
+        "mode": "retained",
+        "operation": "redraw-timeout-recovery",
+        "elapsedMs": 14.1185420000038
+      },
+      {
+        "mode": "retained",
+        "operation": "midnight-commander",
+        "fileMenuCells": 4,
+        "separatedClicksSelect": true,
+        "fastClicksOnDifferentRowsOpen": true
+      }
+    ],
+    "passed": true,
+    "warmupBytes": 2097152
+  },
+  "warmSmallCorrected": {
+    "recordedAt": "2026-09-10T14:43:10.474Z",
+    "scope": "Loopback OpenSSH through real gVisor PTY; direct connection versus retained canonical interpreter and native projection. Includes client headless parsing, excludes Warp/browser GUI paint and WAN latency. Throughput uses source payload bytes; projected SSH bytes can differ. Latency ends at parsed acknowledgement, not the polling interval.",
+    "sourceBytes": 131072,
+    "columns": 80,
+    "rows": 24,
+    "measurements": [
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 0,
+        "elapsedMs": 16.243792000001122,
+        "MiBPerSecond": 7.695247513634216,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 1,
+        "elapsedMs": 14.123750000006112,
+        "MiBPerSecond": 8.850340738114587,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "throughput",
+        "trial": 2,
+        "elapsedMs": 12.663667000000714,
+        "MiBPerSecond": 9.870758604122562,
+        "sshBytes": 131165
+      },
+      {
+        "mode": "direct",
+        "operation": "click-input-during-60hz-redraw",
+        "clickPairs": 40,
+        "medianMs": 4.841291999997338,
+        "p95Ms": 6.933834000003117,
+        "maxMs": 7.515833999997994,
+        "maxIntervalErrorMs": 0.8733310000041428,
+        "exactInput": true
+      },
+      {
+        "mode": "direct",
+        "operation": "redraw-timeout-recovery",
+        "elapsedMs": 5.044374999997672
+      },
+      {
+        "mode": "direct",
+        "operation": "midnight-commander",
+        "fileMenuCells": 4,
+        "separatedClicksSelect": true,
+        "fastClicksOnDifferentRowsOpen": true
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 0,
+        "elapsedMs": 95.49195899999904,
+        "MiBPerSecond": 1.309010740893914,
+        "sshBytes": 219399
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 1,
+        "elapsedMs": 99.75787499999569,
+        "MiBPerSecond": 1.2530339083506479,
+        "sshBytes": 219397
+      },
+      {
+        "mode": "retained",
+        "operation": "throughput",
+        "trial": 2,
+        "elapsedMs": 99.14487499999814,
+        "MiBPerSecond": 1.2607812557129388,
+        "sshBytes": 219397
+      },
+      {
+        "mode": "retained",
+        "operation": "click-input-during-60hz-redraw",
+        "clickPairs": 40,
+        "medianMs": 9.884000000005472,
+        "p95Ms": 14.960458000001381,
+        "maxMs": 16.064375000001746,
+        "maxIntervalErrorMs": 0.5314560000058464,
+        "exactInput": true
+      },
+      {
+        "mode": "retained",
+        "operation": "redraw-timeout-recovery",
+        "elapsedMs": 19.316166999997222
+      },
+      {
+        "mode": "retained",
+        "operation": "midnight-commander",
+        "fileMenuCells": 4,
+        "separatedClicksSelect": true,
+        "fastClicksOnDifferentRowsOpen": true
+      }
+    ],
+    "passed": true,
+    "warmupBytes": 2097152
+  }
+}

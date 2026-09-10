@@ -154,6 +154,8 @@ export class SSHView {
   #failure?: unknown;
   #sequence = 0;
   queryReplies = 0;
+  receivedBytes = 0;
+  lastOutputAt = 0;
 
   constructor(
     context: NativeBrowserFixtureContext,
@@ -189,10 +191,12 @@ export class SSHView {
     this.#output = (async () => {
       try {
         for await (const data of child.stdout) {
+          this.receivedBytes += data.byteLength;
           const reply = await this.engine.apply({
             sequence: ++this.#sequence,
             data,
           });
+          this.lastOutputAt = performance.now();
           if (reply) {
             this.queryReplies++;
             await input.write(reply);
@@ -230,7 +234,7 @@ export class SSHView {
           present ? "missing" : "still contains"
         } ${text}: ${this.text()}`,
       );
-      await new Promise((resolve) => setTimeout(resolve, 25));
+      await new Promise((resolve) => setTimeout(resolve, 1));
     }
   }
   async close(): Promise<void> {

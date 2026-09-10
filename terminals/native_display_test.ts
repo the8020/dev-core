@@ -15,6 +15,34 @@ function lines(engine: TerminalEngine, history = false): string[] {
   );
 }
 
+Deno.test("native history accepts a full 256-KiB native read", async () => {
+  const source = new TerminalEngine({ columns: 80, rows: 24 });
+  const client = new TerminalEngine({ columns: 80, rows: 24 });
+  const display = new NativeTerminalDisplay(source);
+  try {
+    await client.apply({
+      sequence: 1,
+      data: encoder.encode(display.initial()),
+    });
+    await source.apply({
+      sequence: 1,
+      data: encoder.encode("x".repeat(256 << 10)),
+    });
+    const update = encoder.encode(display.update());
+    assertEquals(update.byteLength < 1 << 20, true);
+    await client.apply({ sequence: 2, data: update });
+    assertEquals(lines(client, true), lines(source, true));
+    assertEquals(
+      client.terminal.buffer.active.cursorX,
+      source.terminal.buffer.active.cursorX,
+    );
+  } finally {
+    display.close();
+    await source.close();
+    await client.close();
+  }
+});
+
 Deno.test("new native shells restore startup text without filling unused rows", async () => {
   for (
     const startup of [
@@ -289,8 +317,22 @@ Deno.test("native synchronized redraws have a deadline and flush on exit", async
       before + 1,
       "a missing end marker cannot freeze the view",
     );
-    await source.apply({ sequence: 2, data: encoder.encode("final output") });
+    await source.apply({
+      sequence: 2,
+      data: encoder.encode("ordinary output"),
+    });
     view.update();
+    assertEquals(
+      writes.length,
+      before + 2,
+      "the deadline ends synchronization so subsequent output is immediate",
+    );
+    await source.apply({
+      sequence: 3,
+      data: encoder.encode("\x1b[?2026hfinal output"),
+    });
+    view.update();
+    assertEquals(writes.length, before + 2, "a new frame still defers output");
     view.finish();
     assertEquals(writes.at(-1)!.includes("final output"), true);
   } finally {

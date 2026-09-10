@@ -5,6 +5,7 @@ import type {
   CustomElementInstance,
 } from "/p/the8020/uui/custom_element.ts";
 import {
+  installTerminalStyles,
   installTerminalView,
   MAX_SNAPSHOT_BYTES,
   restoreTerminal,
@@ -168,6 +169,10 @@ class RetainedConsole implements CustomElementInstance {
     installTerminalView(this.#terminal);
     this.#terminal.open(
       this.element.querySelector(".sandbox-console-display")!,
+    );
+    installTerminalStyles(
+      this.#terminal,
+      document.querySelector<HTMLScriptElement>("script[nonce]")?.nonce ?? "",
     );
     this.#terminal.onData((value) => this.#input(value));
     this.#terminal.onBinary((value) => this.#input(value, true));

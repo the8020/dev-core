@@ -17,6 +17,10 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   version for retained display recovery.
 - Use xterm's synchronized-output support to paint completed application frames.
   Keep the matching upstream CSS, including its viewport scrollbar styles.
+- Open xterm in the detached component and prepare its styles before mounting.
+  `state.ts` authorizes only xterm's generated styles with the shell's page
+  nonce and applies RGB/selection styles through CSSOM; keep the shell CSP
+  intact.
 - Encode Shift+Enter as `CSI 13;2u` through xterm's public input API and custom
   key handler so applications can distinguish it from Enter. Consume only that
   exact chord outside composition, once per keydown; other keys keep xterm's
@@ -82,6 +86,9 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   the native-terminal boundary alongside Ctrl+A, Escape, and bracketed paste.
 - It also holds an xterm write pending while a control-transfer notice and close
   arrive, verifying that Take control remains available.
+- The native browser fixture checks actual indexed/RGB colors, cell spacing,
+  cursor appearance, and CSP violations, including after snapshot restoration.
+  Pixel equality alone cannot establish that either display rendered correctly.
 
 # Child DOX Index
 

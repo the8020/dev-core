@@ -688,6 +688,25 @@ export function checkEngineTextBounds(terminal: any): void {
   }
 }
 
+// xterm 6 has no CSP nonce option and writes RGB/selection styles as attributes.
+// Prepare its owned renderer before mounting; CSSOM writes retain the shell CSP.
+export function installTerminalStyles(terminal: any, nonce: string): void {
+  for (const style of terminal.element.querySelectorAll("style")) {
+    style.nonce = nonce;
+  }
+  terminal._core._renderService._renderer.value._rowFactory._addStyle = (
+    element: HTMLElement,
+    style: string,
+  ) => {
+    element.style.cssText += style;
+  };
+}
+
+/** Match xterm's renderer timeout: subsequent writes no longer defer painting. */
+export function endSynchronizedOutput(terminal: any): void {
+  terminal._core.coreService.decPrivateModes.synchronizedOutput = false;
+}
+
 // Query responses originate synchronously in xterm's parser. Suppress only that
 // origin in a view: keyboard, paste, focus, and mouse events outside parsing keep
 // their ordinary xterm encoding. The canonical headless owner answers queries.

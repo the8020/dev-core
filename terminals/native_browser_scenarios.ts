@@ -89,6 +89,14 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     await waitForScreen(page, "Welcome to 80|20");
   };
 
+  await page.evaluate(`(() => {
+    globalThis.terminalStyleViolations = [];
+    addEventListener('securitypolicyviolation', event => {
+      if (event.effectiveDirective.startsWith('style-src')) {
+        globalThis.terminalStyleViolations.push(event.effectiveDirective);
+      }
+    });
+  })()`);
   await clickRow(page, "the8020/dev-core/development-test");
   await waitForScreen(page, "Development", 60_000);
   await ready();
@@ -149,12 +157,43 @@ export default async function verify(context: NativeBrowserFixtureContext) {
 
   // Hide the cursor and compare rendered text pixels through a fresh mount.
   await output(
-    "printf '\\033[2J\\033[H\\033[32mNative α😀 display\\033[0m\\r\\n\\033[?25l\\036PAINTED\\037\\n'",
+    "printf '\\033[2J\\033[H\\033[32;44mNative α😀 display\\033[0m\\r\\n\\033[38;2;17;34;51;48;2;170;187;204mRGB\\033[0m\\r\\n\\033[?25l\\036PAINTED\\037\\n'",
     "\x1ePAINTED\x1f",
+  );
+  const verifyStyles = async () => {
+    await waitForPage(
+      page,
+      "!!document.querySelector('.xterm-fg-2')",
+      "colored terminal text",
+    );
+    assertEquals(
+      await page.evaluate(`(() => {
+      const cell = document.querySelector('.xterm-fg-2');
+      const style = getComputedStyle(cell);
+      const rgb = getComputedStyle([...document.querySelectorAll('.xterm-rows span')].find(e => e.textContent === 'RGB'));
+      return [style.color, style.backgroundColor, style.whiteSpace, style.display, rgb.color, rgb.backgroundColor];
+    })()`),
+      [
+        "rgb(78, 154, 6)",
+        "rgb(52, 101, 164)",
+        "pre",
+        "inline-block",
+        "rgb(17, 34, 51)",
+        "rgb(170, 187, 204)",
+      ],
+      "terminal colors and cell layout under the real shell CSP",
+    );
+  };
+  await verifyStyles();
+  assertEquals(
+    await page.evaluate("globalThis.terminalStyleViolations"),
+    [],
+    "terminal styles obey the shell CSP",
   );
   const beforeReload = await displayPixels(page);
   await page.command("Page.reload");
   await ready(first);
+  await verifyStyles();
   assertEquals(
     await displayPixels(page),
     beforeReload,
@@ -166,6 +205,18 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     ),
     2,
     "reload must not create another process",
+  );
+  await output(
+    "printf '\\033[?25h\\033[6 q\\036CURSOR_READY\\037\\n'",
+    "\x1eCURSOR_READY\x1f",
+  );
+  await waitForPage(
+    page,
+    `(() => {
+    const cursor = document.querySelector('.xterm-cursor');
+    return cursor && getComputedStyle(cursor).boxShadow.includes('rgb(88, 166, 255)');
+  })()`,
+    "visible input cursor under the real shell CSP",
   );
 
   // An ordinary sandbox command releases the query and observes its result

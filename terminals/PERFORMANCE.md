@@ -52,3 +52,48 @@ throughput about elevenfold and reduced median CPU from 1.07 to 0.36 seconds.
 Per-event replies, resize ordering and atomic snapshot boundaries remain covered
 by the engine and owner regressions. No synchronous parser bypass, additional
 buffer window, idle expiry, or application-specific runtime transport was added.
+
+## SSH regression qualification — 2026-09-10
+
+The OpenSSH fixture uses the same disposable native harness, with an 80×24
+headless client. It includes client parsing and, for named terminals, canonical
+interpretation and VT projection. It excludes GUI painting and WAN latency. Run
+with `--fixture=../dev-core/terminals/native_ssh_performance_scenarios.ts` and
+the ordinary native harness options.
+[Raw results](native-ssh-performance-results.json) compare the 0.6.5 baseline
+with the 0.6.7 corrections.
+
+| Corrected SSH path                  | Ordinary SSH | Retained SSH |
+| ----------------------------------- | -----------: | -----------: |
+| Median throughput, three 2-MiB runs |  16.63 MiB/s |   1.69 MiB/s |
+| Input/display median at 60 Hz       |      4.62 ms |      9.07 ms |
+| Input/display 95th percentile       |      6.75 ms |     13.90 ms |
+| Exact, ordered click pairs          |        40/40 |        40/40 |
+
+Both 0.6.5 and uncorrected 0.6.6 disconnected during a 2-MiB burst. The history
+buffer charged every character as three bytes: a normal 256-KiB native read
+could falsely exceed the one-MiB projection budget. Counting encoded UTF-8 bytes
+preserves that budget and lets the burst complete. Retained projection delivered
+about 3.44 MB of VT for each 2-MiB source payload, so its throughput is not a
+raw SSH byte-copy rate. The source throughput range was 1.68–1.72 MiB/s.
+
+The smaller workload (`THE8020_TERMINAL_BENCHMARK_SMALL=1`) lets both releases
+finish. With equal two-MiB warm-up followed by three 128-KiB bursts, retained
+median throughput was 1.15 MiB/s in 0.6.5 and 1.26 MiB/s after correction.
+Retained median click/display latency was 9.67 and 9.88 ms respectively. There
+was no observed steady-state throughput regression in this workload. Initial
+small-burst samples with only 128 KiB of warm-up varied considerably, especially
+in xterm 6; those earlier samples are retained in the raw report too. These few
+local samples are not a guarantee for cold starts or remote networks.
+
+Click bytes were recorded at the physical PTY during 60-Hz synchronized redraws.
+All coordinates, presses, and releases arrived once and in order. The largest
+retained inter-click timing difference from the sent intervals was 0.36 ms. An
+unfinished synchronized frame timed out; subsequent ordinary SSH output was
+immediate, as checked separately from normal redraw latency.
+
+Real Midnight Commander opened the File menu at each of its four letter cells on
+both SSH paths. Clicking different rows 80 ms apart opened the second folder;
+350-ms spacing only selected it. This reproduces MC's time-based double-click
+handling without a lost or duplicated input event. These checks do not establish
+Warp's pixel-to-cell mouse mapping or rendering performance.

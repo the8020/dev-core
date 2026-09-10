@@ -31,9 +31,10 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   Qualify the selected version with a fresh named session.
 - Preserve DEC 2026 synchronized redraw state through recovery. Native views
   defer projection until the application completes its frame, with a one-second
-  rendering deadline and a final flush on process exit. Wrap each native
-  projection, including initial history, in synchronized-output markers; query
-  processing continues while rendering is deferred.
+  rendering deadline that ends synchronization and a final flush on process
+  exit. Ordinary output after a missing end marker must resume immediately. Wrap
+  each native projection, including initial history, in synchronized-output
+  markers; query processing continues while rendering is deferred.
 - One canonical headless interpreter answers process queries, including while
   detached. Views never duplicate those responses. Historical snapshots never
   execute clipboard or notification effects.
@@ -97,6 +98,8 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   native display output is limited to one MiB/512 queued updates plus one
   in-flight update; writes are split into 64-KiB frames. A stalled frame has a
   ten-second transfer deadline, and initial recovery has a two-minute deadline.
+  Count pending committed history by its actual UTF-8 byte size, so an ordinary
+  256-KiB native read does not falsely exceed its one-MiB projection budget.
   Overflow or transport failure releases only the view. Native clients recover
   normal history and current cells, then receive changed rows, committed
   history, cursor appearance, and keyboard/mouse modes.
@@ -168,6 +171,16 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   limitations;
   [native-performance-results.json](native-performance-results.json) contains
   the raw comparison.
+- `native_ssh_performance_scenarios.ts` uses that harness with real OpenSSH to
+  compare direct and retained two-MiB throughput, exact click bytes and input
+  timing during 60-Hz redraws, and Midnight Commander menu/file clicks. Its
+  report defaults to `/tmp/8020-terminal-ssh-performance.json`, overridable with
+  `THE8020_TERMINAL_BENCHMARK_REPORT`. Include client terminal parsing; exclude
+  GUI painting and WAN latency. Qualify SSH performance when changing redraw or
+  transport behavior. `PERFORMANCE.md` records its scope and
+  `native-ssh-performance-results.json` retains the comparison samples. Set
+  `THE8020_TERMINAL_BENCHMARK_SMALL=1` for 128-KiB bursts; both sizes warm up
+  with a total of two MiB before collecting samples.
 - The native fixture uses OpenSSH with real password authentication to attach
   twice to the browser's running htop, checks function/search/scroll keys and
   query-free rendering, then returns to the browser with the same processes. It
