@@ -588,6 +588,50 @@ export default async function fixture(temporaryRoot: string) {
         "document.querySelector('.xterm-rows').textContent.includes('Updating')",
         "completed redraw rendered",
       );
+      await page.evaluate(`(() => {
+        globalThis.__completedFrames = [];
+        globalThis.__frameObserver = globalThis.__terminalForTest.onRender(() => {
+          const rows = [...document.querySelector('.xterm-rows').children];
+          globalThis.__completedFrames.push({
+            text: rows[2].textContent.trimEnd(),
+            cursorRow: rows.findIndex(row => row.querySelector('.xterm-cursor')),
+          });
+        });
+      })()`);
+      try {
+        await native.output(
+          `\x1b[?2026h\x1b[3;1HFrameOne\x1b[${rows};3H\x1b[?2026l` +
+            `\x1b[?2026h\x1b[3;1HFrameTwo\x1b[${rows};3H\x1b[?2026l` +
+            "\x1b[?2026h\x1b[3;1HUnfinished\x1b[4;1H\x1b[6n",
+        );
+        await waitPage(
+          page,
+          `Number(document.querySelector('.sandbox-console').dataset.outputSequence) === ${native.events.length}`,
+          "adjacent frame boundaries parsed",
+        );
+        assertEquals(
+          await page.evaluate("globalThis.__completedFrames"),
+          [
+            { text: "FrameOne", cursorRow: rows - 1 },
+            { text: "FrameTwo", cursorRow: rows - 1 },
+          ],
+          "each completed frame renders before the next frame changes its cells or cursor",
+        );
+        const completed = await page.evaluate<string>(
+          "document.querySelector('.xterm-rows').innerHTML",
+        );
+        assertEquals(
+          await page.evaluate(
+            "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve(document.querySelector('.xterm-rows').innerHTML))))",
+          ),
+          completed,
+          "queued animation frames must not paint the unfinished frame",
+        );
+        assertEquals(native.replies.length, replies + 2);
+      } finally {
+        await page.evaluate("globalThis.__frameObserver.dispose()");
+        await native.output("\x1b[?2026l");
+      }
       await native.output("\x1b[?1049l");
       // A session discovered through shared metadata, outside this component.
       const external = "tty-9999999999";

@@ -35,6 +35,13 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   exit. Ordinary output after a missing end marker must resume immediately. Wrap
   each native projection, including initial history, in synchronized-output
   markers; query processing continues while rendering is deferred.
+- Publish each parsed synchronized-output end before later bytes mutate the
+  completed frame, including adjacent end/begin markers in one event or native
+  batch. `state.ts` observes the upstream mode reset; it does not parse VT
+  again. Browser views flush xterm's queued render at that boundary, respecting
+  hidden views. Native views project it into their bounded send queue and omit
+  unchanged projections. Ordinary bytes following the frame still publish
+  normally.
 - One canonical headless interpreter answers process queries, including while
   detached. Views never duplicate those responses. Historical snapshots never
   execute clipboard or notification effects.
@@ -122,6 +129,9 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 
 # Verification
 
+- Keep local checks small and sequential. Run native/browser performance and
+  multi-node qualification in a separate environment with CPU, memory, and
+  runtime limits; never use the shared development instance for stress testing.
 - Use the existing package Deno check/test and Chromium harnesses. The earlier
   isolated serializer probes are component evidence, not completed application
   or interactive-program validation.
@@ -142,6 +152,9 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 - Engine and browser regressions cover split synchronized redraw markers,
   cursor/style recovery, query replies during redraws, and reload mid-frame.
   Native view tests cover deferred initial history, timeout, and exit flushing.
+  They also cover multiple completed frames followed by an unfinished frame in
+  the same write/batch, byte fragmentation, combined mode resets, cursor
+  stability, ordinary output after a frame, and observer cleanup on detach.
 - `deno task test:native-browser` runs `native_browser_scenarios.ts` through the
   sibling UUI native harness with real users, database, service Workers, and
   gVisor PTYs. Pass its required `--source-root`, `--package-workspace`,
@@ -167,18 +180,15 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   background cleanup affect it. Direct reconnect starts another process;
   retained reconnect preserves the process. Explicit begin/end markers separate
   each measured payload from output still draining after a disconnected view.
-  [PERFORMANCE.md](PERFORMANCE.md) records the measured scope, samples and
-  limitations;
-  [native-performance-results.json](native-performance-results.json) contains
-  the raw comparison.
+  Keep measurement output in the disposable report path.
 - `native_ssh_performance_scenarios.ts` uses that harness with real OpenSSH to
   compare direct and retained two-MiB throughput, exact click bytes and input
   timing during 60-Hz redraws, and Midnight Commander menu/file clicks. Its
   report defaults to `/tmp/8020-terminal-ssh-performance.json`, overridable with
   `THE8020_TERMINAL_BENCHMARK_REPORT`. Include client terminal parsing; exclude
   GUI painting and WAN latency. Qualify SSH performance when changing redraw or
-  transport behavior. `PERFORMANCE.md` records its scope and
-  `native-ssh-performance-results.json` retains the comparison samples. Set
+  transport behavior. Test separated and adjacent synchronized frames; an
+  input/display stall of 500 ms fails qualification. Set
   `THE8020_TERMINAL_BENCHMARK_SMALL=1` for 128-KiB bursts; both sizes warm up
   with a total of two MiB before collecting samples.
 - The native fixture uses OpenSSH with real password authentication to attach

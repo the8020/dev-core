@@ -707,10 +707,37 @@ export function endSynchronizedOutput(terminal: any): void {
   terminal._core.coreService.decPrivateModes.synchronizedOutput = false;
 }
 
+/** Observe xterm's parsed mode transition before later bytes mutate the frame. */
+export function onSynchronizedOutputEnd(
+  terminal: any,
+  callback: () => void,
+): () => void {
+  const input = terminal._core._inputHandler;
+  const core = terminal._core.coreService;
+  const reset = input.resetModePrivate;
+  input.resetModePrivate = function (...args: any[]) {
+    const wasSynchronized = core.decPrivateModes.synchronizedOutput;
+    const result = reset.apply(this, args);
+    if (wasSynchronized && !core.decPrivateModes.synchronizedOutput) callback();
+    return result;
+  };
+  return () => {
+    input.resetModePrivate = reset;
+  };
+}
+
 // Query responses originate synchronously in xterm's parser. Suppress only that
 // origin in a view: keyboard, paste, focus, and mouse events outside parsing keep
 // their ordinary xterm encoding. The canonical headless owner answers queries.
 export function installTerminalView(terminal: any): void {
+  onSynchronizedOutputEnd(terminal, () => {
+    const render = terminal._core._renderService;
+    if (!render || render._isPaused) return;
+    // DEC 2026 reset already queued the completed rows. Flush that render now:
+    // the next begin marker can otherwise suppress its animation frame forever.
+    render._renderDebouncer.dispose();
+    render._renderDebouncer._innerRefresh();
+  });
   const handler = terminal._core._inputHandler;
   const core = terminal._core.coreService;
   const parse = handler.parse.bind(handler);

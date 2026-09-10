@@ -286,6 +286,101 @@ Deno.test("native views publish completed redraws and defer recovery across spli
   }
 });
 
+Deno.test("native views commit adjacent frames before parsing the next partial frame", async () => {
+  const stream = encoder.encode(
+    "\x1b[?2026;2004h\x1b[2;1Hfirst\x1b[24;3H\x1b[?2026;2004l" +
+      "\x1b[?2026h\x1b[2;1Hsecond\x1b[24;5H\x1b[?2026l" +
+      "\x1b[?2026h\x1b[2;1Hunfinished\x1b[19;1H\x1b[6n\x1b[?2026$p",
+  );
+  // Transport chunking must not choose which application frames are displayed.
+  for (
+    const chunks of [
+      [stream],
+      [...stream].map((byte) => Uint8Array.of(byte)),
+    ]
+  ) {
+    const source = new TerminalEngine({ columns: 80, rows: 24 });
+    const client = new TerminalEngine({ columns: 80, rows: 24 });
+    const writes: Uint8Array[] = [];
+    const native = new TestTerminals();
+    const view = new NativeTerminalView(
+      new NativeTerminalDisplay(source),
+      "processor",
+      "view",
+      {
+        ...native.api,
+        writeView: (_processor, _view, data) => {
+          writes.push(data);
+          return Promise.resolve();
+        },
+      },
+      new AbortController().signal,
+      () => {},
+    );
+    try {
+      await client.apply({ sequence: 1, data: writes.shift()! });
+      const replies = await source.applyBatch(
+        chunks.map((data, index) => ({ sequence: index + 1, data })),
+      );
+      view.update();
+      assertEquals(
+        writes.length,
+        2,
+        "both completed frames reach the view immediately",
+      );
+      for (const [index, data] of writes.entries()) {
+        await client.apply({ sequence: index + 2, data });
+        assertEquals(lines(client)[1], ["first", "second"][index]);
+        assertEquals(client.terminal.buffer.active.cursorY, 23);
+        assertEquals(client.terminal.buffer.active.cursorX, [2, 4][index]);
+        assertEquals(client.terminal.modes.bracketedPasteMode, false);
+      }
+      assertEquals(lines(source)[1], "unfinished");
+      assertEquals(source.terminal.modes.synchronizedOutputMode, true);
+      assertEquals(
+        replies.map((reply) => reply ? new TextDecoder().decode(reply) : "")
+          .join(""),
+        "\x1b[19;1R\x1b[?2026;1$y",
+        "queries continue exactly once inside the unfinished frame",
+      );
+      await source.apply({
+        sequence: stream.length + 1,
+        data: encoder.encode("\x1b[?2026l\x1b[1;1Hafter the frame"),
+      });
+      view.update();
+      assertEquals(
+        writes.length,
+        4,
+        "ordinary bytes after the end marker still publish",
+      );
+      for (const [index, data] of writes.slice(2).entries()) {
+        await client.apply({ sequence: 4 + index, data });
+      }
+      assertEquals(lines(client), lines(source));
+      view.update();
+      assertEquals(
+        writes.length,
+        4,
+        "unchanged projections do not send duplicate frames",
+      );
+      view.close();
+      await source.apply({
+        sequence: stream.length + 2,
+        data: encoder.encode("\x1b[?2026hclosed\x1b[?2026l"),
+      });
+      assertEquals(
+        writes.length,
+        4,
+        "closed views stop observing frame completions",
+      );
+    } finally {
+      view.close();
+      await source.close();
+      await client.close();
+    }
+  }
+});
+
 Deno.test("native synchronized redraws have a deadline and flush on exit", async () => {
   const source = new TerminalEngine({ columns: 80, rows: 24 });
   const writes: string[] = [];

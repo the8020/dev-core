@@ -73,16 +73,21 @@ export default async function benchmark(context: NativeBrowserFixtureContext) {
         }
         // Record exact input at the physical PTY while the application redraws
         // at 60 Hz. Acknowledgements include the input sequence and coordinates.
-        const received = `/tmp/ssh-input-${mode}.json`;
-        const probe = `import os,tty,time,threading,json
+        for (const adjacent of [false, true]) {
+          const received = `/tmp/ssh-input-${mode}-${adjacent}.json`;
+          const probe = `import os,tty,time,threading,json
 tty.setraw(0)
 stop=threading.Event()
+adjacent=${adjacent ? "True" : "False"}
 def draw():
  n=0
+ if adjacent: os.write(1,b'\\x1b[?2026h')
  while not stop.wait(1/60):
-  os.write(1, ('\\x1b[?2026h\\x1b[3;1HREDRAW_%06d\\x1b[24;3H\\x1b[?2026l'%n).encode()); n+=1
+  body='\\x1b[3;1HREDRAW_%06d\\x1b[24;3H'%n
+  frame=(body+'\\x1b[?2026l\\x1b[?2026h') if adjacent else ('\\x1b[?2026h'+body+'\\x1b[?2026l')
+  os.write(1,frame.encode()); n+=1
 t=threading.Thread(target=draw); t.start()
-os.write(1,b'\\x1b[2J\\x1b[HINPUT_READY\\r\\n')
+os.write(1,b'\\x1b[2J\\x1b[HINPUT_READY_${adjacent}\\r\\n')
 buffer=b''; records=[]
 while len(records)<40:
  buffer+=os.read(0,4096)
@@ -92,50 +97,59 @@ while len(records)<40:
   os.write(1,('\\x1b[2;1HACK_%02d'%len(records)).encode())
 stop.set(); t.join()
 open(${JSON.stringify(received)},'w').write(json.dumps(records))
-os.write(1,b'\\r\\nINPUT_DONE\\r\\n')
+os.write(1,b'\\x1b[?2026l\\r\\nINPUT_DONE_${adjacent}\\r\\n')
 `;
-        await shell(`printf %s ${quote(probe)} > /tmp/ssh-input-probe.py`);
-        await ssh.input("python3 /tmp/ssh-input-probe.py\r");
-        await ssh.contains("INPUT_READY");
-        const inputs: string[] = [],
-          latency: number[] = [],
-          sent: number[] = [];
-        for (let i = 0; i < 40; i++) {
-          const x = 5 + i % 20, y = 4 + i % 12;
-          const input = `\x1b[<0;${x};${y}M\x1b[<0;${x};${y}m`;
-          inputs.push(input);
-          const start = performance.now();
-          sent.push(start);
-          await ssh.input(input + "\n");
-          await ssh.contains(`ACK_${String(i + 1).padStart(2, "0")}`);
-          latency.push(ssh.lastOutputAt - start);
-          await pause(25);
+          await shell(`printf %s ${quote(probe)} > /tmp/ssh-input-probe.py`);
+          await ssh.input("python3 /tmp/ssh-input-probe.py\r");
+          await ssh.contains(`INPUT_READY_${adjacent}`);
+          const inputs: string[] = [],
+            latency: number[] = [],
+            sent: number[] = [];
+          for (let i = 0; i < 40; i++) {
+            const x = 5 + i % 20, y = 4 + i % 12;
+            const input = `\x1b[<0;${x};${y}M\x1b[<0;${x};${y}m`;
+            inputs.push(input);
+            const start = performance.now();
+            sent.push(start);
+            await ssh.input(input + "\n");
+            await ssh.contains(`ACK_${String(i + 1).padStart(2, "0")}`);
+            latency.push(ssh.lastOutputAt - start);
+            await pause(25);
+          }
+          await ssh.contains(`INPUT_DONE_${adjacent}`);
+          const result = await shell(`cat ${received}`);
+          const records = JSON.parse(
+            (result.shell as { output: string }).output,
+          ) as { input: string; at: number }[];
+          assertEquals(
+            records.map((r) => r.input),
+            inputs,
+            "each click pair reaches the physical PTY exactly once and in order",
+          );
+          const timingErrorMs = records.slice(1).map((r, i) =>
+            Math.abs((r.at - records[i]!.at) * 1000 - (sent[i + 1]! - sent[i]!))
+          );
+          latency.sort((a, b) => a - b);
+          assert(
+            latency[39]! < 500,
+            `${mode} ${
+              adjacent ? "adjacent" : "separated"
+            } redraw stalled for ${latency[39]} ms`,
+          );
+          measurements.push({
+            mode,
+            operation: adjacent
+              ? "click-input-during-adjacent-60hz-redraw"
+              : "click-input-during-60hz-redraw",
+            clickPairs: inputs.length,
+            medianMs: latency[20],
+            p95Ms: latency[37],
+            maxMs: latency[39],
+            maxIntervalErrorMs: Math.max(...timingErrorMs),
+            exactInput: true,
+          });
+          console.log(JSON.stringify(measurements.at(-1)));
         }
-        await ssh.contains("INPUT_DONE");
-        const result = await shell(`cat ${received}`);
-        const records = JSON.parse(
-          (result.shell as { output: string }).output,
-        ) as { input: string; at: number }[];
-        assertEquals(
-          records.map((r) => r.input),
-          inputs,
-          "each click pair reaches the physical PTY exactly once and in order",
-        );
-        const timingErrorMs = records.slice(1).map((r, i) =>
-          Math.abs((r.at - records[i]!.at) * 1000 - (sent[i + 1]! - sent[i]!))
-        );
-        latency.sort((a, b) => a - b);
-        measurements.push({
-          mode,
-          operation: "click-input-during-60hz-redraw",
-          clickPairs: inputs.length,
-          medianMs: latency[20],
-          p95Ms: latency[37],
-          maxMs: latency[39],
-          maxIntervalErrorMs: Math.max(...timingErrorMs),
-          exactInput: true,
-        });
-        console.log(JSON.stringify(measurements.at(-1)));
         await ssh.input("printf '\\033[?2026h\\r\\nFRAME_TIMEOUT\\r\\n'\r");
         await ssh.contains("\nFRAME_TIMEOUT\n");
         const resumed = performance.now();

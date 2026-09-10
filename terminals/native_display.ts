@@ -20,6 +20,7 @@ export class NativeTerminalDisplay {
   #columns = 0;
   #height = 0;
   #overflow = false;
+  #cursorModes = "";
 
   constructor(readonly engine: TerminalEngine) {
     this.#source = nativeDisplaySource(engine.terminal);
@@ -69,7 +70,8 @@ export class NativeTerminalDisplay {
   }
 
   update(force = false): string {
-    return beginUpdate + this.#update(force) + endUpdate;
+    const update = this.#update(force);
+    return update ? beginUpdate + update + endUpdate : "";
   }
 
   #update(force: boolean): string {
@@ -108,9 +110,14 @@ export class NativeTerminalDisplay {
       if (force || row !== this.#rows[y]) result += `\x1b[${y + 1};1H${row}`;
     }
     this.#rows = rows;
-    return result +
+    const cursorModes =
       `\x1b[${active.cursorY + 1};${Math.min(t.cols, active.cursorX + 1)}H` +
       this.#source.modes();
+    // A frame completion and the surrounding native batch can publish the same
+    // state. Send nothing until cells, history, geometry, cursor or modes change.
+    if (result === prepare && cursorModes === this.#cursorModes) return "";
+    this.#cursorModes = cursorModes;
+    return result + cursorModes;
   }
 
   close(): void {
