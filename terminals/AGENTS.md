@@ -206,14 +206,13 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   process survival, named reopening with a fresh display owner, and explicit
   orphan close from the second node.
 - `native_recovery_scenarios.ts` uses that harness to check repeated real
-  sandbox-helper activation through Deno commands, response-before-reset,
-  sandbox replacement and named terminal reopening, network recovery, and New
-  IDs 3/4/5. Run with
+  sandbox-helper activation through Deno commands, unchanged shell processes,
+  named terminal reattachment, network recovery, and New IDs 3/4/5. Run with
   `--fixture=../dev-core/terminals/native_recovery_scenarios.ts`.
 - `test:native-idle` uses an eight-second terminal deadline and two-second
   sandbox deadline to verify attached browser/SSH protection, repeated SSH
   reattachment, expiry despite output, label retention, subsequent sandbox stop,
-  ordinary SSH lifetime, and restoration of private checkpointed files.
+  ordinary SSH lifetime, and restoration of persistent private files.
 
 # Child DOX Index
 

@@ -32,7 +32,6 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     ),
   );
   assertEquals(cli.success, true);
-  assertEquals(cli.overlay_reset, false);
   assertEquals(await identity(), before);
   assertEquals(
     await Deno.readTextFile(`${root}/packages/${relative}`),
@@ -40,8 +39,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   );
 
   await shell(`printf 'UUI change\n' >/workspace/packages/${relative}`);
-  // UUI uses this same ordinary activation command without the helper's
-  // defer-overlay-reset option. Both paths must preserve the process.
+  // UUI invokes the same activation owner through this command.
   const ui = await admin([
     "dev-core.activate.run",
     user,

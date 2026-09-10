@@ -70,22 +70,24 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   activation validation, changed-file icons, lazy diff loading, added/modified/
   deleted/binary views, draft retention, and console DOM preservation.
 - Kernel development tests and the sibling UUI browser E2E cover sandbox
-  lifecycle, activation validation, independent commits, and overlay reset.
+  lifecycle, activation validation, independent commits, and process continuity.
 - `activation_processes.ts` uses the ordinary installer-built kernel through the
   existing native harness, including after relocating its binary directory. CLI
   activation and the UUI's command path preserve a running process's PID and
   start time. Startup refuses to ignore a legacy checkpoint with private work.
-- `prototype_browser.ts` uses two development sandboxes to check live shared
+- `activation_browser.ts` uses two development sandboxes to check live shared
   files, new packages, UUI conflict resolution, CLI takeover, continuation and
   deletion. It also checks retained private Git history after shared deletion
-  and an explicit restart. Build and invocation are in kernel analysis
-  `PROTOTYPE.md`.
-- `prototype_concurrency.ts` uses the same disposable native harness separately
-  from the UI scenario. It holds a real pre-activation hook, requires another
-  package to publish while that hook waits, checks prompt overlap rejection and
-  health availability, then resolves the retried overlap through ordinary Git.
-  It writes the scoped `prototype-concurrency-results.json` in kernel analysis;
-  the manual review instance and its pending conflicts remain untouched.
+  and an explicit restart. Build and invocation are in
+  [kernel development verification](../../../kernel/kernel/development/AGENTS.md).
+- `activation_concurrency.ts` uses the same disposable native harness separately
+  from the UI scenario. Launch the harness with
+  `THE8020_JOB_DEFAULT_MAXIMUM_PARALLEL_WORKERS=8` so nested shell/activation
+  commands have admission capacity. It holds a real pre-activation hook,
+  requires another package to publish while that hook waits, checks prompt
+  overlap rejection and health availability, then resolves the retried overlap
+  through ordinary Git. It writes results beneath kernel `.development/`;
+  fixtures use disposable nodes and never the developer's own sandbox.
 
 # Child DOX Index
 

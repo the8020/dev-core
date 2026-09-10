@@ -1,4 +1,4 @@
-import { assert, assertEquals } from "@std/assert";
+import { assertEquals } from "@std/assert";
 import type { NativeBrowserFixtureContext } from "/p/the8020/uui/browser_e2e.ts";
 
 /** Exercise the actual helper -> package command -> kernel -> sandbox path. */
@@ -18,6 +18,16 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   await click(page, "[data-terminal-action=new]");
   await ready("2");
 
+  const processes = async () => {
+    const result = await admin([
+      "dev-core.sandbox.shell",
+      credentials.username,
+      "--command",
+      "ps -eo pid,lstart,args | grep '/bin/bash -l$' | sort",
+    ]);
+    return (result.shell as { output: string }).output;
+  };
+  const before = await processes();
   for (const iteration of [1, 2]) {
     const result = await admin([
       "dev-core.sandbox.shell",
@@ -27,30 +37,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     ]);
     const activation = JSON.parse((result.shell as { output: string }).output);
     assertEquals(activation.success, true);
-    assertEquals(activation.overlay_reset_pending, true);
-    assertEquals(activation.overlay_reset, false);
-
-    const deadline = Date.now() + 60_000;
-    while (true) {
-      const { sandbox } = await admin([
-        "dev-core.sandbox.inspect",
-        credentials.username,
-      ]) as {
-        sandbox: {
-          state: string;
-          last_activation_result?: { overlay_reset: boolean };
-        };
-      };
-      if (
-        sandbox.state === "READY" &&
-        sandbox.last_activation_result?.overlay_reset
-      ) break;
-      assert(
-        Date.now() < deadline,
-        "helper activation did not restore sandbox",
-      );
-      await new Promise((resolve) => setTimeout(resolve, 250));
-    }
+    assertEquals(await processes(), before);
     await click(page, "[data-terminal-action=refresh]");
     await ready("2");
   }
@@ -85,6 +72,6 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     ["1", "2", "3", "4", "5"],
   );
   console.log(
-    "Native recovery passed: repeated helper activation, sandbox restart, terminal reopen, offline recovery, and New IDs 3/4/5.",
+    "Native recovery passed: repeated helper activation, process continuity, terminal reconnect, offline recovery, and New IDs 3/4/5.",
   );
 }

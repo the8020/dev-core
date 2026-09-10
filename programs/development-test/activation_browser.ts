@@ -1,7 +1,7 @@
 import { assertEquals } from "@std/assert";
 import type { NativeBrowserFixtureContext } from "/p/the8020/uui/browser_e2e.ts";
 
-// Run through the existing native harness with run.py prototype's binaries.
+// Run through the existing native harness with run.py activation's binaries.
 export default async function verify(context: NativeBrowserFixtureContext) {
   const {
     page,
@@ -15,7 +15,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     waitForPage,
   } = context;
   const user = credentials.username;
-  const peer = "prototypepeer";
+  const peer = "activationpeer";
   await admin(["dev-core.sandbox.create", user]);
   await admin(["dev-core.sandbox.start", user]);
   await admin(["dev-core.sandbox.create", peer]);
@@ -30,13 +30,13 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     return (result.shell as { output: string }).output;
   };
   const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`;
-  const packageID = "the8020/prototype-fixture";
+  const packageID = "the8020/activation-fixture";
   const source = `${root}/packages/${packageID}`;
   await shell(
     `mkdir -p /workspace/packages/${packageID}; printf 'schema = 1\n' >/workspace/packages/${packageID}/package.toml; printf 'original\n' >/workspace/packages/${packageID}/label.ts; printf 'original deletion\n' >/workspace/packages/${packageID}/removed.ts; printf 'original untouched\n' >/workspace/packages/${packageID}/untouched.ts`,
   );
   const created = JSON.parse(
-    await shell("activate --json --message 'Create prototype package'; true"),
+    await shell("activate --json --message 'Create activation package'; true"),
   );
   assertEquals(created.success, true, JSON.stringify(created));
   assertEquals(
@@ -44,10 +44,10 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     "original\n",
   );
   await shell(
-    `printf 'private\n' >/workspace/packages/${packageID}/label.ts; rm /workspace/packages/${packageID}/removed.ts; printf alive >/tmp/prototype-process`,
+    `printf 'private\n' >/workspace/packages/${packageID}/label.ts; rm /workspace/packages/${packageID}/removed.ts; printf alive >/tmp/activation-process`,
   );
   await shell(
-    `printf 'shared\n' >/workspace/packages/${packageID}/label.ts; printf 'changed upstream\n' >/workspace/packages/${packageID}/removed.ts; printf 'shared untouched\n' >/workspace/packages/${packageID}/untouched.ts; printf alive >/tmp/prototype-peer-process`,
+    `printf 'shared\n' >/workspace/packages/${packageID}/label.ts; printf 'changed upstream\n' >/workspace/packages/${packageID}/removed.ts; printf 'shared untouched\n' >/workspace/packages/${packageID}/untouched.ts; printf alive >/tmp/activation-peer-process`,
     peer,
   );
   const sharedHead = await shell(
@@ -82,7 +82,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   await waitForScreen(page, "Development", 60_000);
   await clickButton(page, "Review changes");
   await waitForScreen(page, "Activate development changes");
-  await setValue(page, '[data-bind="message"]', "Resolve prototype conflicts");
+  await setValue(page, '[data-bind="message"]', "Resolve activation conflicts");
   await clickButton(page, "Activate all changes");
   try {
     await waitForScreen(page, "Resolve activation conflicts", 30_000);
@@ -110,7 +110,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   );
   await Deno.writeFile(
     new URL(
-      "../../../kernel/.development/workflow-prototype/conflicts.png",
+      "../../../kernel/.development/conflicts.png",
       import.meta.url,
     ),
     Uint8Array.from(atob(screenshot.data), (value) => value.charCodeAt(0)),
@@ -121,7 +121,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   }).last_activation_result;
   const worktree = attempt.packages[0]!.conflict_worktree;
   const conflictOutput = await shell(
-    "activate --message 'Resolve prototype conflicts' 2>&1; activation_code=$?; printf '\\nEXIT:%s\\n' \"$activation_code\"",
+    "activate --message 'Resolve activation conflicts' 2>&1; activation_code=$?; printf '\\nEXIT:%s\\n' \"$activation_code\"",
   );
   for (
     const expected of [
@@ -195,7 +195,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     else throw error;
   }
   assertEquals(removed, true);
-  assertEquals(await shell("cat /tmp/prototype-process"), "alive");
+  assertEquals(await shell("cat /tmp/activation-process"), "alive");
   assertEquals(
     await shell(
       `cat /workspace/packages/${packageID}/label.ts /workspace/packages/${packageID}/untouched.ts`,
@@ -206,7 +206,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   await shell(`rm -r /workspace/packages/${packageID}`);
   assertEquals(
     JSON.parse(
-      await shell("activate --json --message 'Delete prototype package'"),
+      await shell("activate --json --message 'Delete activation package'"),
     ).success,
     true,
   );
@@ -220,7 +220,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   assertEquals(deleted, true);
   assertEquals(
     await shell(
-      `test ! -e /workspace/packages/${packageID}/package.toml && test ! -e /workspace/packages/${packageID}/label.ts && cat /tmp/prototype-peer-process`,
+      `test ! -e /workspace/packages/${packageID}/package.toml && test ! -e /workspace/packages/${packageID}/label.ts && cat /tmp/activation-peer-process`,
       peer,
     ),
     "alive",
@@ -246,6 +246,6 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     "shared\n",
   );
   console.log(
-    "Native prototype passed: two-developer publication and live untouched files, UUI merge, terminal handoff, deletion, and unchanged development runtimes.",
+    "Native activation passed: two-developer publication and live untouched files, UUI merge, terminal handoff, deletion, and unchanged development runtimes.",
   );
 }

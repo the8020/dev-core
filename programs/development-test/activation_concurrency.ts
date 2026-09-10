@@ -1,7 +1,7 @@
 import { assert, assertEquals } from "@std/assert";
 import type { NativeBrowserFixtureContext } from "/p/the8020/uui/browser_e2e.ts";
 
-// Separate from the UI scenario: run against the built prototype in disposable nodes.
+// Separate from the UI scenario: run against the built activation in disposable nodes.
 export default async function verify(context: NativeBrowserFixtureContext) {
   const { admin, credentials, root, baseURL } = context;
   const user = credentials.username;
@@ -158,7 +158,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
       passed: true,
       observed_at: new Date().toISOString(),
       scope:
-        "Two developers on one native prototype node with SQLite; real helper, evaluator, pre-activation hook and Git conflict retry.",
+        "Two developers on one native activation node with SQLite; real helper, evaluator, pre-activation hook and Git conflict retry.",
       independent_activation_while_hook_held_ms: independentMilliseconds,
       overlapping_activation_busy_response_ms: overlapMilliseconds,
       busy_retry_produces_native_git_conflict: true,
@@ -168,11 +168,10 @@ export default async function verify(context: NativeBrowserFixtureContext) {
       timing_boundary:
         "Single warm observations, including helper and native runtime transport; not a throughput or asset-cost benchmark.",
       multi_node_and_postgresql_qualified: false,
-      full_workflow_qualified: false,
     };
     await Deno.writeTextFile(
       new URL(
-        "../../../kernel/kernel/development/analysis/prototype-concurrency-results.json",
+        "../../../kernel/.development/activation-concurrency-results.json",
         import.meta.url,
       ),
       JSON.stringify(result, null, 2) + "\n",

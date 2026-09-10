@@ -159,10 +159,7 @@ below.
   `dev-core.*` commands to non-discoverable ordinary programs whose default
   exports parse raw string arguments, report intentional input errors
   structurally, and call typed kernel development operations.
-- `dev-core.activate.run --defer-overlay-reset` carries the legacy helper option
-  through the ordinary program/kernel call for baseline checks. Installed
-  activation preserves the running sandbox and never requests that reset; UUI
-  and CLI use the same activation owner.
+- CLI and UUI use the same process-preserving activation owner.
 - Development test selects the authenticated user's single sandbox by `user_id`,
   reads its opaque `sbx-` console target from the returned sandbox record,
   automatically creates or starts it on entry, delegates lifecycle operations to
@@ -189,8 +186,7 @@ below.
 - Activation conflicts open the existing code editor with file selection,
   annotated versions, save/delete actions, and continuation. The kernel helper
   owns native Git operations; the UUI and sandbox terminal resolve the same
-  retained attempt. Finish this prototype, including package deletions, before
-  optimizing the filesystem or activation costs further.
+  retained attempt, including package creation and deletion.
 
 - Development and activation screen loops retain UUI Model wrappers while
   refreshing business data. Activation uses full accessible count headings with
@@ -226,15 +222,15 @@ below.
   doubles; native SSH, deployment, and interactive programs require separate
   qualification. `test:native-browser` uses the sibling UUI node harness and
   disposable real gVisor terminals; required options are in the terminal DOX.
-  `test:native-idle` checks real browser/SSH expiry and sandbox checkpoint/stop
-  with seconds-long deadlines through the same disposable harness.
-  `bench:native-terminals` uses that harness for direct/retained transport,
-  recovery, slow-view, and process-tree resource measurements. The sibling UUI
-  `test:programs-browser` checks the combined settings group, SSH subtitle,
-  reset confirmation, activation validation, file/diff navigation, and console
-  DOM preservation against deterministic kernel responses. Development-domain
-  unit and real gVisor tests use `the8020/dev-core` and `the8020/demo`
-  identities to prove independent histories and multi-package activation without
-  pushing remotes; the browser E2E covers sandbox lifecycle, the registered
-  development console, UUI activation validation/statistics, independent
-  commits, and overlay reset.
+  `test:native-idle` checks real browser/SSH expiry and sandbox
+  persistent-workspace stop with seconds-long deadlines through the same
+  disposable harness. `bench:native-terminals` uses that harness for
+  direct/retained transport, recovery, slow-view, and process-tree resource
+  measurements. The sibling UUI `test:programs-browser` checks the combined
+  settings group, SSH subtitle, reset confirmation, activation validation,
+  file/diff navigation, and console DOM preservation against deterministic
+  kernel responses. Development-domain unit and real gVisor tests use
+  `the8020/dev-core` and `the8020/demo` identities to prove independent
+  histories and multi-package activation without pushing remotes; the browser
+  E2E covers sandbox lifecycle, the registered development console, UUI
+  activation validation/statistics, independent commits, and process continuity.
