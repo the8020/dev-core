@@ -5,7 +5,7 @@ import {
   type PlatformService,
   type RequestMetadata,
   z,
-} from "@the8020/http";
+} from "/p/the8020/services/http.ts";
 import { kernel, WorkerInvokeError } from "@the8020/kernel";
 import type { TerminalMetadataStore, TerminalRecord } from "./metadata.ts";
 import { TerminalBusyError, TerminalOwner } from "./owner.ts";
@@ -392,7 +392,6 @@ export function defineTerminalService(
     }
   };
   return Object.freeze<PlatformService>({
-    __the8020Service: true as const,
     fetch: (request, runtime) =>
       completeUnowned(runtime.meta, () => service.fetch(request, runtime)),
     connectWebSocket: (request, runtime, socket) =>

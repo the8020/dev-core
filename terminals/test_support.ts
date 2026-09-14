@@ -10,7 +10,7 @@ import type {
   WebSocketData,
   WebSocketInboundEvent,
   WebSocketSession,
-} from "@the8020/http";
+} from "/p/the8020/services/http.ts";
 import { TERMINAL_PROTOCOL } from "./protocol.ts";
 
 export class TestSocket implements WebSocketSession {

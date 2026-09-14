@@ -11,6 +11,8 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 
 # Local Contracts
 
+- Development mutations use `src/development.ts` so the shared system role is
+  checked in the same owner as command mutations.
 - Reuse package-owned development and activation fields from `src/fields.ts`;
   keep terminal controls, layout, and presentation hints in this program.
 

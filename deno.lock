@@ -62,12 +62,9 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@hono/hono@4.9.8",
       "jsr:@std/assert@1.0.14",
       "npm:@xterm/addon-fit@0.11.0",
-      "npm:@xterm/xterm@6.0.0",
-      "npm:kysely@0.29.4",
-      "npm:zod@4.1.5"
+      "npm:@xterm/xterm@6.0.0"
     ]
   }
 }

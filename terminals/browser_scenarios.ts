@@ -1,6 +1,9 @@
 import { assertEquals } from "@std/assert";
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { RequestMetadata, WebSocketSession } from "@the8020/http";
+import type {
+  RequestMetadata,
+  WebSocketSession,
+} from "/p/the8020/services/http.ts";
 import type {
   kernel,
   PersistentServiceTarget,

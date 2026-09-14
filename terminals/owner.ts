@@ -5,7 +5,7 @@ import {
   TerminalControlBusyError,
   type TerminalEvent,
 } from "@the8020/kernel";
-import type { WebSocketSession } from "@the8020/http";
+import type { WebSocketSession } from "/p/the8020/services/http.ts";
 import { TerminalEngine } from "./engine.ts";
 import { MAX_SNAPSHOT_BYTES } from "./state.ts";
 import {

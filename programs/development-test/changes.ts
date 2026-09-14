@@ -1,4 +1,4 @@
-import { kernel } from "@the8020/kernel";
+import { development } from "../../src/development.ts";
 import {
   BACK_EVENT,
   callScreen,
@@ -33,7 +33,7 @@ export function changeLabel(change: string): string {
 }
 
 async function previewPackage(user: string, id: string, file?: string) {
-  const preview = await kernel.development.activate.preview({
+  const preview = await development.activate.preview({
     user_id: user,
     packages: id,
     ...(file === undefined ? {} : { file }),

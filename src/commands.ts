@@ -1,16 +1,16 @@
+import { development } from "./development.ts";
+import { AdminCommandError } from "@the8020/kernel";
 import {
-  AdminCommandError,
-  kernel,
   parseCommandArguments,
   requiredCommandArgument,
-} from "@the8020/kernel";
+} from "/p/the8020/packages/commands.ts";
 
 export function imageStatus() {
-  return kernel.development.imageStatus().then((image) => ({ image }));
+  return development.imageStatus().then((image) => ({ image }));
 }
 
 export function sandboxList() {
-  return kernel.development.sandbox.list().then((sandboxes) => ({ sandboxes }));
+  return development.sandbox.list().then((sandboxes) => ({ sandboxes }));
 }
 
 export function sandboxAction(action: string, args: string[]) {
@@ -35,7 +35,7 @@ export function sandboxAction(action: string, args: string[]) {
   if (parsed.options.command !== undefined) {
     input.command = parsed.options.command;
   }
-  return kernel.development.sandbox.run(
+  return development.sandbox.run(
     action,
     requiredCommandArgument(parsed.positionals, 0, "user ID"),
     input,
@@ -73,11 +73,11 @@ function activationInput(args: string[], requireMessage: boolean) {
 }
 
 export function activationPreview(...args: string[]) {
-  return kernel.development.activate.preview(activationInput(args, false))
+  return development.activate.preview(activationInput(args, false))
     .then((preview) => ({ preview }));
 }
 
 export function activationRun(...args: string[]) {
-  return kernel.development.activate.run(activationInput(args, true))
+  return development.activate.run(activationInput(args, true))
     .then((activation) => ({ activation }));
 }

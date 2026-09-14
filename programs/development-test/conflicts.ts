@@ -1,4 +1,4 @@
-import { kernel } from "@the8020/kernel";
+import { development } from "../../src/development.ts";
 import {
   BACK_EVENT,
   callScreen,
@@ -51,7 +51,7 @@ async function conflictCommand<T>(
   const data = btoa(
     Array.from(bytes, (byte) => String.fromCharCode(byte)).join(""),
   );
-  const result = await kernel.development.sandbox.run("shell", user, {
+  const result = await development.sandbox.run("shell", user, {
     command:
       `printf %s '${data}' | base64 -d | deno run --allow-read --allow-write --allow-run=/usr/bin/git --allow-env=DEVELOPMENT_USER_ID /workspace/scripts/activation-conflicts.ts`,
   });

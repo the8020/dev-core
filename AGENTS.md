@@ -147,6 +147,9 @@ below.
 
 # Local Contracts
 
+- `src/development.ts` gates application sandbox creation/start/shell and direct
+  activation with `system.requireDevelopment()`. Commands and UUI share this
+  owner; inspect, stop, kill, and deletion remain available for cleanup.
 - The package root is its independent Git repository root.
 - Development declares `uui = true` for Home; command entrypoints keep the
   non-UUI default.
@@ -193,6 +196,12 @@ below.
   compact short labels through shared list column metadata.
 
 # Work Guidance
+
+- Build only what the request and established contracts require. Before adding a
+  mechanism, identify that need and why existing owners or standard tools cannot
+  meet it. Do not invent stronger guarantees for hypothetical cases. Remove
+  unsupported additions at closeout; agent-written tests and DOX do not
+  authorize them. Preserve required correctness, security, and data integrity.
 
 - Package development workflows and terminal components here, using ordinary
   programs, services, typed kernel calls, and generic UUI hosting. Keep

@@ -1,5 +1,5 @@
+import { development } from "../../src/development.ts";
 import { context } from "@the8020/context";
-import { kernel } from "@the8020/kernel";
 import {
   BACK_EVENT,
   callScreen,
@@ -180,23 +180,23 @@ export default async function developmentTest(): Promise<void> {
     try {
       if (action === "start") {
         if (sandbox === undefined) {
-          await kernel.development.sandbox.run("create", developmentUserId);
+          await development.sandbox.run("create", developmentUserId);
           status = "Development sandbox created and started";
         } else {
-          await kernel.development.sandbox.run("start", developmentUserId);
+          await development.sandbox.run("start", developmentUserId);
           status = "Development sandbox started";
         }
       }
       if (action === "stop" && sandbox !== undefined) {
-        await kernel.development.sandbox.run("stop", developmentUserId);
+        await development.sandbox.run("stop", developmentUserId);
         status = "Development sandbox stopped";
       }
       if (action === "restart" && sandbox !== undefined) {
-        await kernel.development.sandbox.run("restart", developmentUserId);
+        await development.sandbox.run("restart", developmentUserId);
         status = "Development sandbox restarted";
       }
       if (action === "reset-source" && sandbox !== undefined) {
-        await kernel.development.sandbox.run(
+        await development.sandbox.run(
           "reset-source",
           developmentUserId,
           { confirm: true },
@@ -204,7 +204,7 @@ export default async function developmentTest(): Promise<void> {
         status = "Development source reset";
       }
       if (action === "factory-reset" && sandbox !== undefined) {
-        await kernel.development.sandbox.run(
+        await development.sandbox.run(
           "factory-reset",
           developmentUserId,
           { confirm: true },
@@ -228,14 +228,14 @@ async function activateChanges(userId: string): Promise<void> {
     let previewError = "";
     const result: ActivationPreviewResult = { preview: { packages: [] } };
     try {
-      const inspected = await kernel.development.sandbox.run("inspect", userId);
+      const inspected = await development.sandbox.run("inspect", userId);
       pending = (inspected.sandbox as {
         last_activation_result?: ActivationRunResult["activation"];
       }).last_activation_result;
       conflicted = pending?.status === "conflicted" &&
         !!pending.packages?.some((item) => item.conflict_worktree);
       if (!conflicted) {
-        result.preview = await kernel.development.activate.preview({
+        result.preview = await development.activate.preview({
           user_id: userId,
         }) as ActivationPreviewResult["preview"];
       }
@@ -312,7 +312,7 @@ async function activateChanges(userId: string): Promise<void> {
         ) continue;
         let activation: ActivationRunResult["activation"];
         while (true) {
-          activation = await kernel.development.activate.run({
+          activation = await development.activate.run({
             user_id: userId,
             message: message.trim(),
             metadata: JSON.stringify({ client: "uui" }),
@@ -352,10 +352,10 @@ async function startDevelopmentSandbox(userId: string): Promise<string> {
     return "Ready";
   }
   if (sandbox === undefined) {
-    await kernel.development.sandbox.run("create", userId);
+    await development.sandbox.run("create", userId);
     return "Development sandbox created and started";
   }
-  await kernel.development.sandbox.run("start", userId);
+  await development.sandbox.run("start", userId);
   return "Development sandbox started";
 }
 
@@ -408,7 +408,7 @@ function sshHint(user: string): string | undefined {
 }
 
 async function developmentSandboxes(): Promise<DevelopmentSandbox[]> {
-  return await kernel.development.sandbox.list() as DevelopmentSandbox[];
+  return await development.sandbox.list() as DevelopmentSandbox[];
 }
 
 function isRunning(sandbox: DevelopmentSandbox): boolean {

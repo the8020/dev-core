@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "@std/assert";
-import type { RequestMetadata } from "@the8020/http";
+import type { RequestMetadata } from "/p/the8020/services/http.ts";
 import { WorkerInvokeError } from "@the8020/kernel";
 import { installContextProvider } from "../../kernel/defaults/config/runtime/deno/context/runtime.ts";
 import type { TerminalMetadataStore, TerminalRecord } from "./metadata.ts";
