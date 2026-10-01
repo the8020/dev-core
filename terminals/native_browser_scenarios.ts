@@ -317,7 +317,11 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     "Network.getCookies",
     { urls: [context.baseURL] },
   );
-  assert(!cookies.cookies.some((cookie) => cookie.name === "the8020_auth"));
+  assert(
+    !cookies.cookies.some((cookie) =>
+      /^the8020_auth_sys-[a-z0-9]{10}$/.test(cookie.name)
+    ),
+  );
   // The login page intentionally disallows fetch through CSP. Test the public
   // authenticated endpoint from the harness after checking the browser cookie.
   const unauthenticated = await fetch(
