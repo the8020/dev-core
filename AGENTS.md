@@ -142,6 +142,8 @@ below.
 - Own `programs/development-test`, administrative development command programs,
   its sandbox lifecycle/console screen, terminal code and assets, and small
   `fixtures/activation-*` text and TypeScript fixtures.
+- Own the read-only Code browser program for navigating the authenticated
+  developer's private package workspace with the shared UUI code editor.
 - Do not own development sandbox state, Git activation logic, sandbox
   implementation, physical PTYs, generic browser hosting, or kernel routing.
 
@@ -243,3 +245,5 @@ below.
   histories and multi-package activation without pushing remotes; the browser
   E2E covers sandbox lifecycle, the registered development console, UUI
   activation validation/statistics, independent commits, and process continuity.
+- `deno task test` also checks code-browser source confinement, text search, and
+  language-server framing. Build its assets with `deno task build:code-browser`.

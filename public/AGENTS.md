@@ -8,6 +8,9 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 
 - Own generated browser artifacts. Authored terminal code lives in
   [terminals](../terminals/AGENTS.md).
+- Authored code-navigation assets live in
+  [programs/code-browser](../programs/code-browser/AGENTS.md); its build produces
+  hashed JavaScript/CSS and updates that program's asset manifest.
 
 # Local Contracts
 
@@ -16,6 +19,8 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 - `deno task build` produces content-hashed terminal files and updates
   `terminals/assets.json`. Programs reference that manifest through
   `packageAssetURL`; the shell bundle does not import these assets.
+- `deno task build:code-browser` builds the source navigator and updates
+  `programs/code-browser/assets.json` through the same publication path.
 - Preserve dependency notices in the package's `THIRD_PARTY_NOTICES.md`.
 
 # Work Guidance

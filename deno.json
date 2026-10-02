@@ -23,7 +23,8 @@
   "tasks": {
     "check": "deno fmt --check . && deno lint . && deno check --import-map=deno.local.json programs/*/*.ts src/*.ts services/*/service.ts tables/*.ts terminals/frontend/console.ts terminals/browser_scenarios.ts terminals/native*_scenarios.ts",
     "build": "deno run -A --import-map=deno.local.json terminals/build.ts",
-    "test": "deno test --import-map=deno.local.json terminals",
+    "build:code-browser": "deno run -A --import-map=deno.local.json programs/code-browser/build.ts",
+    "test": "deno test --allow-read --allow-write --import-map=deno.local.json terminals programs/code-browser",
     "test:browser": "deno run -A --import-map=deno.local.json ../uui/presentation_browser_e2e.ts --fixture=../dev-core/terminals/browser_scenarios.ts",
     "test:native-browser": "deno run -A --import-map=deno.local.json ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_browser_scenarios.ts",
     "test:native-resilience": "deno run -A --import-map=deno.local.json ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_resilience_scenarios.ts",
