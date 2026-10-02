@@ -1,0 +1,40 @@
+.code-browser-editor .code-browser-files {
+  flex: 0 0 auto;
+  margin-bottom: 8px;
+}
+.code-browser-files button {
+  white-space: nowrap;
+}
+.code-browser-editor .uui-code-toolbar {
+  flex-wrap: wrap;
+  height: auto;
+  min-height: 28px;
+}
+.code-browser-find {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-block: 8px;
+}
+.code-browser-find[hidden] {
+  display: none;
+}
+.code-browser-find input {
+  flex: 1 1 10rem;
+  min-width: 0;
+}
+.code-browser-find .button {
+  padding: 4px;
+}
+.code-browser-position {
+  flex: 0 0 auto;
+  padding-top: 4px;
+}
+.code-browser-symbol {
+  margin: 0;
+  max-width: min(40rem, calc(100vw - 64px));
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.85rem;
+}
