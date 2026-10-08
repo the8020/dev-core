@@ -1,4 +1,5 @@
 const root = new URL("../../", import.meta.url);
+const importMap = Deno.env.get("DENO_IMPORT_MAP");
 const output = await Deno.makeTempFile({ suffix: ".js" });
 try {
   const build = await new Deno.Command(Deno.execPath(), {
@@ -6,6 +7,7 @@ try {
       "bundle",
       "--config",
       new URL("deno.json", root).pathname,
+      ...(importMap ? ["--import-map", importMap] : []),
       "--platform",
       "browser",
       "--minify",

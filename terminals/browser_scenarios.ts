@@ -591,6 +591,10 @@ export default async function fixture(temporaryRoot: string) {
         "document.querySelector('.xterm-rows').textContent.includes('Updating')",
         "completed redraw rendered",
       );
+      // Drain the preceding redraw's queued paint before observing new frames.
+      await page.evaluate(
+        "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+      );
       await page.evaluate(`(() => {
         globalThis.__completedFrames = [];
         globalThis.__frameObserver = globalThis.__terminalForTest.onRender(() => {

@@ -65,7 +65,9 @@ Parent DOX: [development programs](../AGENTS.md).
 
 # Verification
 
-- Build with `deno task build:code-browser`. Run package checks and
+- Build with `deno task build:code-browser`; for sibling-source builds, set
+  `DENO_IMPORT_MAP=deno.local.json` so the spawned bundle resolves local
+  imports. Run package checks and
   `deno test --allow-read --allow-write programs/code-browser` with runtime SDK
   mappings, or the ordinary local import map when sibling kernel source exists.
 - After dev-only activation, test exception → source → definition/references →
