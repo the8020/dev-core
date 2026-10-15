@@ -1,4 +1,5 @@
 import { development } from "../../src/development.ts";
+import type { SchemaPlan } from "/p/the8020/db/mod.ts";
 import { context } from "@the8020/context";
 import {
   BACK_EVENT,
@@ -50,6 +51,7 @@ interface ActivationRunResult extends Record<string, unknown> {
     status: string;
     error?: string;
     packages: ConflictPackage[];
+    schema_result?: Record<string, { route: string; columns?: string[] }>;
   };
 }
 
@@ -220,8 +222,9 @@ export default async function developmentTest(): Promise<void> {
 
 async function activateChanges(userId: string): Promise<void> {
   let message = "";
-  let status = "Review the changed packages and enter a commit message.";
+  let status = "";
   let screenModel1: Model<z.infer<typeof ActivationScreen>> | undefined;
+  let schemaPlan: SchemaPlan | undefined;
   while (true) {
     let pending: ActivationRunResult["activation"] | undefined;
     let conflicted = false;
@@ -254,8 +257,10 @@ async function activateChanges(userId: string): Promise<void> {
     const model: z.infer<typeof ActivationScreen> = {
       packages,
       message,
-      status: previewError ||
-        (!conflicted && packages.length === 0 ? "No private changes" : status),
+      status: previewError || status ||
+        (!conflicted && packages.length === 0
+          ? "No private changes"
+          : "Review the changed packages and enter a commit message."),
     };
     screenModel1 ??= new Model(model);
     screenModel1.data = model;
@@ -283,6 +288,15 @@ async function activateChanges(userId: string): Promise<void> {
               kind: "primary" as const,
             }]
             : []),
+          ...(schemaPlan?.tables.some((t) =>
+              t.affected_columns.some((c) => c.repair !== "unsupported")
+            )
+            ? [{
+              id: "force",
+              label: "Force activation…",
+              kind: "danger" as const,
+            }]
+            : []),
           { id: "refresh", label: "Refresh" },
         ],
       },
@@ -290,7 +304,10 @@ async function activateChanges(userId: string): Promise<void> {
     message = model.message;
     if (!previewError) status = model.status;
     if (event.action === BACK_EVENT) return;
-    if (event.action === "change" || event.action === "refresh") continue;
+    if (event.action === "change" || event.action === "refresh") {
+      schemaPlan = undefined;
+      continue;
+    }
     if (event.action === "select" && typeof event.value === "string") {
       const selected = result.preview.packages.find((item) =>
         item.package_id === event.value
@@ -299,13 +316,47 @@ async function activateChanges(userId: string): Promise<void> {
         await presentPage(() => reviewPackageChanges(userId, selected));
       }
     }
-    if (event.action === "sync-all" || event.action === "resolve") {
+    if (
+      event.action === "sync-all" || event.action === "resolve" ||
+      event.action === "force"
+    ) {
       if (message.trim() === "") {
         status = "A commit message is required";
         sendMessage(status, "error");
         continue;
       }
       try {
+        const selected = result.preview.packages.filter((p) =>
+          p.activation_ready
+        ).map((p) => p.package_id);
+        let force: string[] = [];
+        let approved: string | undefined;
+        if (event.action === "force") {
+          const preview = await development.activate.preview({
+            user_id: userId,
+            message: message.trim(),
+            packages: selected.join(","),
+            schema_preview: true,
+            metadata: JSON.stringify({ client: "uui" }),
+          });
+          schemaPlan = preview.schema_plan as SchemaPlan;
+          if (
+            !schemaPlan ||
+            !schemaPlan.tables.some((t) =>
+              t.affected_columns.some((c) => c.repair !== "unsupported")
+            )
+          ) {
+            status = "No legal automatic column repair is available";
+            continue;
+          }
+          if (!(await confirmForce(schemaPlan, message.trim()))) continue;
+          force = schemaPlan.tables.flatMap((t) =>
+            t.affected_columns.filter((c) => c.repair !== "unsupported").map((
+              c,
+            ) => `${t.table_id}.${c.name}`)
+          );
+          approved = schemaPlan.identity;
+        }
         if (
           event.action === "resolve" && pending &&
           !(await presentPage(() => resolveConflicts(userId, pending.packages)))
@@ -316,6 +367,9 @@ async function activateChanges(userId: string): Promise<void> {
             user_id: userId,
             message: message.trim(),
             metadata: JSON.stringify({ client: "uui" }),
+            packages: selected.join(","),
+            force_columns: force.join(","),
+            approved_plan: approved,
           }) as ActivationRunResult["activation"];
           if (
             activation.status === "conflicted" &&
@@ -332,14 +386,88 @@ async function activateChanges(userId: string): Promise<void> {
           );
         }
         message = "";
+        schemaPlan = undefined;
         status = "All package changes activated";
+        if (activation.schema_result) {
+          status += ". " +
+            Object.entries(activation.schema_result).map(([table, receipt]) =>
+              `${table}: ${
+                receipt.route === "repair"
+                  ? `incompatible cells repaired (${
+                    receipt.columns?.join(", ") ?? "authorized columns"
+                  })`
+                  : receipt.route === "cleanup"
+                  ? "cleanup and schema applied"
+                  : "schema applied"
+              }`
+            ).join("; ");
+        }
         sendMessage(status, "success");
       } catch (error) {
         status = error instanceof Error ? error.message : String(error);
         sendMessage(status, "error");
+        try {
+          const preview = await development.activate.preview({
+            user_id: userId,
+            message: message.trim(),
+            packages: result.preview.packages.filter((p) => p.activation_ready)
+              .map((p) => p.package_id).join(","),
+            schema_preview: true,
+            metadata: JSON.stringify({ client: "uui" }),
+          });
+          schemaPlan = preview.schema_plan as SchemaPlan | undefined;
+        } catch {
+          schemaPlan = undefined;
+        }
       }
     }
   }
+}
+
+async function confirmForce(
+  plan: SchemaPlan,
+  message: string,
+): Promise<boolean> {
+  return await presentModal(async () => {
+    const model = new Model({ confirmed: false });
+    const tables = plan.tables.filter((t) => t.route !== "automatic");
+    while (true) {
+      const event = await callScreen({
+        id: "development-force-confirm",
+        title: "Force activation?",
+        description: `Commit: ${message}\n\n${
+          tables.flatMap((t) =>
+            t.affected_columns.filter((c) => c.repair !== "unsupported").map((
+              c,
+            ) =>
+              `${t.table_id}.${c.name}: only incompatible cells may become ${
+                c.repair === "null" ? "NULL" : "the authored target default"
+              }. Other values, rows, keys and identities are retained.`
+            )
+          ).join("\n")
+        }\nCleanup and native activation run first. Unsupported repairs stop without clearing a table.`,
+        schema: z.object({
+          confirmed: field(z.boolean(), {
+            label: "Repair incompatible cells in the listed columns",
+          }),
+        }),
+        model,
+        header: {
+          actions: [
+            { id: "force", label: "Force activation", kind: "danger" },
+            { id: "cancel", label: "Cancel" },
+          ],
+        },
+      });
+      if (event.action === BACK_EVENT || event.action === "cancel") {
+        return false;
+      }
+      if (event.action === "force" && model.data.confirmed) return true;
+      if (event.action === "force") {
+        sendMessage("Confirm column repair before force activation.", "error");
+      }
+    }
+  });
 }
 
 async function startDevelopmentSandbox(userId: string): Promise<string> {
