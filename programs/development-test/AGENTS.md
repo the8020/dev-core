@@ -67,6 +67,9 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   unchecked acknowledgement and Cancel/Back. Submit exact tables and plan
   identity; stale candidate/scope requires fresh confirmation. Cancellation
   preserves the message draft; success retains the actual cleanup/repair result.
+- Resumed success identifies captured changes rather than claiming all current
+  workspace changes were activated. Native errors retain deployment/recovery
+  context unchanged.
 
 # Work Guidance
 
@@ -78,9 +81,9 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   ../uui/presentation_browser_e2e.ts
   --fixture=../dev-core/programs/development-test/force_browser_fixture.ts`
   checks unchecked acknowledgement, cancellation/draft retention, stale
-  candidate/scope and fresh confirmation in Chromium with native-operation
-  doubles. Real cleanup/repair and publication behavior are qualified by kernel
-  fixtures.
+  candidate/scope, fresh confirmation and resumed-capture success wording in
+  Chromium with native-operation doubles. Real cleanup/repair and publication
+  behavior are qualified by kernel fixtures.
 - Run sibling UUI `deno task test:programs-browser` for reset confirmation,
   activation validation, changed-file icons, lazy diff loading, added/modified/
   deleted/binary views, draft retention, and console DOM preservation.

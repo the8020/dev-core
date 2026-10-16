@@ -90,6 +90,7 @@ export default function fixture() {
         return Promise.resolve({
           success: true,
           status: "complete",
+          resumed: true,
           schema_result: {
             example__testing__orders: { route: "repair", columns: ["status"] },
           },
@@ -175,6 +176,9 @@ export default function fixture() {
       assertEquals(repairs, 1);
       await wait(
         `[...document.querySelectorAll('[data-bind="status"]')].some(e => !e.closest('[hidden]') && e.getClientRects().length && e.value?.includes('incompatible cells repaired'))`,
+      );
+      await wait(
+        `[...document.querySelectorAll('[data-bind="status"]')].some(e => !e.closest('[hidden]') && e.getClientRects().length && e.value?.includes('review remaining workspace changes'))`,
       );
     },
     serve(request: Request) {

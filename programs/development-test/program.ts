@@ -50,6 +50,7 @@ interface ActivationRunResult extends Record<string, unknown> {
     success: boolean;
     status: string;
     error?: string;
+    resumed?: boolean;
     packages: ConflictPackage[];
     schema_result?: Record<string, { route: string; columns?: string[] }>;
   };
@@ -387,7 +388,9 @@ async function activateChanges(userId: string): Promise<void> {
         }
         message = "";
         schemaPlan = undefined;
-        status = "All package changes activated";
+        status = activation.resumed
+          ? "Captured changes activated; review remaining workspace changes"
+          : "All package changes activated";
         if (activation.schema_result) {
           status += ". " +
             Object.entries(activation.schema_result).map(([table, receipt]) =>
