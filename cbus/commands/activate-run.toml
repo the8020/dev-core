@@ -2,8 +2,10 @@ version = 1
 command = "dev-core.activate.run"
 program = "the8020/dev-core/activate-run"
 summary = "Activate package changes"
-usage = "<user-id> --message <message> [options]"
+usage = "<user-id> --message <message> [--packages <id,id,...>] [--force <table-id.column,...>] [options]"
 mutates_state = true
 restart_behavior = "none"
 [[examples]]
 command = "dev-core.activate.run alice --message 'Update packages'"
+[[examples]]
+command = "dev-core.activate.run alice --packages acme/orders --message 'Change schema' --force acme__orders__documents.status"

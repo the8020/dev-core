@@ -165,6 +165,10 @@ below.
   exports parse raw string arguments, report intentional input errors
   structurally, and call typed kernel development operations.
 - CLI and UUI use the same process-preserving activation owner.
+- Activation transports optional schema preview, exact force-column scope and
+  approved-plan identity. Force does not skip cleanup/native activation or
+  application development-role checks; the DB owner validates repair/recovery
+  semantics.
 - Development test selects the authenticated user's single sandbox by `user_id`,
   reads its opaque `sbx-` console target from the returned sandbox record,
   automatically creates or starts it on entry, delegates lifecycle operations to
@@ -222,6 +226,15 @@ below.
   `Value is stored per-session in the user storage.` or
   `The value is sent directly to kernel secret storage and is not shown again.`
   in the UI.
+
+## UI Rules
+
+- Do not add explanatory helper copy that restates what the control already
+  implies (e.g. "optional", "works without selection", "failure falls back to
+  X"). Prefer clear labels and option text; surface status in results when
+  needed, not as instructional paragraphs under every field.
+- Keep UI copy concise. Avoid tutorial-style descriptions unless the user
+  explicitly asks for onboarding help.
 
 # Verification
 

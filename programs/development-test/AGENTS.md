@@ -62,12 +62,25 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   preserves the root home directory and installed system changes; factory reset
   deletes both. Development sandbox IDs belong to the development manager and
   must not open the runtime Sandboxes program.
+- Schema failure obtains the same candidate plan as CLI. Force activation opens
+  an ordinary modal with exact table/column/NULL-or-default damage, an initially
+  unchecked acknowledgement and Cancel/Back. Submit exact tables and plan
+  identity; stale candidate/scope requires fresh confirmation. Cancellation
+  preserves the message draft; success retains the actual cleanup/repair result.
 
 # Work Guidance
 
 # Verification
 
 - Run `deno task check` from the dev-core root.
+- From the dev-core root,
+  `deno run -A --import-map=deno.local.json
+  ../uui/presentation_browser_e2e.ts
+  --fixture=../dev-core/programs/development-test/force_browser_fixture.ts`
+  checks unchecked acknowledgement, cancellation/draft retention, stale
+  candidate/scope and fresh confirmation in Chromium with native-operation
+  doubles. Real cleanup/repair and publication behavior are qualified by kernel
+  fixtures.
 - Run sibling UUI `deno task test:programs-browser` for reset confirmation,
   activation validation, changed-file icons, lazy diff loading, added/modified/
   deleted/binary views, draft retention, and console DOM preservation.

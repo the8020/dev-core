@@ -44,6 +44,7 @@ export function sandboxAction(action: string, args: string[]) {
 
 function activationInput(args: string[], requireMessage: boolean) {
   const parsed = parseCommandArguments(args, {
+    booleans: ["schema"],
     values: [
       ...(!requireMessage ? ["file"] : []),
       "message",
@@ -52,6 +53,8 @@ function activationInput(args: string[], requireMessage: boolean) {
       "author-name",
       "author-email",
       "metadata",
+      "force",
+      "approved-plan",
     ],
   });
   if (requireMessage && typeof parsed.options.message !== "string") {
@@ -69,6 +72,9 @@ function activationInput(args: string[], requireMessage: boolean) {
     author_name: parsed.options["author-name"],
     author_email: parsed.options["author-email"],
     metadata: parsed.options.metadata,
+    force_columns: parsed.options.force,
+    approved_plan: parsed.options["approved-plan"],
+    schema_preview: parsed.options.schema,
   };
 }
 
