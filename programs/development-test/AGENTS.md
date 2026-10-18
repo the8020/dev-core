@@ -11,6 +11,11 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 
 # Local Contracts
 
+- Changed-package activation, refresh, and conflict-resolution entry actions
+  live in the packages toolbar. Changed-file refresh and selected conflict-file
+  operations live in their file-list toolbars; Save resolution stays with the
+  editor form.
+
 - Development mutations use `src/development.ts` so the shared system role is
   checked in the same owner as command mutations.
 - Reuse package-owned development and activation fields from `src/fields.ts`;

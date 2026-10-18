@@ -128,6 +128,8 @@ export default function fixture() {
         );
       await button("Review changes");
       await wait(`!!document.querySelector('[data-bind="message"]')`);
+      await wait(`!document.querySelector('#screen-back')?.disabled`);
+      await new Promise((resolve) => setTimeout(resolve, 100));
       await page.evaluate(
         `(() => {const e=document.querySelector('[data-bind="message"]'); e.value='Keep this draft'; e.dispatchEvent(new Event('input',{bubbles:true})); e.dispatchEvent(new Event('change',{bubbles:true}));})()`,
       );

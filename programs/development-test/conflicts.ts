@@ -218,6 +218,28 @@ export async function resolveConflicts(
               id: "files",
               type: "list",
               bind: "files",
+              toolbar: [
+                ...(files.length === 0
+                  ? [{
+                    id: "continue",
+                    label: "Continue activation",
+                    kind: "primary" as const,
+                  }]
+                  : [
+                    ...(file?.hasPrivate
+                      ? [{ id: "private", label: "Use your version" }]
+                      : []),
+                    ...(file?.hasShared
+                      ? [{ id: "shared", label: "Use shared version" }]
+                      : []),
+                    {
+                      id: "delete",
+                      label: "Delete file",
+                      kind: "danger" as const,
+                    },
+                  ]),
+                { id: "refresh", label: "Refresh from Git" },
+              ],
               key: "id",
               display: ["package", "path", "kind"],
             },
@@ -238,31 +260,9 @@ export async function resolveConflicts(
         },
       },
       header: {
-        actions: [
-          ...(files.length === 0
-            ? [{
-              id: "continue",
-              label: "Continue activation",
-              kind: "primary" as const,
-            }]
-            : [
-              ...(!file?.binary
-                ? [{
-                  id: "save",
-                  label: "Save resolution",
-                  kind: "primary" as const,
-                }]
-                : []),
-              ...(file?.hasPrivate
-                ? [{ id: "private", label: "Use your version" }]
-                : []),
-              ...(file?.hasShared
-                ? [{ id: "shared", label: "Use shared version" }]
-                : []),
-              { id: "delete", label: "Delete file", kind: "danger" as const },
-            ]),
-          { id: "refresh", label: "Refresh from Git" },
-        ],
+        actions: files.length > 0 && !file?.binary
+          ? [{ id: "save", label: "Save resolution", kind: "primary" }]
+          : [],
       },
     });
     if (event.action === BACK_EVENT) return false;

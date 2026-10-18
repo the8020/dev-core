@@ -272,34 +272,44 @@ async function activateChanges(userId: string): Promise<void> {
         "Activate your changes for all ready packages. Each package gets a commit with the message below.",
       schema: ActivationScreen,
       model: screenModel1,
-      layout: activationLayout,
-      header: {
-        actions: [
-          ...(conflicted
-            ? [{
-              id: "resolve",
-              label: "Resolve conflicts",
-              kind: "primary" as const,
-            }]
-            : []),
-          ...(packages.length > 0
-            ? [{
-              id: "sync-all",
-              label: "Activate all changes",
-              kind: "primary" as const,
-            }]
-            : []),
-          ...(schemaPlan?.tables.some((t) =>
-              t.affected_columns.some((c) => c.repair !== "unsupported")
-            )
-            ? [{
-              id: "force",
-              label: "Force activation…",
-              kind: "danger" as const,
-            }]
-            : []),
-          { id: "refresh", label: "Refresh" },
-        ],
+      layout: {
+        ...activationLayout,
+        root: {
+          ...activationLayout.root,
+          children: activationLayout.root.children.map((child) =>
+            child.id === "changed-packages"
+              ? {
+                ...child,
+                toolbar: [
+                  ...(conflicted
+                    ? [{
+                      id: "resolve",
+                      label: "Resolve conflicts",
+                      kind: "primary" as const,
+                    }]
+                    : []),
+                  ...(packages.length > 0
+                    ? [{
+                      id: "sync-all",
+                      label: "Activate all changes",
+                      kind: "primary" as const,
+                    }]
+                    : []),
+                  ...(schemaPlan?.tables.some((t) =>
+                      t.affected_columns.some((c) => c.repair !== "unsupported")
+                    )
+                    ? [{
+                      id: "force",
+                      label: "Force activation…",
+                      kind: "danger" as const,
+                    }]
+                    : []),
+                  { id: "refresh", label: "Refresh" },
+                ],
+              }
+              : child
+          ),
+        },
       },
     });
     message = model.message;

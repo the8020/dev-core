@@ -75,6 +75,7 @@ export async function reviewPackageChanges(
         schema: 1,
         id: "development-package-changes",
         root: {
+          toolbar: [{ id: "refresh", label: "Refresh" }],
           id: "changed-files",
           type: "list",
           bind: "files",
@@ -83,7 +84,6 @@ export async function reviewPackageChanges(
           columnOptions: { change: { length: "short" } },
         },
       },
-      header: { actions: [{ id: "refresh", label: "Refresh" }] },
     });
     if (event.action === BACK_EVENT) return;
     try {
