@@ -353,7 +353,9 @@ Deno.test("native views commit adjacent frames before parsing the next partial f
         4,
         "ordinary bytes after the end marker still publish",
       );
-      await client.apply({ sequence: 4, data: writes.at(-1)! });
+      for (const [index, data] of writes.slice(2).entries()) {
+        await client.apply({ sequence: 4 + index, data });
+      }
       assertEquals(lines(client), lines(source));
       view.update();
       assertEquals(

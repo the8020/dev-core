@@ -16,7 +16,9 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
 - Keep terminal CSS and dependency versions here. Use the matching headless
   version for retained display recovery.
 - Use xterm's synchronized-output support to paint completed application frames.
-  Keep the matching upstream CSS, including its viewport scrollbar styles.
+  The pinned state adapter flushes the queued renderer on a parsed frame end,
+  before a following begin marker can defer it again. Keep xterm's hidden-view
+  handling and the matching upstream CSS, including viewport scrollbar styles.
 - Open xterm in the detached component and prepare its styles before mounting.
   `state.ts` authorizes only xterm's generated styles with the shell's page
   nonce and applies RGB/selection styles through CSSOM; keep the shell CSP
