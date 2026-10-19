@@ -238,6 +238,9 @@ below.
 
 # Verification
 
+- Run package tasks inside an 80|20 Deno workspace; its root config supplies
+  platform imports. The package config owns dependencies and tasks.
+
 - Package-owned `deno task check` formats, lints, and type-checks development
   programs, terminal service/table entrypoints, and the browser component.
   `deno task test` checks the terminal engine, owner, recovery bounds, and

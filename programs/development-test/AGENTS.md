@@ -82,7 +82,7 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 
 - Run `deno task check` from the dev-core root.
 - From the dev-core root,
-  `deno run -A --import-map=deno.local.json
+  `deno run -A
   ../uui/presentation_browser_e2e.ts
   --fixture=../dev-core/programs/development-test/force_browser_fixture.ts`
   checks unchecked acknowledgement, cancellation/draft retention, stale
