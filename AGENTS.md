@@ -133,6 +133,8 @@ below.
 
 # Ownership
 
+- `widgets/` declares this package's Home tiles and categories through the
+  `the8020/packages/widgets.ts` format.
 - `src/fields.ts` owns development sandbox and activation field definitions,
   shared labels, and help. Development sandbox IDs have no runtime-sandbox
   navigation. Sandbox states, activation readiness/change kinds, and conflict

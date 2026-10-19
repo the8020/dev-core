@@ -1,0 +1,9 @@
+schema = 1
+title = "Development sandbox"
+description = "Start and control your development sandbox"
+icon = "terminal"
+category = "development"
+order = 10
+
+[open]
+program = "the8020/dev-core/development-test"

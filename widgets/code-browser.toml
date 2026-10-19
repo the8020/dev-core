@@ -1,0 +1,9 @@
+schema = 1
+title = "Code browser"
+description = "Read and navigate package source code"
+icon = "code"
+category = "development"
+order = 20
+
+[open]
+program = "the8020/dev-core/code-browser"
