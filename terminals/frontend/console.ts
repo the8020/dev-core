@@ -6,6 +6,7 @@ import type {
 } from "/p/the8020/uui/custom_element.ts";
 import {
   installTerminalStyles,
+  installTerminalUnicode,
   installTerminalView,
   MAX_SNAPSHOT_BYTES,
   restoreTerminal,
@@ -84,6 +85,7 @@ class RetainedConsole implements CustomElementInstance {
     fontFamily:
       "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
     fontSize: 14,
+    lineHeight: 1,
     theme: {
       ...terminalTheme,
       selectionBackground: "rgba(88, 166, 255, 0.62)",
@@ -170,6 +172,7 @@ class RetainedConsole implements CustomElementInstance {
     this.#takeover = this.element.querySelector(
       '[data-terminal-action="takeover"]',
     )!;
+    installTerminalUnicode(this.#terminal);
     this.#terminal.loadAddon(this.#fit);
     installTerminalView(this.#terminal);
     this.#terminal.open(

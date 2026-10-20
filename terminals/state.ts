@@ -2,6 +2,15 @@
 // are confined here; browser and headless continuation tests qualify this format.
 // Snapshots transfer data and never replay historical VT commands.
 // deno-lint-ignore-file no-explicit-any
+// deno-lint-ignore no-import-prefix
+import { Unicode11Addon } from "npm:@xterm/addon-unicode11@0.9.0";
+
+const SNAPSHOT_VERSION = "the8020.xterm-6.0.0.2";
+
+export function installTerminalUnicode(terminal: any): void {
+  terminal.loadAddon(new Unicode11Addon());
+  terminal.unicode.activeVersion = "11";
+}
 
 type Palette = { colors: number[]; defaults: number[] };
 export const terminalTheme = Object.freeze({
@@ -412,7 +421,7 @@ export function captureTerminal(terminal: any) {
   }
   const charset = c._charsetService;
   const snapshot = {
-    version: "the8020.xterm-6.0.0.1",
+    version: SNAPSHOT_VERSION,
     cols: terminal.cols,
     rows: terminal.rows,
     scrollback: terminal.options.scrollback,
@@ -475,7 +484,7 @@ export function captureTerminal(terminal: any) {
 
 export function restoreTerminal(terminal: any, snapshot: any) {
   validateSnapshot(snapshot);
-  if (snapshot.version !== "the8020.xterm-6.0.0.1") {
+  if (snapshot.version !== SNAPSHOT_VERSION) {
     throw new Error("unknown state version");
   }
   terminal.options.scrollback = snapshot.scrollback;
@@ -593,7 +602,7 @@ export function validateSnapshot(snapshot: any): void {
   const integer = (n: any, min: number, max: number): boolean =>
     Number.isSafeInteger(n) && n >= min && n <= max;
   if (
-    snapshot?.version !== "the8020.xterm-6.0.0.1" ||
+    snapshot?.version !== SNAPSHOT_VERSION ||
     !integer(snapshot.cols, 2, 500) || !integer(snapshot.rows, 1, 200) ||
     !integer(
       snapshot.scrollback,
@@ -694,12 +703,74 @@ export function installTerminalStyles(terminal: any, nonce: string): void {
   for (const style of terminal.element.querySelectorAll("style")) {
     style.nonce = nonce;
   }
-  terminal._core._renderService._renderer.value._rowFactory._addStyle = (
+  const renderer = terminal._core._renderService._renderer.value;
+  renderer._rowFactory._addStyle = (
     element: HTMLElement,
     style: string,
   ) => {
     element.style.cssText += style;
   };
+  // xterm 6 rounds offsetWidth; fractional CSS widths keep columns aligned.
+  const cache = renderer._widthCache;
+  cache._measure = (text: string, variant: number) => {
+    const element = cache._measureElements[variant];
+    element.textContent = text.repeat(32);
+    return parseFloat(getComputedStyle(element).width) / 32;
+  };
+  cache.clear();
+  renderer._setDefaultSpacing();
+  const factory = renderer._rowFactory;
+  const createRow = factory.createRow;
+  factory.createRow = function (...args: any[]): HTMLSpanElement[] {
+    const cellWidth = args[7];
+    return createRow.apply(this, args).flatMap((span: HTMLSpanElement) => {
+      const text = span.textContent ?? "";
+      if (!/[\u2580-\u259f]/u.test(text)) return [span];
+      return text.match(/([\u2580-\u259f])\1*|[^\u2580-\u259f]+/gu)!.map(
+        (part) => {
+          const node = span.cloneNode(false) as HTMLSpanElement;
+          node.textContent = part;
+          const code = part.charCodeAt(0);
+          if (code >= 0x2580 && code <= 0x259f) {
+            node.style.width = `${part.length * cellWidth}px`;
+            node.style.letterSpacing = "0";
+            // Retain text and xterm's colors/cursor; paint the whole cell, not font ink.
+            node.style.webkitTextFillColor = "transparent";
+            node.style.backgroundImage = blockBackground(code);
+            node.style.backgroundSize = code >= 0x2591 && code <= 0x2593
+              ? "2px 2px"
+              : `${cellWidth}px 100%`;
+            node.style.backgroundRepeat = "repeat";
+          }
+          return node;
+        },
+      );
+    });
+  };
+}
+
+function blockBackground(code: number): string {
+  const band = (direction: string, percent: number) =>
+    `linear-gradient(to ${direction}, currentColor ${percent}%, transparent ${percent}%)`;
+  if (code === 0x2580) return band("bottom", 50);
+  if (code <= 0x2588) return band("top", (code - 0x2580) * 12.5);
+  if (code <= 0x258f) return band("right", (0x2590 - code) * 12.5);
+  if (code === 0x2590) return band("left", 50);
+  if (code <= 0x2593) {
+    return `conic-gradient(currentColor ${
+      (code - 0x2590) * 25
+    }%, transparent 0)`;
+  }
+  if (code === 0x2594) return band("bottom", 12.5);
+  if (code === 0x2595) return band("left", 12.5);
+  const quadrants = [4, 8, 1, 13, 9, 7, 11, 2, 6, 14][code - 0x2596]!;
+  return `conic-gradient(${
+    [2, 8, 4, 1].map((bit, i) =>
+      `${quadrants & bit ? "currentColor" : "transparent"} ${i * 25}% ${
+        (i + 1) * 25
+      }%`
+    ).join(",")
+  })`;
 }
 
 /** Match xterm's renderer timeout: subsequent writes no longer defer painting. */

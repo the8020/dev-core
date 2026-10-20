@@ -26,6 +26,10 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   preserves parser continuation, both buffers, modes, Unicode, links, palette,
   and cursor without replaying historical terminal output. Changes to private
   engine data require continuation and real-browser qualification.
+- Install `@xterm/addon-unicode11` 0.9.0 and activate Unicode 11 in both
+  constructors before parsing output or restoring state. Snapshot version
+  `the8020.xterm-6.0.0.2` binds this width policy; reject earlier snapshots
+  rather than mixing cell widths.
 - Upgrades and rollbacks apply to new display owners. Snapshots are tied to the
   engine version, and reconnecting can retain an existing terminal's old Worker.
   Qualify the selected version with a fresh named session.
@@ -157,6 +161,12 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   They also cover multiple completed frames followed by an unfinished frame in
   the same write/batch, byte fragmentation, combined mode resets, cursor
   stability, ordinary output after a frame, and observer cleanup on detach.
+- `rendering_browser.ts`, run by `test:browser`, checks actual block pixels,
+  colors, inverse styling, selection, copying, cursors, two-column emoji, and
+  painted final background cells through direct output and headless restoration
+  at DPR 1, 1.25, and 2. Fractional-scale boundary antialiasing is allowed;
+  empty full-block pixel rows are not. Chromium emulation does not qualify
+  native Brave/macOS rendering.
 - `deno task test:native-browser` runs `native_browser_scenarios.ts` through the
   sibling UUI native harness with real users, database, service Workers, and
   gVisor PTYs. Pass its required `--source-root`, `--package-workspace`,

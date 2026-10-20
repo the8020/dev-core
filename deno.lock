@@ -23,6 +23,7 @@
     "npm:@lezer/highlight@1.2.3": "1.2.3",
     "npm:@noble/hashes@2.4.0": "2.4.0",
     "npm:@xterm/addon-fit@0.11.0": "0.11.0",
+    "npm:@xterm/addon-unicode11@0.9.0": "0.9.0",
     "npm:@xterm/headless@6.0.0": "6.0.0",
     "npm:@xterm/xterm@6.0.0": "6.0.0",
     "npm:kysely@0.29.4": "0.29.4",
@@ -277,6 +278,9 @@
     },
     "@xterm/addon-fit@0.11.0": {
       "integrity": "sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g=="
+    },
+    "@xterm/addon-unicode11@0.9.0": {
+      "integrity": "sha512-FxDnYcyuXhNl+XSqGZL/t0U9eiNb/q3EWT5rYkQT/zuig8Gz/VagnQANKHdDWFM2lTMk9ly0EFQxxxtZUoRetw=="
     },
     "@xterm/headless@6.0.0": {
       "integrity": "sha512-5Yj1QINYCyzrZtf8OFIHi47iQtI+0qYFPHmouEfG8dHNxbZ9Tb9YGSuLcsEwj9Z+OL75GJqPyJbyoFer80a2Hw=="

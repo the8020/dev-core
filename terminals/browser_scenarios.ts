@@ -21,8 +21,9 @@ import type { TerminalMetadataStore, TerminalRecord } from "./metadata.ts";
 import { defineTerminalService, workerFunctions } from "./service.ts";
 import { TERMINAL_PROTOCOL, TERMINAL_SERVICE } from "./protocol.ts";
 import { TestSocket, TestTerminals } from "./test_support.ts";
+import { verifyTerminalRendering } from "./rendering_browser.ts";
 
-interface Browser {
+export interface Browser {
   evaluate<T>(expression: string): Promise<T>;
   command<T = Record<string, unknown>>(
     method: string,
@@ -51,6 +52,7 @@ export default async function fixture(temporaryRoot: string) {
       globalThis.__terminalForTest = this;
       return open.apply(this, args);
     };
+    globalThis.__restoreTerminalForTest = snapshot => restoreTerminal(globalThis.__terminalForTest, snapshot);
     globalThis.__testRestoreScroll = () => {
       const terminal = globalThis.__terminalForTest;
       restoreTerminal(terminal, captureTerminal(terminal));
@@ -469,6 +471,97 @@ export default async function fixture(temporaryRoot: string) {
       assertEquals(terminals.size, 1);
       const first = [...terminals.keys()][0]!;
       const native = terminals.get(first)!;
+      try {
+        for (const width of [800, 1280]) {
+          for (const deviceScaleFactor of [1, 1.25, 2]) {
+            await page.command("Emulation.setDeviceMetricsOverride", {
+              width,
+              height: 900,
+              deviceScaleFactor,
+              mobile: false,
+            });
+            await page.evaluate(`(() => {
+              const terminal = globalThis.__terminalForTest;
+              terminal.element.style.transform = 'scale(0.8)';
+              terminal.options.fontSize = ${width === 800 ? 15 : 14};
+            })()`);
+            // Let Fit and xterm finish updating dimensions before writing columns.
+            await page.evaluate(
+              "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
+            );
+            const columns = await page.evaluate<number>(
+              "globalThis.__terminalForTest.cols",
+            );
+            const content = [
+              " ".repeat(columns - 2),
+              "W".repeat(columns - 2),
+              "\x1b[1m" + "i".repeat(columns - 2),
+              "a".repeat(Math.floor((columns - 2) / 3)) + "\x1b[1m" +
+              "b".repeat(Math.floor((columns - 2) / 3)) + "\x1b[22m" +
+              " ".repeat(columns - 2 - 2 * Math.floor((columns - 2) / 3)),
+            ];
+            await native.output(
+              "\x1b[?1049h\x1b[2J\x1b[H\x1b[?25l" +
+                content.map((text, row) =>
+                  `\x1b[${row + 1};1H${text}\x1b[0;32m█\x1b[0m`
+                ).join(""),
+            );
+            await waitPage(
+              page,
+              `Number(document.querySelector('.sandbox-console').dataset.outputSequence) === ${native.events.length} && [...document.querySelectorAll('.xterm-rows > div')].slice(0, 4).every(row => row.textContent.trimEnd().endsWith('█'))`,
+              "mixed-style block columns rendered",
+            );
+            const geometry = await page.evaluate<{
+              fractionalWidths: boolean;
+              lineHeight: number;
+              drift: number;
+              gaps: number[];
+            }>(`(() => {
+                const terminal = globalThis.__terminalForTest;
+                const cache = terminal._core._renderService._renderer.value._widthCache;
+                const fractionalWidths = [['W', 0], ['i', 1], [' ', 0], [' ', 1]].every(([text, variant]) => {
+                  const measured = cache.get(text, variant === 1, false);
+                  const element = cache._measureElements[variant];
+                  element.textContent = text.repeat(32);
+                  return Math.abs(measured - parseFloat(getComputedStyle(element).width) / 32) < 0.00001;
+                });
+                const rows = [...document.querySelectorAll('.xterm-rows > div')].slice(0, 4);
+                const bars = rows.map(row => [...row.children].find(span => span.textContent === '█').getBoundingClientRect());
+                return {
+                  fractionalWidths,
+                  lineHeight: terminal.options.lineHeight,
+                  drift: Math.max(...bars.map(bar => bar.x)) - Math.min(...bars.map(bar => bar.x)),
+                  gaps: bars.slice(1).map((bar, index) => bar.top - bars[index].bottom),
+                };
+              })()`);
+            assertEquals(
+              geometry.fractionalWidths && geometry.lineHeight === 1 &&
+                geometry.drift < 0.1 &&
+                geometry.gaps.every((gap) => Math.abs(gap) < 0.1),
+              true,
+              `continuous aligned blocks at width ${width}, DPR ${deviceScaleFactor}: ${
+                JSON.stringify(geometry)
+              }`,
+            );
+          }
+        }
+      } finally {
+        await page.evaluate(`(() => {
+          const terminal = globalThis.__terminalForTest;
+          terminal.element.style.transform = '';
+          terminal.options.fontSize = 14;
+        })()`);
+        await page.command("Emulation.clearDeviceMetricsOverride");
+        await native.output("\x1b[0m\x1b[?25h\x1b[?1049l");
+      }
+      await verifyTerminalRendering(page, async (data) => {
+        await native.output(data);
+        await waitPage(
+          page,
+          `Number(document.querySelector('.sandbox-console').dataset.outputSequence) >= ${native.events.length}`,
+          "rendering fixture parsed by the browser",
+        );
+      });
       await page.evaluate(`(() => {
         const open = window.open, confirm = window.confirm;
         globalThis.__terminalLinkOpens = [];

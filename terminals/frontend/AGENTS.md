@@ -15,6 +15,14 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   it independently; never import it into the UUI shell.
 - Keep terminal CSS and dependency versions here. Use the matching headless
   version for retained display recovery.
+- The pinned adapter in `state.ts` measures glyphs with fractional computed CSS
+  widths, clears the width cache, and recalculates spacing. Measurement must
+  remain independent of CSS transforms.
+- Paint Unicode Block Elements U+2580–U+259F with exact cell geometry, retaining
+  text for selection/copy and xterm's foreground/background, inverse, selection,
+  and cursor styling. Keep private renderer access in `state.ts`. Block fixes
+  must not change global fonts, line height, or scrollbar sizing; the ordinary
+  terminal keeps `lineHeight: 1`.
 - Use xterm's synchronized-output support to paint completed application frames.
   The pinned state adapter flushes the queued renderer on a parsed frame end,
   before a following begin marker can defer it again. Keep xterm's hidden-view
@@ -93,6 +101,10 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   opening without confirmation, and verifies that script URLs stay inactive.
 - It also holds an xterm write pending while a control-transfer notice and close
   arrive, verifying that Take control remains available.
+- It checks contiguous block columns across normal/bold text and spaces at
+  multiple widths and pixel densities, including a transformed terminal. For
+  Spynel qualification, launch in a fresh directory, keep the welcome screen
+  open, and compare full-logo and shortened-viewport scrollbar screenshots.
 - The native browser fixture checks actual indexed/RGB colors, cell spacing,
   cursor appearance, and CSP violations, including after snapshot restoration.
   Pixel equality alone cannot establish that either display rendered correctly.

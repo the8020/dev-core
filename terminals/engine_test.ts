@@ -8,6 +8,48 @@ import {
 
 const encode = (data: string) => new TextEncoder().encode(data);
 
+Deno.test("Unicode 11 emoji fill two columns before and after snapshot restoration", async () => {
+  const owner = new TerminalEngine({ columns: 20, rows: 6 });
+  const view = new TerminalEngine({ columns: 20, rows: 6 });
+  try {
+    await owner.apply({
+      sequence: 1,
+      data: encode(
+        "\x1b[?1049h\x1b[48;2;17;25;39m" +
+          ["👋", "👍"].map((emoji) => emoji + " ".repeat(18)).join("\r\n"),
+      ),
+    });
+    const snapshot = await owner.capture();
+    restoreTerminal(view.terminal, snapshot);
+    for (const engine of [owner, view]) {
+      assertEquals(engine.terminal.unicode.activeVersion, "11");
+      for (const row of [0, 1]) {
+        const line = engine.terminal.buffer.active.getLine(row)!;
+        assertEquals(line.getCell(0)!.getWidth(), 2);
+        assertEquals(line.getCell(1)!.getWidth(), 0);
+        assertEquals(line.getCell(19)!.getBgColor(), 0x111927);
+      }
+      await engine.apply({ sequence: 2, data: encode("\r\n👋👍\x1b[6n") });
+      assertEquals(engine.terminal.buffer.active.cursorX, 4);
+    }
+    assertEquals(await view.capture(), await owner.capture());
+    const before = await view.capture();
+    assertThrows(
+      () =>
+        restoreTerminal(view.terminal, {
+          ...snapshot,
+          version: "the8020.xterm-6.0.0.1",
+        }),
+      Error,
+      "version",
+    );
+    assertEquals(await view.capture(), before);
+  } finally {
+    await owner.close();
+    await view.close();
+  }
+});
+
 Deno.test("terminal engine snapshots precede later queued output and continue partial Unicode", async () => {
   const first = new TerminalEngine({ columns: 20, rows: 6 });
   const second = new TerminalEngine({ columns: 20, rows: 6 });

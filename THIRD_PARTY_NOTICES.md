@@ -1,8 +1,9 @@
 # Third-party notices
 
 The optional development terminal uses `@xterm/xterm` 6.0.0, `@xterm/addon-fit`
-0.11.0, and the matching `@xterm/headless` 6.0.0 engine. Its browser bundle and
-copied styles are distributed under the MIT license.
+0.11.0, `@xterm/addon-unicode11` 0.9.0, and the matching `@xterm/headless` 6.0.0
+engine. Its browser bundle and copied styles are distributed under the MIT
+license.
 
 Copyright (c) 2017-2019, The xterm.js authors
 (https://github.com/xtermjs/xterm.js)
