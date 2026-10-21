@@ -16,6 +16,7 @@ import {
 import { packageId } from "/p/the8020/packages/types/package.ts";
 import { username } from "/p/the8020/users/types/user.ts";
 import { activationChange, developmentInfo } from "../../src/fields.ts";
+import { allowed } from "../../src/authorized.ts";
 import layout from "./layouts/main.json" with { type: "json" };
 import activationLayout from "./layouts/activation.json" with { type: "json" };
 import terminalAssets from "../../terminals/assets.json" with { type: "json" };
@@ -87,6 +88,7 @@ const ActivationScreen = z.object({
 
 export default async function developmentTest(): Promise<void> {
   if (!context.authenticated) throw new Error("authenticated user is required");
+  if (!await allowed("the8020.dev-core.development.use", "")) return;
   const developmentUserId = context.username;
   let status = await startDevelopmentSandbox(developmentUserId);
   let terminalRefresh = 0;

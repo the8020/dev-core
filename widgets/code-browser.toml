@@ -7,3 +7,6 @@ order = 20
 
 [open]
 program = "the8020/dev-core/code-browser"
+
+[visible]
+permission = "the8020.dev-core.development.use"

@@ -134,7 +134,13 @@ below.
 # Ownership
 
 - `widgets/` declares this package's Home tiles and categories through the
-  `the8020/packages/widgets.ts` format.
+  `the8020/packages/widgets.ts` format; each tile is visible with
+  `the8020.dev-core.development.use`.
+- `declarations/auth.toml` declares `the8020.dev-core.development.use` (value
+  empty). `programs/code-browser` and `programs/development-test` check it
+  through `src/authorized.ts` before creating or starting a sandbox; a denial
+  becomes a screen message. Administrative sandbox command programs are not
+  checked here.
 - `src/fields.ts` owns development sandbox and activation field definitions,
   shared labels, and help. Development sandbox IDs have no runtime-sandbox
   navigation. Sandbox states, activation readiness/change kinds, and conflict

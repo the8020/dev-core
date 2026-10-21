@@ -7,3 +7,6 @@ order = 10
 
 [open]
 program = "the8020/dev-core/development-test"
+
+[visible]
+permission = "the8020.dev-core.development.use"

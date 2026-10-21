@@ -12,6 +12,7 @@ import {
   z,
 } from "/p/the8020/uui/mod.ts";
 import { development } from "../../src/development.ts";
+import { allowed } from "../../src/authorized.ts";
 import {
   type Entry,
   type Location,
@@ -166,6 +167,7 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
   if (!context.authenticated) {
     throw new Error("An authenticated user is required.");
   }
+  if (!await allowed("the8020.dev-core.development.use", "")) return;
   const user = context.username;
   let sandbox = (await development.sandbox.list() as Sandbox[]).find((item) =>
     item.user_id === user
