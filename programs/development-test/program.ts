@@ -4,6 +4,7 @@ import { context } from "@the8020/context";
 import {
   BACK_EVENT,
   callScreen,
+  CONFIRM_CLASS,
   currentBrowser,
   field,
   Model,
@@ -449,6 +450,7 @@ async function confirmForce(
     while (true) {
       const event = await callScreen({
         id: "development-force-confirm",
+        class: CONFIRM_CLASS,
         title: "Force activation?",
         description: `Commit: ${message}\n\n${
           tables.flatMap((t) =>
@@ -508,6 +510,7 @@ async function confirmReset(factory: boolean): Promise<boolean> {
     while (true) {
       const response = await callScreen({
         id: "development-reset-confirm",
+        class: CONFIRM_CLASS,
         title: factory ? "Factory reset?" : "Reset source?",
         description: factory
           ? "This deletes your source changes, root home directory, and installed system changes."

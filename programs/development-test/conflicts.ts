@@ -3,9 +3,9 @@ import {
   BACK_EVENT,
   callScreen,
   codeEditor,
+  confirmAction,
   field,
   Model,
-  presentModal,
   sendMessage,
   z,
 } from "/p/the8020/uui/mod.ts";
@@ -269,23 +269,13 @@ export async function resolveConflicts(
     if (event.action === "change") continue;
     if (event.action === "select" || event.action === "refresh") {
       if (file && model.data.content !== file.content) {
-        const discard = await presentModal(async () => {
-          const response = await callScreen({
-            id: "conflict-discard-draft",
-            title: "Discard unsaved edits?",
-            description:
-              "Your unsaved editor changes will be discarded. Saved Git resolutions are kept.",
-            schema: z.object({}),
-            model: new Model({}),
-            header: {
-              actions: [{
-                id: "discard",
-                label: "Discard edits",
-                kind: "danger",
-              }, { id: "keep", label: "Keep editing" }],
-            },
-          });
-          return response.action === "discard";
+        const discard = await confirmAction({
+          id: "conflict-discard-draft",
+          title: "Discard unsaved edits?",
+          message:
+            "Your unsaved editor changes will be discarded. Saved Git resolutions are kept.",
+          confirm: "Discard edits",
+          cancel: "Keep editing",
         });
         if (!discard) continue;
       }
