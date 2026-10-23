@@ -41,11 +41,13 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   markers; query processing continues while rendering is deferred.
 - Publish each parsed synchronized-output end before later bytes mutate the
   completed frame, including adjacent end/begin markers in one event or native
-  batch. `state.ts` observes the upstream mode reset; it does not parse VT
-  again. Browser views flush xterm's queued render at that boundary, respecting
-  hidden views. Native views project it into their bounded send queue and omit
-  unchanged projections. Ordinary bytes following the frame still publish
-  normally.
+  batch and explicit ends arriving after xterm's render timeout. `state.ts`
+  observes the upstream reset's active parameters; it does not parse VT again.
+  Browser views flush xterm's queued render at that boundary, respecting hidden
+  views. The browser resize adapter holds existing rows and scrollbar while
+  parsing, with bounded fallbacks owned by the frontend contract. Native views
+  project completed frames into their bounded send queue and omit unchanged
+  projections. Ordinary bytes following the frame still publish normally.
 - One canonical headless interpreter answers process queries, including while
   detached. Views never duplicate those responses. Historical snapshots never
   execute clipboard or notification effects.
@@ -167,6 +169,9 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   They also cover multiple completed frames followed by an unfinished frame in
   the same write/batch, byte fragmentation, combined mode resets, cursor
   stability, ordinary output after a frame, and observer cleanup on detach.
+- Browser resize regressions check batched write submission, parse-based output
+  credit, ordered resize/recovery, late frame ends, stable scrollbars, and
+  quiet/silent/deadline fallbacks through the real service protocol.
 - `rendering_browser.ts`, run by `test:browser`, checks actual block pixels,
   colors, inverse styling, selection, copying, cursors, two-column emoji, and
   painted final background cells through direct output and headless restoration

@@ -5,6 +5,7 @@ import type {
   CustomElementInstance,
 } from "/p/the8020/uui/custom_element.ts";
 import {
+  installTerminalResize,
   installTerminalStyles,
   installTerminalUnicode,
   installTerminalView,
@@ -38,7 +39,6 @@ interface Configuration {
 interface Connection {
   socket: WebSocket;
   abort: AbortController;
-  ordered: Promise<void>;
   queuedBytes: number;
   queuedFrames: number;
   sequence: number;
@@ -103,6 +103,8 @@ class RetainedConsole implements CustomElementInstance {
   readonly #loadingMessage: HTMLElement;
   readonly #takeover: HTMLButtonElement;
   readonly #observer: ResizeObserver;
+  readonly #resizeDisplay: ReturnType<typeof installTerminalResize>;
+  #resizeTimer?: ReturnType<typeof setTimeout>;
   readonly #clientId = stored("the8020.dev-core.terminal-client") ??
     crypto.randomUUID();
   #configuration?: Configuration;
@@ -125,6 +127,7 @@ class RetainedConsole implements CustomElementInstance {
   #connecting = false;
   #connectEpoch = 0;
   #display: Promise<void> = Promise.resolve();
+  readonly #displayWrites = new Set<Promise<void>>();
 
   constructor(
     config: Record<string, unknown>,
@@ -184,6 +187,17 @@ class RetainedConsole implements CustomElementInstance {
       this.#terminal,
       document.querySelector<HTMLScriptElement>("script[nonce]")?.nonce ?? "",
     );
+    this.#resizeDisplay = installTerminalResize(this.#terminal);
+    for (const event of ["pointerdown", "wheel"]) {
+      this.#viewport.addEventListener(
+        event,
+        () => this.#resizeDisplay.release(),
+        {
+          passive: true,
+          signal: this.#lifetime.signal,
+        },
+      );
+    }
     this.#terminal.onData((value) => this.#input(value));
     this.#terminal.onBinary((value) => this.#input(value, true));
     this.#terminal.attachCustomKeyEventHandler((event) => {
@@ -531,7 +545,6 @@ class RetainedConsole implements CustomElementInstance {
       const connection: Connection = {
         socket,
         abort: new AbortController(),
-        ordered: Promise.resolve(),
         queuedBytes: 0,
         queuedFrames: 0,
         sequence: 0,
@@ -626,18 +639,22 @@ class RetainedConsole implements CustomElementInstance {
       this.#fail(connection, "Terminal output exceeded the connection limit");
       return;
     }
-    connection.ordered = connection.ordered.then(async () => {
+    this.#display = this.#display.then(async () => {
       if (this.#connection !== connection) return;
+      if (!(data instanceof ArrayBuffer)) {
+        await Promise.all(this.#displayWrites);
+        if (this.#connection !== connection) return;
+      }
       await this.#message(connection, data);
+      if (!(data instanceof ArrayBuffer)) {
+        connection.queuedBytes -= bytes;
+        connection.queuedFrames--;
+      }
     }).catch((error) => {
       if (this.#connection === connection) {
         this.#fail(connection, errorMessage(error));
       }
-    })
-      .finally(() => {
-        connection.queuedBytes -= bytes;
-        connection.queuedFrames--;
-      });
+    });
   }
 
   async #message(connection: Connection, data: unknown): Promise<void> {
@@ -645,14 +662,22 @@ class RetainedConsole implements CustomElementInstance {
       const frame = new Uint8Array(data);
       const sequence = outputSequence(frame);
       this.#sequence(connection, sequence);
-      await this.#changeDisplay(
-        connection,
-        () =>
-          new Promise<void>((resolve) =>
-            this.#terminal.write(frame.subarray(8), resolve)
-          ),
+      // Submit consecutive writes together; metadata and recovery wait for parsing.
+      const write = new Promise<void>((resolve) =>
+        this.#terminal.write(frame.subarray(8), () => {
+          this.#ack(connection, sequence);
+          connection.queuedBytes -= frame.byteLength;
+          connection.queuedFrames--;
+          resolve();
+        })
       );
-      this.#ack(connection, sequence);
+      this.#displayWrites.add(write);
+      void write.then(() => this.#displayWrites.delete(write), (error) => {
+        this.#displayWrites.delete(write);
+        if (this.#connection === connection) {
+          this.#fail(connection, errorMessage(error));
+        }
+      });
       return;
     }
     const message = object(data);
@@ -681,10 +706,7 @@ class RetainedConsole implements CustomElementInstance {
         ) throw new Error("Invalid terminal snapshot boundary");
         const snapshot = await readJSON(response, bytes);
         if (this.#connection !== connection) return;
-        await this.#changeDisplay(
-          connection,
-          () => restoreTerminal(this.#terminal, snapshot),
-        );
+        restoreTerminal(this.#terminal, snapshot);
         connection.sequence = sequence;
         this.element.dataset.outputSequence = String(sequence);
         this.#send(connection, { type: "ready", sequence });
@@ -701,13 +723,12 @@ class RetainedConsole implements CustomElementInstance {
         const size = terminalSize(message.size);
         const sequence = Number(message.sequence);
         this.#sequence(connection, sequence);
-        await this.#changeDisplay(connection, () => {
-          this.#terminal.options.scrollback = retainedScrollback(
-            size.columns,
-            size.rows,
-          );
-          this.#terminal.resize(size.columns, size.rows);
-        });
+        this.#resizeDisplay.begin();
+        this.#terminal.options.scrollback = retainedScrollback(
+          size.columns,
+          size.rows,
+        );
+        this.#terminal.resize(size.columns, size.rows);
         this.#ack(connection, sequence);
         break;
       }
@@ -724,17 +745,6 @@ class RetainedConsole implements CustomElementInstance {
       default:
         throw new Error("Unknown terminal message");
     }
-  }
-
-  #changeDisplay(
-    connection: Connection,
-    action: () => void | Promise<void>,
-  ): Promise<void> {
-    const next = this.#display.then(() => {
-      if (this.#connection === connection && !this.#disposed) return action();
-    });
-    this.#display = next.then(() => {}, () => {});
-    return next;
   }
 
   #sequence(connection: Connection, sequence: number): void {
@@ -791,6 +801,7 @@ class RetainedConsole implements CustomElementInstance {
       !this.#canConnect() || !connection?.ready || connection.exited ||
       !value.length
     ) return;
+    this.#resizeDisplay.release();
     const available = VIEW_QUEUE_BYTES - connection.inputBytes;
     const full = () => {
       this.#setStatus(
@@ -856,19 +867,23 @@ class RetainedConsole implements CustomElementInstance {
     };
   }
   #resize(): void {
-    const connection = this.#connection;
-    if (
-      !this.#canConnect() || !connection?.ready || connection.exited ||
-      connection.resize || !this.element.isConnected ||
-      this.#viewport.clientWidth === 0
-    ) return;
-    const size = this.#size();
-    const last = connection.lastResize ??
-      { columns: this.#terminal.cols, rows: this.#terminal.rows };
-    if (size.columns === last.columns && size.rows === last.rows) return;
-    connection.resize = connection.lastResize = size;
-    this.#send(connection, { type: "resize", size });
+    clearTimeout(this.#resizeTimer);
+    this.#resizeTimer = setTimeout(() => {
+      const connection = this.#connection;
+      if (
+        !this.#canConnect() || !connection?.ready || connection.exited ||
+        connection.resize || !this.element.isConnected ||
+        this.#viewport.clientWidth === 0
+      ) return;
+      const size = this.#size();
+      const last = connection.lastResize ??
+        { columns: this.#terminal.cols, rows: this.#terminal.rows };
+      if (size.columns === last.columns && size.rows === last.rows) return;
+      connection.resize = connection.lastResize = size;
+      this.#send(connection, { type: "resize", size });
+    }, 80);
   }
+
   #heartbeat(connection: Connection): void {
     connection.heartbeat = setTimeout(() => {
       if (this.#connection !== connection) return;
@@ -897,6 +912,8 @@ class RetainedConsole implements CustomElementInstance {
     this.#retryDelay = Math.min(10_000, this.#retryDelay * 2);
   }
   #detach(): void {
+    this.#resizeDisplay.release();
+    clearTimeout(this.#resizeTimer);
     ++this.#connectEpoch;
     this.#connecting = false;
     if (this.#reconnect) clearTimeout(this.#reconnect);
@@ -918,6 +935,7 @@ class RetainedConsole implements CustomElementInstance {
     return new URL(`${TERMINAL_SERVICE}/${path}`, location.href);
   }
   #setStatus(message: string, state: string): void {
+    if (state !== "connected") this.#resizeDisplay.release();
     this.#status.textContent = message;
     this.#status.title = message;
     this.element.dataset.terminalState = state;

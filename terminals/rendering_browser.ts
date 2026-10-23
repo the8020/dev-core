@@ -36,17 +36,18 @@ export async function verifyTerminalRendering(
           deviceScaleFactor,
           mobile: false,
         });
-        await paint();
+        await waitForTerminalSize(page);
         const size = await page.evaluate<{ columns: number; rows: number }>(
           "({columns: globalThis.__terminalForTest.cols, rows: globalThis.__terminalForTest.rows})",
         );
-        const data = "\x1b[?1049h\x1b[2J\x1b[H\x1b[?25l" +
+        const data = "\x1b[?2026h\x1b[?1049h\x1b[2J\x1b[H\x1b[?25l" +
           "\x1b[0;38;2;255;255;255;48;2;0;0;0m" +
           ["████", "████", "████", blocks].join("\r\n") +
           "\r\n\x1b[38;2;255;0;0;48;2;0;0;255m▀\x1b[7m▀\x1b[27m" +
           "\r\n\x1b[0mA██▀B\r\n\x1b[48;2;17;25;39m" +
           ["👋", "👍"].map((emoji) => emoji + " ".repeat(size.columns - 2))
-            .join("\r\n");
+            .join("\r\n") +
+          "\x1b[?2026l";
         const engine = new TerminalEngine(size);
         try {
           await engine.apply({
@@ -270,4 +271,25 @@ export async function verifyTerminalRendering(
     await page.command("Emulation.clearDeviceMetricsOverride");
     await output("\x1b[0m\x1b[0 q\x1b[?25h\x1b[?1049l");
   }
+}
+
+/** Wait for debounced PTY geometry and the silent-resize presentation fallback. */
+export async function waitForTerminalSize(page: Browser): Promise<void> {
+  assertEquals(
+    await page.evaluate(`(async () => {
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const terminal = globalThis.__terminalForTest;
+    const deadline = performance.now() + 5000;
+    do {
+      const size = globalThis.__terminalFitForTest.proposeDimensions();
+      if (terminal.cols === size.cols && terminal.rows === size.rows &&
+          Math.abs(parseFloat(getComputedStyle(terminal.element.querySelector('.xterm-screen')).width) -
+            terminal._core._renderService.dimensions.css.canvas.width) < 0.5) return true;
+      await new Promise(resolve => setTimeout(resolve, 25));
+    } while (performance.now() < deadline);
+    return false;
+  })()`),
+    true,
+    "terminal geometry settles after viewport resize",
+  );
 }

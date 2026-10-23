@@ -27,6 +27,14 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   The pinned state adapter flushes the queued renderer on a parsed frame end,
   before a following begin marker can defer it again. Keep xterm's hidden-view
   handling and the matching upstream CSS, including viewport scrollbar styles.
+- On resize, the pinned adapter keeps existing rows and scrollbar visible while
+  parsing the redraw. Present at its explicit synchronized end, after 120 ms of
+  quiet unmarked output, or after 300 ms without output. Late clear-scrollback
+  and synchronized-begin markers can re-arm the hold within the same five-second
+  resize deadline. Input, pointer/wheel interaction, disconnection, errors, and
+  process exit release and disarm it; disposal clears its hooks and timers.
+- Debounce geometry changes for 80 ms, retain one outstanding resize, and send
+  the latest dimensions after acknowledgement. Resize the existing terminal.
 - Open xterm in the detached component and prepare its styles before mounting.
   `state.ts` authorizes only xterm's generated styles with the shell's page
   nonce and applies RGB/selection styles through CSSOM; keep the shell CSP
@@ -52,8 +60,10 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   resizes the existing terminal, and restores normal layout on toggle or page
   deactivation. Never use browser fullscreen or consume terminal Escape input.
 - Restore the bounded snapshot and acknowledge its sequence before consuming
-  later output. One display queue orders restoration, writes, and resize across
-  connections. Synchronize restored viewport geometry before rendering or scroll
+  later output. One display queue submits consecutive writes without waiting for
+  each callback; metadata, resize, and restoration wait for pending writes
+  across connections. Acknowledge output and release its queue budget only after
+  parsing. Synchronize restored viewport geometry before rendering or scroll
   events; terminal selection must not reset over pending write callbacks.
 - Handle bounded terminal error/control-denial notices immediately, before the
   display queue, and detach without replaying pending input. A following socket
@@ -107,6 +117,10 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   one input window from reaching the native boundary. It also holds that write
   while a control-transfer notice and close arrive, verifying that Take control
   remains available.
+- It holds actual xterm writes to check output pipelining, resize and reconnect
+  barriers, and parse-based credit. Resize checks cover delayed/adjacent redraws
+  beyond xterm's one-second timeout, stable scrollbars, unmarked/silent output,
+  missing-end deadlines, and immediate release on input.
 - It checks contiguous block columns across normal/bold text and spaces at
   multiple widths and pixel densities, including a transformed terminal. For
   Spynel qualification, launch in a fresh directory, keep the welcome screen

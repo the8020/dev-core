@@ -21,7 +21,10 @@ import type { TerminalMetadataStore, TerminalRecord } from "./metadata.ts";
 import { defineTerminalService, workerFunctions } from "./service.ts";
 import { TERMINAL_PROTOCOL, TERMINAL_SERVICE } from "./protocol.ts";
 import { TestSocket, TestTerminals } from "./test_support.ts";
-import { verifyTerminalRendering } from "./rendering_browser.ts";
+import {
+  verifyTerminalRendering,
+  waitForTerminalSize,
+} from "./rendering_browser.ts";
 
 export interface Browser {
   evaluate<T>(expression: string): Promise<T>;
@@ -41,11 +44,17 @@ export default async function fixture(temporaryRoot: string) {
     browserEntry,
     `
     import { Terminal } from '@xterm/xterm';
+    import { FitAddon } from '@xterm/addon-fit';
     import mount from ${
       JSON.stringify(new URL("frontend/console.ts", import.meta.url).href)
     };
     import { captureTerminal, restoreTerminal } from ${
       JSON.stringify(new URL("state.ts", import.meta.url).href)
+    };
+    const activate = FitAddon.prototype.activate;
+    FitAddon.prototype.activate = function (...args) {
+      globalThis.__terminalFitForTest = this;
+      return activate.apply(this, args);
     };
     const open = Terminal.prototype.open;
     Terminal.prototype.open = function (...args) {
@@ -496,10 +505,7 @@ export default async function fixture(temporaryRoot: string) {
               terminal.element.style.transform = 'scale(0.8)';
               terminal.options.fontSize = ${width === 800 ? 15 : 14};
             })()`);
-            // Let Fit and xterm finish updating dimensions before writing columns.
-            await page.evaluate(
-              "new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))",
-            );
+            await waitForTerminalSize(page);
             const columns = await page.evaluate<number>(
               "globalThis.__terminalForTest.cols",
             );
@@ -563,6 +569,7 @@ export default async function fixture(temporaryRoot: string) {
           terminal.options.fontSize = 14;
         })()`);
         await page.command("Emulation.clearDeviceMetricsOverride");
+        await waitForTerminalSize(page);
         await native.output("\x1b[0m\x1b[?25h\x1b[?1049l");
       }
       await verifyTerminalRendering(page, async (data) => {
@@ -744,6 +751,179 @@ export default async function fixture(temporaryRoot: string) {
         await native.output("\x1b[?2026l");
       }
       await native.output("\x1b[?1049l");
+      const parsed = () =>
+        waitPage(
+          page,
+          `Number(document.querySelector('.sandbox-console').dataset.outputSequence) === ${native.events.length}`,
+          "all terminal output parsed",
+        );
+      const pause = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
+      const screen = () =>
+        page.evaluate<string>(
+          "document.querySelector('.xterm-rows').textContent",
+        );
+      await parsed();
+      // Hold actual writes, not just callbacks: xterm's callbacks are ordered too.
+      await page.evaluate(`(() => {
+        const terminal = globalThis.__terminalForTest;
+        const write = terminal.write.bind(terminal);
+        globalThis.__pendingWrites = [];
+        terminal.write = (...args) => globalThis.__pendingWrites.push(args);
+        globalThis.__releaseWrites = () => {
+          terminal.write = write;
+          for (const args of globalThis.__pendingWrites.splice(0)) write(...args);
+        };
+      })()`);
+      const oldColumns = await page.evaluate<number>(
+        "globalThis.__terminalForTest.cols",
+      );
+      const beforeBatch = native.events.length;
+      try {
+        for (let i = 0; i < 32; i++) await native.output(`\r\nBATCH_${i}`);
+        await waitPage(
+          page,
+          "globalThis.__pendingWrites.length === 32",
+          "output submitted before any write callback",
+        );
+        native.emit({ size: { columns: oldColumns - 1, rows } });
+        await native.output("\r\nAFTER_BATCH_RESIZE");
+        await pause(150);
+        assertEquals(
+          await page.evaluate("globalThis.__terminalForTest.cols"),
+          oldColumns,
+          "resize waits for preceding writes",
+        );
+        assertEquals(
+          await page.evaluate(
+            "Number(document.querySelector('.sandbox-console').dataset.outputSequence)",
+          ),
+          beforeBatch,
+          "output credit waits for parsing",
+        );
+      } finally {
+        await page.evaluate("globalThis.__releaseWrites()");
+      }
+      await parsed();
+      assertEquals(
+        await page.evaluate("globalThis.__terminalForTest.cols"),
+        oldColumns - 1,
+      );
+      assertEquals(
+        await page.evaluate(`(() => {
+        const buffer = globalThis.__terminalForTest.buffer.active;
+        const lines = Array.from({length:buffer.length}, (_, i) => buffer.getLine(i).translateToString(true));
+        return lines.filter(line => /^BATCH_[0-9]+$/.test(line)).length;
+      })()`),
+        32,
+        "batching preserves every output frame",
+      );
+
+      const redraw = async () => {
+        const size = await page.evaluate<{ columns: number; rows: number }>(
+          "({columns:globalThis.__terminalForTest.cols - 1, rows:globalThis.__terminalForTest.rows})",
+        );
+        native.emit({ size });
+        await parsed();
+      };
+      await pause(350);
+      await native.output("\x1b[2J\x1b[HBEFORE_RESIZE");
+      await waitPage(
+        page,
+        "document.querySelector('.xterm-rows').textContent.includes('BEFORE_RESIZE')",
+        "initial resize screen",
+      );
+      await redraw();
+      // Codex may format the transcript before emitting its clear and redraw.
+      await pause(400);
+      const beforeRedraw = await screen();
+      const scrollStyle = await page.evaluate(
+        "document.querySelector('.xterm-scrollable-element .slider')?.getAttribute('style')",
+      );
+      await native.output("\x1b[3J\x1b[?25;2026h\x1b[2J\x1b[HPARTIAL_REDRAW");
+      await parsed();
+      await pause(1150);
+      await native.output("\x1b[?25l");
+      await parsed();
+      assertEquals(
+        await screen(),
+        beforeRedraw,
+        "resize holds the previous screen beyond xterm's timeout, ignoring unused parser parameter slots",
+      );
+      assertEquals(
+        await page.evaluate(
+          "document.querySelector('.xterm-scrollable-element .slider')?.getAttribute('style')",
+        ),
+        scrollStyle,
+        "scrollbar stays stable while reconstructing history",
+      );
+      await native.output(
+        "\x1b[2J\x1b[HREDRAW_COMPLETE\x1b[?2026l\x1b[?2026h\x1b[2J\x1b[HNEXT_REDRAW",
+      );
+      await parsed();
+      assertEquals(
+        (await screen()).trim(),
+        "REDRAW_COMPLETE",
+        "a late end publishes the completed frame before the next frame begins",
+      );
+      await native.output("\x1b[?2026l");
+      await waitPage(
+        page,
+        "document.querySelector('.xterm-rows').textContent.includes('NEXT_REDRAW')",
+        "next redraw completes",
+      );
+
+      await redraw();
+      await native.output("\x1b[2J\x1b[HUNMARKED_REDRAW");
+      await parsed();
+      assertEquals((await screen()).includes("UNMARKED_REDRAW"), false);
+      await waitPage(
+        page,
+        "document.querySelector('.xterm-rows').textContent.includes('UNMARKED_REDRAW')",
+        "quiet fallback for unmarked output",
+      );
+      await redraw();
+      await pause(350);
+      assertEquals(
+        await page.evaluate(`(() => {
+        const terminal = globalThis.__terminalForTest;
+        return Math.abs(terminal.element.querySelector('.xterm-screen').getBoundingClientRect().width -
+          terminal._core._renderService.dimensions.css.canvas.width) < 0.5;
+      })()`),
+        true,
+        "silent resize applies final geometry",
+      );
+      await redraw();
+      const deadlineStart = Date.now();
+      await native.output("\x1b[?2026h\x1b[2J\x1b[HMISSING_END");
+      await parsed();
+      await pause(1150);
+      assertEquals((await screen()).includes("MISSING_END"), false);
+      await waitPage(
+        page,
+        "document.querySelector('.xterm-rows').textContent.includes('MISSING_END')",
+        "five-second missing-end fallback",
+      );
+      assertEquals(
+        Date.now() - deadlineStart < 6000,
+        true,
+        "redraw hold stays bounded",
+      );
+      await native.output("\x1b[?2026l");
+      await redraw();
+      await native.output("\x1b[?2026h\x1b[2J\x1b[HINPUT_RELEASE");
+      await parsed();
+      await page.evaluate("globalThis.__terminalForTest.input('x')");
+      await waitPage(
+        page,
+        "document.querySelector('.xterm-rows').textContent.includes('INPUT_RELEASE')",
+        "input releases the held screen immediately",
+      );
+      await native.output("\x1b[?2026l\x1b[?25h");
+      await parsed();
+      console.log(
+        "Resize browser checks passed: pipelined writes, ordered resize, late/adjacent redraws, stable scrollbar, quiet/silent/deadline fallbacks and input release.",
+      );
       // A session discovered through shared metadata, outside this component.
       const external = "tty-9999999999";
       records.set(external, {
@@ -1141,9 +1321,13 @@ export default async function fixture(temporaryRoot: string) {
       await page.evaluate(`(() => {
         const terminal = globalThis.__terminalForTest;
         const write = terminal.write.bind(terminal);
-        terminal.write = (data, callback) => {
-          terminal.write = write;
-          write(data, () => { globalThis.__finishTerminalWrite = callback; });
+        const pending = [];
+        terminal.write = (...args) => {
+          pending.push(args);
+          globalThis.__finishTerminalWrite = () => {
+            terminal.write = write;
+            for (const args of pending.splice(0)) write(...args);
+          };
         };
       })()`);
       await native.output("\r\noutput before control transfer");
@@ -1172,10 +1356,18 @@ export default async function fixture(temporaryRoot: string) {
           "!document.querySelector('[data-terminal-action=takeover]').hidden",
           "control notice ahead of queued output",
         );
+        await button(page, "refresh");
+        await pause(150);
+        assertEquals(
+          await page.evaluate(
+            "document.querySelector('.sandbox-console').dataset.terminalState",
+          ),
+          "connecting",
+          "a new snapshot waits for writes from the previous connection",
+        );
       } finally {
         await page.evaluate("globalThis.__finishTerminalWrite()");
       }
-      await button(page, "refresh");
       await ready(first);
 
       const other = await openPage();
