@@ -9,6 +9,8 @@ import type { WebSocketSession } from "/p/the8020/services/http.ts";
 import { TerminalEngine } from "./engine.ts";
 import { MAX_SNAPSHOT_BYTES } from "./state.ts";
 import {
+  INPUT_WINDOW_BYTES,
+  INPUT_WINDOW_FRAMES,
   outputFrame,
   VIEW_QUEUE_BYTES,
   VIEW_QUEUE_FRAMES,
@@ -332,7 +334,9 @@ export class TerminalView {
   #sent = 0;
   #seeded = false;
   #ready = false;
-  #inputPending = false;
+  #input = Promise.resolve();
+  #inputFrames = 0;
+  #inputBytes = 0;
   #closed = false;
   readonly #lifetime = new AbortController();
   snapshotStarted = false;
@@ -418,21 +422,32 @@ export class TerminalView {
   }
 
   input(data: Uint8Array): void {
-    if (!this.#ready || this.#inputPending || this.closed) {
+    if (!this.#ready || this.closed) {
       throw new Error("Terminal input window is unavailable");
     }
-    this.#inputPending = true;
-    if (data.byteLength < 1 || data.byteLength > 65_536) {
+    if (data.byteLength < 1 || data.byteLength > INPUT_WINDOW_BYTES) {
       throw new Error("Terminal input exceeds its frame limit");
     }
-    void this.owner.terminals.write(
-      this.attachment.attachmentId,
-      data,
-      this.signal,
-    ).then(() => {
-      this.#inputPending = false;
+    if (
+      this.#inputFrames >= INPUT_WINDOW_FRAMES ||
+      this.#inputBytes + data.byteLength > INPUT_WINDOW_BYTES
+    ) throw new Error("Terminal input window is unavailable");
+    this.#inputFrames++;
+    this.#inputBytes += data.byteLength;
+    this.#input = this.#input.then(async () => {
+      if (this.closed) return;
+      await this.owner.terminals.write(
+        this.attachment.attachmentId,
+        data,
+        this.signal,
+      );
+      if (this.closed) return;
+      this.#inputFrames--;
+      this.#inputBytes -= data.byteLength;
       this.send(JSON.stringify({ type: "input-ack" }));
-    }, () => this.close(1011, "Terminal input failed; its outcome is unknown"));
+    }).catch(() =>
+      this.close(1011, "Terminal input failed; its outcome is unknown")
+    );
   }
 
   state(state: { exited: boolean; exitStatus?: number }): void {

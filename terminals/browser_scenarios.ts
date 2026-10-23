@@ -112,6 +112,8 @@ export default async function fixture(temporaryRoot: string) {
   const lifetimes = new Set<Promise<void>>();
   const sockets = new Set<TestSocket>();
   let currentSocket: WebSocket;
+  let holdInputAcks = false;
+  const inputAcks: Array<() => void> = [];
   let ordinal = 0;
   let attachmentOrdinal = 0;
   let bindingOrdinal = 0;
@@ -398,8 +400,17 @@ export default async function fixture(temporaryRoot: string) {
         const adapter: WebSocketSession = {
           protocol: TERMINAL_PROTOCOL,
           signal: incoming.signal,
-          send: (data) =>
-            socket.send(typeof data === "string" ? data : new Uint8Array(data)),
+          send: (data) => {
+            const send = () =>
+              socket.send(
+                typeof data === "string" ? data : new Uint8Array(data),
+              );
+            if (
+              holdInputAcks && typeof data === "string" &&
+              JSON.parse(data).type === "input-ack"
+            ) inputAcks.push(send);
+            else send();
+          },
           receive: () => incoming.receive(),
           close: (code, reason) => {
             incoming.close(code, reason);
@@ -836,6 +847,35 @@ export default async function fixture(temporaryRoot: string) {
       await page.evaluate(
         "document.querySelector('.xterm-helper-textarea').focus()",
       );
+      holdInputAcks = true;
+      const inputStart = native.writes.length;
+      try {
+        await page.evaluate(`(() => {
+          for (let i=0; i<64; i++) globalThis.__terminalForTest.input(String.fromCharCode(65+i%26));
+          globalThis.__terminalForTest.input('queued');
+        })()`);
+        await until(
+          () => inputAcks.length === 64,
+          "64 input frames without round-trip waits",
+        );
+        assertEquals(native.writes.length - inputStart, 64);
+        assertEquals(
+          new TextDecoder().decode(
+            Uint8Array.from(
+              native.writes.slice(inputStart).map((data) => data[0]!),
+            ),
+          ),
+          Array.from({ length: 64 }, (_, i) => String.fromCharCode(65 + i % 26))
+            .join(""),
+        );
+      } finally {
+        holdInputAcks = false;
+        for (const ack of inputAcks.splice(0)) ack();
+      }
+      await until(
+        () => textInput(native).endsWith("queued"),
+        "input resumes after consumption credit",
+      );
       await page.command("Input.insertText", { text: "first line" });
       await until(
         () => textInput(native).includes("first line"),
@@ -1113,6 +1153,14 @@ export default async function fixture(temporaryRoot: string) {
         "pending terminal write",
       );
       try {
+        const before = native.writes.length;
+        await page.evaluate(`(() => {
+          for (let i=0; i<72; i++) globalThis.__terminalForTest.input('x');
+        })()`);
+        await until(
+          () => native.writes.length === before + 72,
+          "input acknowledgements bypass a blocked renderer",
+        );
         currentSocket!.send(JSON.stringify({
           type: "error",
           message: "Terminal control transferred to another connection",

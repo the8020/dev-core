@@ -14,6 +14,8 @@ import {
   terminalTheme,
 } from "../state.ts";
 import {
+  INPUT_WINDOW_BYTES,
+  INPUT_WINDOW_FRAMES,
   outputSequence,
   SESSION_ID,
   TERMINAL_PROTOCOL,
@@ -44,7 +46,7 @@ interface Connection {
   exited: boolean;
   input: Uint8Array<ArrayBuffer>[];
   inputBytes: number;
-  inFlight?: Uint8Array<ArrayBuffer>;
+  inFlight: number[];
   resize?: Size;
   lastResize?: Size;
   heartbeat?: ReturnType<typeof setTimeout>;
@@ -537,6 +539,7 @@ class RetainedConsole implements CustomElementInstance {
         exited: false,
         input: [],
         inputBytes: 0,
+        inFlight: [],
         awaitingPong: false,
         stopped: false,
       };
@@ -599,6 +602,15 @@ class RetainedConsole implements CustomElementInstance {
             "error",
           );
           this.#detach();
+          return;
+        }
+        if (message.type === "input-ack") {
+          const bytes = connection.inFlight.shift();
+          if (bytes === undefined) {
+            throw new Error("Unexpected terminal input acknowledgement");
+          }
+          connection.inputBytes -= bytes;
+          this.#flushInput(connection);
           return;
         }
         data = message;
@@ -703,14 +715,6 @@ class RetainedConsole implements CustomElementInstance {
         connection.resize = undefined;
         this.#resize();
         break;
-      case "input-ack":
-        if (!connection.inFlight) {
-          throw new Error("Unexpected terminal input acknowledgement");
-        }
-        connection.inputBytes -= connection.inFlight.byteLength;
-        connection.inFlight = undefined;
-        this.#flushInput(connection);
-        break;
       case "state":
         this.#state(connection, message);
         break;
@@ -813,28 +817,36 @@ class RetainedConsole implements CustomElementInstance {
       data = buffer.subarray(0, written);
     }
     if (
-      connection.input.length + (connection.inFlight ? 1 : 0) +
-          Math.ceil(data.byteLength / 65_536) > VIEW_QUEUE_FRAMES
+      connection.input.length + connection.inFlight.length +
+          Math.ceil(data.byteLength / INPUT_WINDOW_BYTES) > VIEW_QUEUE_FRAMES
     ) {
       full();
       return;
     }
     this.#uncertainInput = false;
     connection.inputBytes += data.byteLength;
-    for (let offset = 0; offset < data.byteLength; offset += 65_536) {
-      connection.input.push(data.subarray(offset, offset + 65_536));
+    for (
+      let offset = 0;
+      offset < data.byteLength;
+      offset += INPUT_WINDOW_BYTES
+    ) {
+      connection.input.push(data.subarray(offset, offset + INPUT_WINDOW_BYTES));
     }
     this.#flushInput(connection);
   }
   #flushInput(connection: Connection): void {
-    if (
-      connection.inFlight || !connection.ready ||
-      this.#connection !== connection
-    ) return;
-    const data = connection.input.shift();
-    if (!data) return;
-    connection.inFlight = data;
-    this.#send(connection, data);
+    let bytes = connection.inFlight.reduce((sum, length) => sum + length, 0);
+    while (
+      connection.ready && this.#connection === connection &&
+      connection.input.length &&
+      connection.inFlight.length < INPUT_WINDOW_FRAMES &&
+      bytes + connection.input[0]!.byteLength <= INPUT_WINDOW_BYTES
+    ) {
+      const data = connection.input.shift()!;
+      bytes += data.byteLength;
+      connection.inFlight.push(data.byteLength);
+      this.#send(connection, data);
+    }
   }
   #size(): Size {
     const proposed = this.#fit.proposeDimensions();
@@ -897,7 +909,7 @@ class RetainedConsole implements CustomElementInstance {
       if (connection.heartbeat) clearTimeout(connection.heartbeat);
       connection.input.length = 0;
       connection.inputBytes = 0;
-      connection.inFlight = undefined;
+      connection.inFlight.length = 0;
       connection.socket.close(1000, "Terminal view detached");
     }
     this.#terminal.options.disableStdin = true;

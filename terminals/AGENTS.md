@@ -91,6 +91,10 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   overflow close only that view. Native input acknowledgement means consumption;
   canonical query replies mean bounded admission so the interpreter can continue
   draining output.
+- Browser input uses a 64-frame/64-KiB window shared through `protocol.ts`.
+  Include the active write in both bounds. Serialize native writes separately
+  from output/render acknowledgements, acknowledge each only after consumption,
+  and drop queued input on view closure or write failure without replay.
 - Snapshot capture and event sequencing share one ordered queue. HTTP delivers
   gzip JSON with a sequence boundary; the WebSocket queues only later events
   until the view acknowledges the snapshot. A view has a 256-KiB/64-frame send
@@ -142,10 +146,12 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   isolated serializer probes are component evidence, not completed application
   or interactive-program validation.
 - Owner/service tests cover snapshot and later-output ordering, split UTF-8,
-  detached queries, input acknowledgement, controller replacement, slow/broken
-  views, request loss during creation, metadata isolation, and explicit cleanup.
-  They use native-terminal doubles; actual browser, SSH, database deployment,
-  and interactive-program qualification remain separate integration gates.
+  detached queries, ordered input pipelining, consumption acknowledgements,
+  frame/byte limits, cancellation/failure discarding queued input, controller
+  replacement, slow/broken views, request loss during creation, metadata
+  isolation, and explicit cleanup. They use native-terminal doubles; actual
+  browser, SSH, database deployment, and interactive-program qualification
+  remain separate integration gates.
 - `deno task test:browser` supplies `browser_scenarios.ts` to the sibling UUI
   presentation harness. It checks the single toolbar, accessible icons,
   desktop/mobile content fullscreen and restoration, named controls, modified

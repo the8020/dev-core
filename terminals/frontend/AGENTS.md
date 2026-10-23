@@ -58,9 +58,12 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
 - Handle bounded terminal error/control-denial notices immediately, before the
   display queue, and detach without replaying pending input. A following socket
   close must not discard the notice or its Take control action.
-- Bound pending input to 1 MiB and 512 frames, with one 64-KiB frame in flight.
-  Reject an oversized paste before allocating or sending partial input. Never
-  replay input whose acknowledgement was lost.
+- Keep typing responsive over delayed connections with up to 64 input frames
+  totaling 64 KiB in flight, sharing the limits in `protocol.ts` with the owner.
+  Handle consumption acknowledgements before the display queue so a pending
+  render cannot hold input credit. Bound total pending input to 1 MiB and 512
+  frames, including sent frames. Reject oversized pastes before allocating or
+  sending partial input; never replay input whose acknowledgement was lost.
 - Allocate New IDs as the greatest existing all-numeric ID plus one, starting at
   `1`; ignore nonnumeric names. Render `[ID] Terminal ID` initially and
   `[ID] Label` after rename. IDs stay fixed and obey the kernel's 40-character
@@ -99,8 +102,11 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
   the native-terminal boundary alongside Ctrl+A, Escape, and bracketed paste.
 - It clicks OSC 8 links through the rendered terminal, checks direct HTTP/HTTPS
   opening without confirmation, and verifies that script URLs stay inactive.
-- It also holds an xterm write pending while a control-transfer notice and close
-  arrive, verifying that Take control remains available.
+- It holds input acknowledgements to verify the complete 64-frame window,
+  ordered bytes and resumption; a blocked xterm write must not prevent more than
+  one input window from reaching the native boundary. It also holds that write
+  while a control-transfer notice and close arrive, verifying that Take control
+  remains available.
 - It checks contiguous block columns across normal/bold text and spaces at
   multiple widths and pixel densities, including a transformed terminal. For
   Spynel qualification, launch in a fresh directory, keep the welcome screen

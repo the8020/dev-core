@@ -1,7 +1,11 @@
 import { assert, assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { TerminalEngine } from "./engine.ts";
 import { TerminalBusyError, TerminalOwner } from "./owner.ts";
-import { outputSequence } from "./protocol.ts";
+import {
+  INPUT_WINDOW_BYTES,
+  INPUT_WINDOW_FRAMES,
+  outputSequence,
+} from "./protocol.ts";
 import {
   captureTerminal,
   installTerminalView,
@@ -133,7 +137,7 @@ Deno.test("unacknowledged output disconnects a slow view while the owner keeps d
   }
 });
 
-Deno.test("input acknowledgement waits for native consumption and accepts one frame at a time", async () => {
+Deno.test("input pipelines bounded frames in order and acknowledges only native consumption", async () => {
   const native = new TestTerminals();
   native.input = Promise.withResolvers<void>();
   const owner = new TerminalOwner(native.native, native.api);
@@ -144,19 +148,77 @@ Deno.test("input acknowledgement waits for native consumption and accepts one fr
     const response = await owner.snapshot(view.id, signal);
     await snapshotJSON(response);
     view.ready(Number(response.headers.get("x-terminal-sequence")));
-    view.input(new TextEncoder().encode("command\r"));
+    const complete = Promise.withResolvers<void>();
+    const send = socket.send.bind(socket);
+    socket.send = (data) => {
+      send(data);
+      if (socket.messages("input-ack").length === INPUT_WINDOW_FRAMES) {
+        complete.resolve();
+      }
+    };
+    for (let i = 0; i < INPUT_WINDOW_FRAMES; i++) {
+      view.input(new Uint8Array([i]));
+    }
+    await Promise.resolve();
     assertEquals(socket.messages("input-ack"), []);
+    assertEquals(native.writes, [new Uint8Array([0])]);
     assertThrows(() => view.input(new Uint8Array([1])), Error, "input window");
     native.input.resolve();
-    await native.input.promise;
-    await Promise.resolve();
-    assertEquals(socket.messages("input-ack").length, 1);
-    assertEquals(native.writes.length, 1);
+    await complete.promise;
+    assertEquals(
+      native.writes.map((data) => data[0]),
+      Array.from({ length: INPUT_WINDOW_FRAMES }, (_, i) => i),
+    );
+    native.input = Promise.withResolvers<void>();
+    view.input(new Uint8Array(INPUT_WINDOW_BYTES));
+    assertThrows(() => view.input(new Uint8Array([1])), Error, "input window");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assertEquals(native.writes.at(-1)?.byteLength, INPUT_WINDOW_BYTES);
     await owner.detach(view);
     assertThrows(() => view.input(new Uint8Array([2])), Error, "input window");
   } finally {
     await owner.close();
     await running;
+  }
+});
+
+Deno.test("input failure or detach drops queued frames without replay or acknowledgement", async () => {
+  for (const failure of [false, true]) {
+    const native = new TestTerminals();
+    native.input = Promise.withResolvers<void>();
+    const owner = new TerminalOwner(native.native, native.api);
+    const running = owner.run();
+    try {
+      const socket = new TestSocket();
+      const view = await owner.attach(socket, "one", false);
+      assertThrows(
+        () => view.input(new Uint8Array([1])),
+        Error,
+        "input window",
+      );
+      const response = await owner.snapshot(view.id, signal);
+      await snapshotJSON(response);
+      view.ready(Number(response.headers.get("x-terminal-sequence")));
+      assertThrows(() => view.input(new Uint8Array()), Error, "frame limit");
+      assertThrows(
+        () => view.input(new Uint8Array(INPUT_WINDOW_BYTES + 1)),
+        Error,
+        "frame limit",
+      );
+      view.input(new Uint8Array([1]));
+      view.input(new Uint8Array([2]));
+      await Promise.resolve();
+      if (failure) native.input.reject(new Error("write failed"));
+      else await owner.detach(view);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      assertEquals(view.closed, true);
+      assertEquals(native.writes, [new Uint8Array([1])]);
+      assertEquals(socket.messages("input-ack"), []);
+      assertEquals(native.closed, []);
+    } finally {
+      await owner.close();
+      await running;
+    }
   }
 });
 
