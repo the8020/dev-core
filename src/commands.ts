@@ -55,9 +55,14 @@ function activationInput(args: string[], requireMessage: boolean) {
       "metadata",
       "force",
       "approved-plan",
+      "action",
+      "attempt",
     ],
   });
-  if (requireMessage && typeof parsed.options.message !== "string") {
+  if (
+    requireMessage && !parsed.options.action &&
+    typeof parsed.options.message !== "string"
+  ) {
     throw new AdminCommandError({
       code: "invalid_arguments",
       message: "--message is required",
@@ -65,6 +70,8 @@ function activationInput(args: string[], requireMessage: boolean) {
   }
   return {
     user_id: requiredCommandArgument(parsed.positionals, 0, "user ID"),
+    action: parsed.options.action,
+    attempt: parsed.options.attempt,
     ...(!requireMessage ? { file: parsed.options.file } : {}),
     message: parsed.options.message,
     packages: parsed.options.packages,

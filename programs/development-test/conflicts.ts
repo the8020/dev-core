@@ -53,7 +53,7 @@ async function conflictCommand<T>(
   );
   const result = await development.sandbox.run("shell", user, {
     command:
-      `printf %s '${data}' | base64 -d | deno run --allow-read --allow-write --allow-run=/usr/bin/git --allow-env=DEVELOPMENT_USER_ID /workspace/scripts/activation-conflicts.ts`,
+      `printf %s '${data}' | base64 -d | deno run --no-config --allow-read --allow-write --allow-run=/usr/bin/git --allow-env=DEVELOPMENT_USER_ID /workspace/scripts/activation-conflicts.ts`,
   });
   return JSON.parse((result.shell as { output: string }).output) as T;
 }

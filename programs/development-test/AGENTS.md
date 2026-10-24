@@ -45,9 +45,16 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   file selector, `codeEditor()` line markers, and labelled
   original/private/shared versions. Save resolution, side selection, and
   deletion update that same native index through the sandbox shell and platform
-  `activation-conflicts.ts` helper. Continue commits resolved indexes and
-  retries ordinary activation.
-- Reopening activation discovers pending conflicts through sandbox inspection.
+  self-contained `activation-conflicts.ts` helper with `--no-config` and its
+  existing read/write/Git/environment permissions. Continue commits resolved
+  indexes and retries ordinary activation.
+- Reopening activation reads pending lifecycle state from the native preview
+  journal, including interruption/restart and cleanup failures. It offers
+  Continue/Retry cleanup and Abort, preserve work, and shows retained/legacy
+  inventory with terminal recovery/export/disposition commands. Only actual
+  conflicts open the conflict editor; unfinished staging is not called a merge
+  conflict. Cleanup continuation, including confirmed rollback cleanup, does not
+  require a publication message; use the native `cleanup-pending` status.
   Terminal changes are picked up by Refresh from Git; stale saves fail without
   overwriting the terminal's file. Confirm discarding an unsaved editor draft
   before switching files or refreshing. Binary, linked, and files over 48 KiB
@@ -72,6 +79,8 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   unchecked acknowledgement and Cancel/Back. Submit exact tables and plan
   identity; stale candidate/scope requires fresh confirmation. Cancellation
   preserves the message draft; success retains the actual cleanup/repair result.
+- Completed rollback cleanup reports a closed attempt with private changes
+  pending; it never claims publication.
 - Resumed success identifies captured changes rather than claiming all current
   workspace changes were activated. Native errors retain deployment/recovery
   context unchanged.

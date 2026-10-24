@@ -173,6 +173,12 @@ below.
   exports parse raw string arguments, report intentional input errors
   structurally, and call typed kernel development operations.
 - CLI and UUI use the same process-preserving activation owner.
+- Activation commands accept `--action status|continue|abort` and optional
+  `--attempt ID` for explicitly preserving legacy work. Native status/preview
+  supplies journal-backed pending and bounded retained inventory. Abort leaves
+  files recoverable; schema rollback and completed-staging retirement remain
+  native. Neither command parsing nor the UI may infer cleanup authority from a
+  clean Git worktree or its age.
 - Activation transports optional schema preview, exact force-column scope and
   approved-plan identity. Force does not skip cleanup/native activation or
   application development-role checks; the DB owner validates repair/recovery

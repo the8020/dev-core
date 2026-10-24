@@ -44,6 +44,14 @@ interface DevelopmentScreenModel {
 interface ActivationPreviewResult extends Record<string, unknown> {
   preview: {
     packages: ActivationPackagePreview[];
+    pending?: ActivationRunResult["activation"];
+    retained?: {
+      attempt_id: string;
+      status: string;
+      worktree: string;
+      recovery?: string;
+    }[];
+    inventory_truncated?: boolean;
   };
 }
 
@@ -53,6 +61,7 @@ interface ActivationRunResult extends Record<string, unknown> {
     status: string;
     error?: string;
     resumed?: boolean;
+    phase?: string;
     packages: ConflictPackage[];
     schema_result?: Record<string, { route: string; columns?: string[] }>;
   };
@@ -235,17 +244,12 @@ async function activateChanges(userId: string): Promise<void> {
     let previewError = "";
     const result: ActivationPreviewResult = { preview: { packages: [] } };
     try {
-      const inspected = await development.sandbox.run("inspect", userId);
-      pending = (inspected.sandbox as {
-        last_activation_result?: ActivationRunResult["activation"];
-      }).last_activation_result;
+      result.preview = await development.activate.preview({
+        user_id: userId,
+      }) as ActivationPreviewResult["preview"];
+      pending = result.preview.pending;
       conflicted = pending?.status === "conflicted" &&
         !!pending.packages?.some((item) => item.conflict_worktree);
-      if (!conflicted) {
-        result.preview = await development.activate.preview({
-          user_id: userId,
-        }) as ActivationPreviewResult["preview"];
-      }
     } catch (error) {
       previewError = error instanceof Error ? error.message : String(error);
       sendMessage(previewError, "error");
@@ -261,7 +265,24 @@ async function activateChanges(userId: string): Promise<void> {
     const model: z.infer<typeof ActivationScreen> = {
       packages,
       message,
-      status: previewError || status ||
+      status: previewError || (pending
+        ? `${pending.status}: ${
+          pending.error ?? "Continue or abort preserving work."
+        }`
+        : "") ||
+        (result.preview.retained?.length
+          ? result.preview.retained.map((item) =>
+            `${item.attempt_id}: ${item.status}. Recover/export at ${item.worktree}${
+              item.status === "legacy-unresolved"
+                ? `, or preserve with activate --abort --attempt ${item.attempt_id}`
+                : ""
+            }. ${item.recovery ?? ""}`
+          ).join("\n")
+          : "") ||
+        (result.preview.inventory_truncated
+          ? "Retained inventory is truncated; inspect with activate --status in the terminal."
+          : "") ||
+        status ||
         (!conflicted && packages.length === 0
           ? "No private changes"
           : "Review the changed packages and enter a commit message."),
@@ -291,7 +312,15 @@ async function activateChanges(userId: string): Promise<void> {
                       kind: "primary" as const,
                     }]
                     : []),
-                  ...(packages.length > 0
+                  ...(pending
+                    ? [{
+                      id: "continue",
+                      label: pending.status === "cleanup-pending"
+                        ? "Retry cleanup"
+                        : "Continue activation",
+                    }, { id: "abort", label: "Abort, preserve work" }]
+                    : []),
+                  ...(!pending && packages.length > 0
                     ? [{
                       id: "sync-all",
                       label: "Activate all changes",
@@ -299,7 +328,9 @@ async function activateChanges(userId: string): Promise<void> {
                     }]
                     : []),
                   ...(schemaPlan?.tables.some((t) =>
-                      t.affected_columns.some((c) => c.repair !== "unsupported")
+                      t.affected_columns.some((c) =>
+                        c.repair !== "unsupported"
+                      )
                     )
                     ? [{
                       id: "force",
@@ -322,6 +353,27 @@ async function activateChanges(userId: string): Promise<void> {
       schemaPlan = undefined;
       continue;
     }
+    if (event.action === "abort") {
+      try {
+        const result = await development.activate.run({
+          user_id: userId,
+          action: "abort",
+        });
+        if (!result.success) {
+          throw new Error(
+            String(result.error ?? "Abort could not finish"),
+          );
+        }
+        status = result.status === "aborted-preserved"
+          ? "Attempt closed; files and captures preserved for recovery/export"
+          : "Attempt closed; private changes remain pending";
+        sendMessage(status, "success");
+      } catch (error) {
+        status = error instanceof Error ? error.message : String(error);
+        sendMessage(status, "error");
+      }
+      continue;
+    }
     if (event.action === "select" && typeof event.value === "string") {
       const selected = result.preview.packages.find((item) =>
         item.package_id === event.value
@@ -332,17 +384,18 @@ async function activateChanges(userId: string): Promise<void> {
     }
     if (
       event.action === "sync-all" || event.action === "resolve" ||
-      event.action === "force"
+      event.action === "force" || event.action === "continue"
     ) {
-      if (message.trim() === "") {
+      if (message.trim() === "" && pending?.status !== "cleanup-pending") {
         status = "A commit message is required";
         sendMessage(status, "error");
         continue;
       }
       try {
-        const selected = result.preview.packages.filter((p) =>
-          p.activation_ready
-        ).map((p) => p.package_id);
+        const selected = pending?.packages.map((p) => p.package_id) ??
+          result.preview.packages.filter((p) => p.activation_ready).map((p) =>
+            p.package_id
+          );
         let force: string[] = [];
         let approved: string | undefined;
         if (event.action === "force") {
@@ -371,14 +424,16 @@ async function activateChanges(userId: string): Promise<void> {
           );
           approved = schemaPlan.identity;
         }
+        const pendingPackages = pending?.packages;
         if (
-          event.action === "resolve" && pending &&
-          !(await presentPage(() => resolveConflicts(userId, pending.packages)))
+          event.action === "resolve" && pendingPackages &&
+          !(await presentPage(() => resolveConflicts(userId, pendingPackages)))
         ) continue;
         let activation: ActivationRunResult["activation"];
         while (true) {
           activation = await development.activate.run({
             user_id: userId,
+            action: pending ? "continue" : undefined,
             message: message.trim(),
             metadata: JSON.stringify({ client: "uui" }),
             packages: selected.join(","),
@@ -391,7 +446,10 @@ async function activateChanges(userId: string): Promise<void> {
             await presentPage(() =>
               resolveConflicts(userId, activation.packages)
             )
-          ) continue;
+          ) {
+            pending = activation;
+            continue;
+          }
           break;
         }
         if (!activation.success) {
@@ -401,7 +459,9 @@ async function activateChanges(userId: string): Promise<void> {
         }
         message = "";
         schemaPlan = undefined;
-        status = activation.resumed
+        status = activation.phase === "aborted"
+          ? "Attempt closed; private changes remain pending"
+          : activation.resumed
           ? "Captured changes activated; review remaining workspace changes"
           : "All package changes activated";
         if (activation.schema_result) {
