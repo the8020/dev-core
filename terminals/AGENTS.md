@@ -102,6 +102,12 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   until the view acknowledges the snapshot. A view has a 256-KiB/64-frame send
   window and a 1-MiB/512-frame total queue. Lost native output fails recovery
   explicitly.
+- Capture cell arrays once and JSON-detach the remaining engine metadata; later
+  output must not mutate snapshots. Preserve the state format and history
+  limits. Validate every cell as an exact uint32, including sparse entries, and
+  count validated arrays toward structural/depth bounds without walking their
+  cells again. Retain generic metadata and text validation. Keep array spread
+  for cell capture in the Deno/V8 runtime.
 - Browser establishment first checks the exact owner's HTTP status so
   authentication and stale-owner failures remain distinguishable from transient
   transport loss. WebSocket heartbeats detect lost views; resize
@@ -169,6 +175,10 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   They also cover multiple completed frames followed by an unfinished frame in
   the same write/batch, byte fragmentation, combined mode resets, cursor
   stability, ordinary output after a frame, and observer cleanup on detach.
+- Engine tests also cover snapshot independence, Unicode/OSC/CSI/DCS parser
+  continuation, saved charsets, links, palette and alternate-screen recovery;
+  invalid/sparse cells and metadata retain the structural, depth and text
+  bounds.
 - Browser resize regressions check batched write submission, parse-based output
   credit, ordered resize/recovery, late frame ends, stable scrollbars, and
   quiet/silent/deadline fallbacks through the real service protocol.
@@ -184,7 +194,9 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   `--runtime-root`, `--kernel`, `--admin`, and `--browser` options as
   `--name=value`. Use freshly built binaries and a materialized test runtime;
   the harness stages disposable package snapshots and nodes and never uses a
-  developer sandbox. It checks native process identity through
+  developer sandbox. The fixture grants its disposable account the development
+  permission explicitly before refreshing Home and waits for the navigator to
+  mount before opening Development. It checks native process identity through
   navigation/reload/logout, rendered snapshot recovery, detached queries,
   explicit controller transfer between tabs, and independent terminal cleanup.
   Offline query checks wait for native command admission and observe the result

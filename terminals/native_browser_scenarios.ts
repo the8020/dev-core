@@ -31,6 +31,15 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     page.evaluate<string>(
       "document.querySelector('.sandbox-console').dataset.terminalId",
     );
+  const openDevelopment = async (target = page) => {
+    await waitForPage(
+      target,
+      `[...document.querySelectorAll('.home-navigator .home-tree')].some(element =>
+        element.getClientRects().length && !element.closest('[inert]'))`,
+      "Home navigator mounted",
+    );
+    await clickRow(target, "the8020/dev-core/development-test");
+  };
   const choose = async (id: string, target = page) => {
     await target.evaluate(`(() => {
       const e=document.querySelector('.sandbox-console-select');
@@ -89,6 +98,16 @@ export default async function verify(context: NativeBrowserFixtureContext) {
     await waitForScreen(page, "Welcome to 80|20");
   };
 
+  await context.admin(["auth.users.personal", context.credentials.username]);
+  await context.admin([
+    "auth.roles.grant",
+    context.credentials.username,
+    "the8020.dev-core.development.use",
+    "*",
+  ]);
+  await context.clickButton(page, "Refresh");
+  await waitForScreen(page, "Welcome to 80|20");
+
   await page.evaluate(`(() => {
     globalThis.terminalStyleViolations = [];
     addEventListener('securitypolicyviolation', event => {
@@ -97,7 +116,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
       }
     });
   })()`);
-  await clickRow(page, "the8020/dev-core/development-test");
+  await openDevelopment();
   await waitForScreen(page, "Development", 60_000);
   await ready();
   const first = await selected();
@@ -147,7 +166,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
 
   await click(page, "#screen-back");
   await waitForScreen(page, "Welcome to 80|20");
-  await clickRow(page, "the8020/dev-core/development-test");
+  await openDevelopment();
   await waitForScreen(page, "Development");
   await ready(first);
   assert((await output(
@@ -163,26 +182,31 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   const verifyStyles = async () => {
     await waitForPage(
       page,
-      "!!document.querySelector('.xterm-fg-2')",
+      `[...document.querySelectorAll('.xterm-rows > div')].some(element => element.textContent === 'RGB')`,
       "colored terminal text",
     );
-    assertEquals(
-      await page.evaluate(`(() => {
-      const cell = document.querySelector('.xterm-fg-2');
-      const style = getComputedStyle(cell);
-      const rgb = getComputedStyle([...document.querySelectorAll('.xterm-rows span')].find(e => e.textContent === 'RGB'));
-      return [style.color, style.backgroundColor, style.whiteSpace, style.display, rgb.color, rgb.backgroundColor];
-    })()`),
-      [
-        "rgb(78, 154, 6)",
-        "rgb(52, 101, 164)",
-        "pre",
-        "inline-block",
-        "rgb(17, 34, 51)",
-        "rgb(170, 187, 204)",
-      ],
-      "terminal colors and cell layout under the real shell CSP",
-    );
+    const rows = await page.evaluate<string[][][]>(`(() => {
+      const rows = [...document.querySelectorAll('.xterm-rows > div')];
+      return ['Native α😀 display', 'RGB'].map(text =>
+        [...rows.find(row => row.textContent === text).children].map(cell => {
+          const style = getComputedStyle(cell);
+          return [style.color, style.backgroundColor, style.whiteSpace, style.display];
+        }));
+    })()`);
+    for (const [index, cells] of rows.entries()) {
+      for (const cell of cells) {
+        assertEquals(
+          cell,
+          [
+            index === 0 ? "rgb(78, 154, 6)" : "rgb(17, 34, 51)",
+            index === 0 ? "rgb(52, 101, 164)" : "rgb(170, 187, 204)",
+            "pre",
+            "inline-block",
+          ],
+          "terminal colors and cell layout under the real shell CSP",
+        );
+      }
+    }
   };
   await verifyStyles();
   assertEquals(
@@ -268,7 +292,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   // A different browser cannot silently take over input or resize ownership.
   const observer = await context.openPage();
   await waitForScreen(observer, "Welcome to 80|20", 60_000);
-  await clickRow(observer, "the8020/dev-core/development-test");
+  await openDevelopment(observer);
   await waitForScreen(observer, "Development");
   await waitForPage(
     observer,
@@ -342,7 +366,7 @@ export default async function verify(context: NativeBrowserFixtureContext) {
   );
   await unauthenticated.body?.cancel();
   await login();
-  await clickRow(page, "the8020/dev-core/development-test");
+  await openDevelopment();
   await waitForScreen(page, "Development");
   await ready(first);
   assert((await output(
