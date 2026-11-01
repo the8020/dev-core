@@ -26,7 +26,7 @@
     "test:native-resilience": "deno run -A ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_resilience_scenarios.ts",
     "test:native-idle": "deno run -A ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_idle_scenarios.ts",
     "bench:native-terminals": "deno run -A ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_performance_scenarios.ts",
-    "check:i18n": "deno run --allow-read ../i18n/check.ts --complete=cs ."
+    "check:i18n": "deno run --allow-read ../i18n/check.ts --complete=builtin ."
   },
   "fmt": {
     "exclude": [

@@ -563,13 +563,12 @@ async function confirmForce(
               ) =>
                 localizedText(
                   msg(
-                    "program.value1_value2_only_incompatible_cells_may_become",
+                    c.repair === "null"
+                      ? "program.incompatible_cells_to_null"
+                      : "program.incompatible_cells_to_default",
                     {
-                      value1: t.table_id,
-                      value2: c.name,
-                      value3: c.repair === "null"
-                        ? "NULL"
-                        : "the authored target default",
+                      table: t.table_id,
+                      column: c.name,
                     },
                   ),
                 )

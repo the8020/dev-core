@@ -106,7 +106,8 @@ relevant child AGENTS.md
 
 ## Child DOX Index
 
-- [i18n/AGENTS.md](i18n/AGENTS.md): English and Czech presentation catalogs.
+- [i18n/AGENTS.md](i18n/AGENTS.md): Complete built-in-language presentation
+  catalogs.
 
 This root retains repository-wide contracts and files outside the child scopes
 below.
