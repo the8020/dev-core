@@ -17,7 +17,7 @@
     "@xterm/xterm": "npm:@xterm/xterm@6.0.0"
   },
   "tasks": {
-    "check": "deno fmt --check . && deno lint . && deno check programs/*/*.ts src/*.ts services/*/service.ts tables/*.ts terminals/frontend/console.ts terminals/browser_scenarios.ts terminals/native*_scenarios.ts",
+    "check": "deno fmt --check . && deno lint . && deno check programs/*/*.ts src/*.ts services/*/service.ts tables/*.ts terminals/frontend/console.ts terminals/browser_scenarios.ts terminals/native*_scenarios.ts && deno task check:i18n",
     "build": "deno run -A terminals/build.ts",
     "build:code-browser": "deno run -A programs/code-browser/build.ts",
     "test": "deno test --allow-read --allow-write terminals programs/code-browser",
@@ -25,7 +25,8 @@
     "test:native-browser": "deno run -A ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_browser_scenarios.ts",
     "test:native-resilience": "deno run -A ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_resilience_scenarios.ts",
     "test:native-idle": "deno run -A ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_idle_scenarios.ts",
-    "bench:native-terminals": "deno run -A ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_performance_scenarios.ts"
+    "bench:native-terminals": "deno run -A ../uui/browser_e2e.ts --fixture=../dev-core/terminals/native_performance_scenarios.ts",
+    "check:i18n": "deno run --allow-read ../i18n/check.ts --complete=cs ."
   },
   "fmt": {
     "exclude": [

@@ -8,7 +8,11 @@
       {
         "id": "changed-packages",
         "type": "list",
-        "title": "Changed packages",
+        "title": {
+          "package": "the8020/dev-core",
+          "key": "program.changed_packages",
+          "fallback": "Changed packages"
+        },
         "bind": "packages",
         "key": "package",
         "display": [
@@ -29,7 +33,11 @@
           },
           "changedFiles": {
             "length": "compact",
-            "shortHeading": "Files"
+            "shortHeading": {
+              "package": "the8020/dev-core",
+              "key": "layout.files",
+              "fallback": "Files"
+            }
           },
           "addedRows": {
             "length": "compact",
@@ -38,7 +46,7 @@
           },
           "removedRows": {
             "length": "compact",
-            "shortHeading": "\u2212",
+            "shortHeading": "−",
             "heading": "Removed rows"
           }
         }
@@ -46,7 +54,11 @@
       {
         "id": "activation",
         "type": "field-group",
-        "title": "Activation",
+        "title": {
+          "package": "the8020/dev-core",
+          "key": "layouts.development-test.activation.activation.title",
+          "fallback": "Activation"
+        },
         "controls": [
           "message",
           "status"

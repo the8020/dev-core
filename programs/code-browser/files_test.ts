@@ -30,7 +30,10 @@ Deno.test("code browser reads bounded package text and rejects unsafe paths", as
     assert((await readSource(root, "file.ts")).content === "const café = 1;\n");
     assert((await readSource(root, "folder")).entries?.length === 0);
     assert((await readSource(root, "binary")).notice?.includes("binary"));
-    assert((await readSource(root, "large")).notice?.includes("128 KiB"));
+    assert(
+      (await readSource(root, "large")).notice ===
+        "files.this_file_exceeds_128_kib_open_it",
+    );
     assert(sourceText("one\r\ncafé 👋\r\nthree") === "one\ncafé 👋\nthree");
     assert(
       matchesExcerpt("one\r\ncafé 👋\r\nthree", {

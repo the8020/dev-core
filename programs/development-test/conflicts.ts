@@ -1,3 +1,5 @@
+import { text as localizedText } from "/p/the8020/i18n/mod.ts";
+import { msg } from "/p/the8020/dev-core/i18n/messages.ts";
 import { development } from "../../src/development.ts";
 import {
   BACK_EVENT,
@@ -66,19 +68,19 @@ function markers(text: string) {
     let label: string | undefined;
     if (line.startsWith("<<<<<<<")) {
       side = "added";
-      label = "Yours";
+      label = localizedText(msg("conflicts.yours"));
     } else if (line.startsWith("|||||||")) {
       side = "removed";
-      label = "Original";
+      label = localizedText(msg("conflicts.original"));
     } else if (line === "=======") {
       side = "added";
-      label = "Shared";
+      label = localizedText(msg("conflicts.shared"));
     } else if (line.startsWith(">>>>>>>")) {
       side = undefined;
       return [{
         line: index + 1,
         kind: "error" as const,
-        label: "End",
+        label: localizedText(msg("conflicts.end")),
       }];
     }
     return side
@@ -96,8 +98,9 @@ export async function resolveConflicts(
   let selected: FileRow | undefined;
   let file: ConflictFile | undefined;
   let refresh = true;
-  let status =
-    "Choose a file, resolve the marked sections, then save the resolution.";
+  let status = localizedText(
+    msg("conflicts.choose_a_file_resolve_the_marked_sections"),
+  );
   const model = new Model({
     files,
     content: "",
@@ -155,10 +158,14 @@ export async function resolveConflicts(
             worktree: z.string(),
           }),
         ),
-        { label: "Conflicting files", control: "list", readOnly: true },
+        {
+          label: msg("conflicts.conflicting_files"),
+          control: "list",
+          readOnly: true,
+        },
       ),
       content: field(conflictInfo.shape.content, {
-        label: selected?.path ?? "Resolution",
+        label: selected?.path ?? localizedText(msg("conflicts.resolution")),
         custom: codeEditor({
           language,
           syntaxCheck: false,
@@ -169,21 +176,21 @@ export async function resolveConflicts(
         readOnly: !file || file.binary,
       }),
       original: field(conflictInfo.shape.content, {
-        label: "Original",
+        label: msg("conflicts.original"),
         custom: codeEditor({ language, syntaxCheck: false }),
         readOnly: true,
         rowSpan: 5,
         length: "long",
       }),
       private: field(conflictInfo.shape.content, {
-        label: "Your version",
+        label: msg("conflicts.your_version"),
         custom: codeEditor({ language, syntaxCheck: false }),
         readOnly: true,
         rowSpan: 5,
         length: "long",
       }),
       shared: field(conflictInfo.shape.content, {
-        label: "Shared version",
+        label: msg("conflicts.shared_version"),
         custom: codeEditor({ language, syntaxCheck: false }),
         readOnly: true,
         rowSpan: 5,
@@ -195,13 +202,15 @@ export async function resolveConflicts(
       }),
     });
     model.data.status = files.length === 0
-      ? "All conflicts resolved. Continue to finish activation."
+      ? localizedText(
+        msg("conflicts.all_conflicts_resolved_continue_to_finish_activation"),
+      )
       : file?.binary
-      ? "Binary, linked, or large file. Choose a version, delete the file, or resolve it in the terminal."
+      ? localizedText(msg("conflicts.binary_linked_or_large_file_choose_a"))
       : status;
     const event = await callScreen({
       id: "development-conflicts",
-      title: "Resolve activation conflicts",
+      title: msg("conflicts.resolve_activation_conflicts"),
       description: selected
         ? `${selected.package} / ${selected.path} — ${selected.kind}. ${model.data.status}`
         : model.data.status,
@@ -222,23 +231,29 @@ export async function resolveConflicts(
                 ...(files.length === 0
                   ? [{
                     id: "continue",
-                    label: "Continue activation",
+                    label: msg("conflicts.continue_activation"),
                     kind: "primary" as const,
                   }]
                   : [
                     ...(file?.hasPrivate
-                      ? [{ id: "private", label: "Use your version" }]
+                      ? [{
+                        id: "private",
+                        label: msg("conflicts.use_your_version"),
+                      }]
                       : []),
                     ...(file?.hasShared
-                      ? [{ id: "shared", label: "Use shared version" }]
+                      ? [{
+                        id: "shared",
+                        label: msg("conflicts.use_shared_version"),
+                      }]
                       : []),
                     {
                       id: "delete",
-                      label: "Delete file",
+                      label: msg("conflicts.delete_file"),
                       kind: "danger" as const,
                     },
                   ]),
-                { id: "refresh", label: "Refresh from Git" },
+                { id: "refresh", label: msg("conflicts.refresh_from_git") },
               ],
               key: "id",
               display: ["package", "path", "kind"],
@@ -252,7 +267,9 @@ export async function resolveConflicts(
               ? [{
                 id: "versions",
                 type: "field-group",
-                title: "Versions for comparison (an absent version is blank)",
+                title: msg(
+                  "conflicts.versions_for_comparison_an_absent_version_is",
+                ),
                 controls: ["private", "original", "shared"],
               }]
               : []),
@@ -261,7 +278,11 @@ export async function resolveConflicts(
       },
       header: {
         actions: files.length > 0 && !file?.binary
-          ? [{ id: "save", label: "Save resolution", kind: "primary" }]
+          ? [{
+            id: "save",
+            label: msg("conflicts.save_resolution"),
+            kind: "primary",
+          }]
           : [],
       },
     });
@@ -271,11 +292,12 @@ export async function resolveConflicts(
       if (file && model.data.content !== file.content) {
         const discard = await confirmAction({
           id: "conflict-discard-draft",
-          title: "Discard unsaved edits?",
-          message:
-            "Your unsaved editor changes will be discarded. Saved Git resolutions are kept.",
-          confirm: "Discard edits",
-          cancel: "Keep editing",
+          title: msg("conflicts.discard_unsaved_edits"),
+          message: localizedText(
+            msg("conflicts.your_unsaved_editor_changes_will_be_discarded"),
+          ),
+          confirm: msg("conflicts.discard_edits"),
+          cancel: msg("conflicts.keep_editing"),
         });
         if (!discard) continue;
       }
@@ -304,7 +326,9 @@ export async function resolveConflicts(
           content: model.data.content,
           version: file.version,
         });
-        status = "Resolution saved. Choose the next conflict.";
+        status = localizedText(
+          msg("conflicts.resolution_saved_choose_the_next_conflict"),
+        );
         refresh = true;
       }
     } catch (error) {

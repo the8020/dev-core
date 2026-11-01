@@ -1,26 +1,27 @@
+import { msg } from "/p/the8020/dev-core/i18n/messages.ts";
 import { choiceHelp, field, z } from "/p/the8020/db/fields.ts";
 
 export const activationChange = field(z.string(), {
-  label: "Change",
-  description:
-    "Added, modified, or deleted. Moves appear as deletions and additions.",
+  label: msg("fields.change"),
+  description: msg("fields.added_modified_or_deleted_moves_appear_as"),
   valueHelp: choiceHelp(z.string(), [
-    { value: "[[icon=add color=success]] Added", label: "Added" },
-    { value: "[[icon=edit]] Modified", label: "Modified" },
-    { value: "[[icon=remove color=error]] Deleted", label: "Deleted" },
+    { value: "[[icon=add color=success]] Added", label: msg("fields.added") },
+    { value: "[[icon=edit]] Modified", label: msg("fields.modified") },
+    {
+      value: "[[icon=remove color=error]] Deleted",
+      label: msg("fields.deleted"),
+    },
   ]),
 });
 
 export const developmentInfo = z.object({
   sandboxId: field(z.string(), {
-    label: "Sandbox ID",
-    description:
-      "Your development sandbox. Use the terminal above to work in it, or the sandbox actions to restart or reset it.",
+    label: msg("fields.sandbox_id"),
+    description: msg("fields.your_development_sandbox_use_the_terminal_above"),
   }),
   state: field(z.string(), {
-    label: "State",
-    description:
-      "The current state of your development sandbox. Ready and conflicted sandboxes can be used in the terminal.",
+    label: msg("fields.state"),
+    description: msg("fields.the_current_state_of_your_development_sandbox"),
     valueHelp: choiceHelp(z.string(), [
       "ABSENT",
       "CREATING",
@@ -37,79 +38,75 @@ export const developmentInfo = z.object({
     ]),
   }),
   status: field(z.string(), {
-    label: "Last operation",
-    description: "The result of the most recent development sandbox action.",
+    label: msg("fields.last_operation"),
+    description: msg("fields.the_result_of_the_most_recent_development"),
   }),
   changedFiles: field(z.number().int().nonnegative(), {
-    label: "Changed files",
-    description:
-      "Files added, changed, or removed in this package since its current active version.",
+    label: msg("changes.changed_files"),
+    description: msg("fields.files_added_changed_or_removed_in_this"),
   }),
   addedRows: field(z.number().int().nonnegative(), {
-    label: "Added rows",
-    description: "Text lines added by the package changes in this preview.",
+    label: msg("fields.added_rows"),
+    description: msg("fields.text_lines_added_by_the_package_changes"),
   }),
   removedRows: field(z.number().int().nonnegative(), {
-    label: "Removed rows",
-    description: "Text lines removed by the package changes in this preview.",
+    label: msg("fields.removed_rows"),
+    description: msg("fields.text_lines_removed_by_the_package_changes"),
   }),
   ready: field(z.string(), {
-    label: "Activation readiness",
-    description:
-      "Ready packages can be activated. Resolve blocked package changes before activating.",
-    valueHelp: choiceHelp(z.string(), ["Ready", "Blocked"]),
+    label: msg("fields.activation_readiness"),
+    description: msg("fields.ready_packages_can_be_activated_resolve_blocked"),
+    valueHelp: choiceHelp(z.string(), [
+      msg("program.ready"),
+      msg("program.blocked"),
+    ]),
   }),
   message: field(z.string(), {
-    label: "Commit message",
-    description:
-      "Required. The same message is used for every changed package in this activation.",
+    label: msg("fields.commit_message"),
+    description: msg("fields.required_the_same_message_is_used_for"),
   }),
   activationStatus: field(z.string(), {
-    label: "Activation status",
-    description:
-      "The result of reviewing or activating the current package changes.",
+    label: msg("fields.activation_status"),
+    description: msg("fields.the_result_of_reviewing_or_activating_the"),
   }),
   confirmed: field(z.boolean(), {
-    label: "I understand that these changes will be deleted",
-    description:
-      "Confirm only after reviewing which changes this reset deletes. Cancel to keep them.",
+    label: msg("fields.i_understand_that_these_changes_will_be"),
+    description: msg("fields.confirm_only_after_reviewing_which_changes_this"),
   }),
 });
 
 export const conflictInfo = z.object({
   path: field(z.string(), {
-    label: "File",
-    description: "The conflicting file within this package.",
+    label: msg("program.file"),
+    description: msg("fields.the_conflicting_file_within_this_package"),
   }),
   kind: field(z.string(), {
-    label: "Conflict",
-    description: "Which versions changed or deleted this file.",
+    label: msg("fields.conflict"),
+    description: msg("fields.which_versions_changed_or_deleted_this_file"),
     valueHelp: choiceHelp(z.string(), [
-      "Both changed",
-      "Deleted upstream",
-      "Deleted by you",
-      "Added upstream",
+      msg("choices.both_changed"),
+      msg("choices.deleted_upstream"),
+      msg("choices.deleted_by_you"),
+      msg("choices.added_upstream"),
     ]),
   }),
   content: field(z.string(), {
-    label: "File contents",
-    description:
-      "Resolve the Git-marked sections, remove the markers, and save. Use Delete file to resolve a deletion.",
+    label: msg("fields.file_contents"),
+    description: msg("fields.resolve_the_git_marked_sections_remove_the"),
   }),
   status: field(z.string(), {
-    label: "Resolution status",
-    description: "Resolve every file before continuing activation.",
+    label: msg("fields.resolution_status"),
+    description: msg("fields.resolve_every_file_before_continuing_activation"),
   }),
 });
 
 export const activationFileInfo = z.object({
   path: field(z.string(), {
-    label: "File",
-    description:
-      "Changed filename within this package. Open it to review the diff.",
+    label: msg("program.file"),
+    description: msg("fields.changed_filename_within_this_package_open_it"),
   }),
   change: activationChange,
   diff: field(z.string(), {
-    label: "Changes",
+    label: msg("fields.changes"),
   }),
 });

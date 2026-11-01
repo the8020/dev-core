@@ -26,6 +26,8 @@ Parent DOX: [development programs](../AGENTS.md).
   the explicit `@runtime/` namespace from the running Worker's `/opt/runtime`.
   Reject traversal, Git internals and special files. Previews stop at 128 KiB;
   folders at 1,000 entries.
+- The standalone sandbox file reader has no application imports. It returns
+  notice keys and search counts; the UUI program localizes presentation.
 - Search is literal/case-insensitive and reports its bounds: 200 results, 10,000
   files or 32 MiB. Exclude hidden, generated, vendor, public and node_modules
   trees. Never describe a capped scan as exhaustive.

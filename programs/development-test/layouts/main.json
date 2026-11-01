@@ -19,7 +19,11 @@
           "state",
           "status"
         ],
-        "actions": ["restart", "reset-source", "factory-reset"]
+        "actions": [
+          "restart",
+          "reset-source",
+          "factory-reset"
+        ]
       }
     ]
   }

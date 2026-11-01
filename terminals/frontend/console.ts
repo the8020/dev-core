@@ -1,3 +1,4 @@
+import { setTexts, t } from "/p/the8020/dev-core/i18n/browser.ts";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
 import type {
@@ -63,6 +64,7 @@ class RequestError extends Error {
 export default function mount(
   { host, config, signal, renderText }: CustomElementContext,
 ): CustomElementInstance {
+  setTexts(config.texts);
   const instance = new RetainedConsole(config, renderText);
   host.append(instance.element);
   signal.addEventListener("abort", () => instance.dispose(), { once: true });
@@ -148,6 +150,23 @@ class RetainedConsole implements CustomElementInstance {
       <div class="sandbox-console-message" role="status">Loading…</div>
       <button type="button" data-terminal-action="takeover" hidden>Take control</button>
     </div></div><div class="sandbox-console-display"></div></div>`;
+    for (
+      const [selector, key] of [
+        ["select", "terminal"],
+        ["[data-terminal-action=new]", "new"],
+        ["[data-terminal-action=rename]", "rename"],
+        ["[data-terminal-action=refresh]", "refresh"],
+        ["[data-terminal-action=close]", "close"],
+      ]
+    ) {
+      const element = this.element.querySelector<HTMLElement>(selector!)!;
+      element.title = t(`console.${key}`);
+      element.setAttribute("aria-label", element.title);
+    }
+    this.element.querySelector<HTMLElement>(".sandbox-console-message")!
+      .textContent = t("console.loading");
+    this.element.querySelector<HTMLElement>("[data-terminal-action=takeover]")!
+      .textContent = t("console.takeover");
     for (
       const [action, icon] of Object.entries({
         new: "add",
@@ -240,7 +259,7 @@ class RetainedConsole implements CustomElementInstance {
     const options = { signal: this.#lifetime.signal };
     addEventListener("offline", () => {
       this.#detach();
-      this.#setStatus("Offline", "disconnected");
+      this.#setStatus(t("console.offline"), "disconnected");
     }, options);
     addEventListener("online", () => void this.#connect(), options);
     addEventListener("pagehide", () => {
@@ -285,8 +304,8 @@ class RetainedConsole implements CustomElementInstance {
       this.#detach();
       this.#setStatus(
         parsed
-          ? "Start the sandbox to open a terminal"
-          : "Terminal configuration is invalid",
+          ? t("console.start_the_sandbox_to_open_a_terminal")
+          : t("console.terminal_configuration_is_invalid"),
         "unavailable",
       );
     } else this.#start();
@@ -361,7 +380,7 @@ class RetainedConsole implements CustomElementInstance {
     const config = this.#configuration;
     if (!config) return;
     this.#detach();
-    this.#setStatus("Loading terminals…", "connecting");
+    this.#setStatus(t("console.loading_terminals"), "connecting");
     const result = object(
       await this.#post("list", {
         targetKind: config.target.kind,
@@ -369,7 +388,7 @@ class RetainedConsole implements CustomElementInstance {
       }),
     );
     if (!Array.isArray(result.terminals) || result.terminals.length > 257) {
-      throw new Error("Invalid terminal list");
+      throw new Error(t("console.invalid_terminal_list"));
     }
     this.#items = result.terminals.map(terminalItem);
   }
@@ -388,7 +407,7 @@ class RetainedConsole implements CustomElementInstance {
 
   #newItem(id: string): TerminalItem {
     if (!SESSION_ID.test(id)) {
-      throw new Error("Terminal session IDs are limited to 40 characters");
+      throw new Error(t("console.terminal_session_ids_are_limited_to_40"));
     }
     const item = { id, name: `Terminal ${id}`, terminalId: "", route: "" };
     this.#items.push(item);
@@ -413,7 +432,7 @@ class RetainedConsole implements CustomElementInstance {
       this.#detach();
       // The ordered snapshot installation clears the old display. Resetting
       // here would race a previous connection's pending xterm write callback.
-      this.#setStatus("Loading terminal…", "connecting");
+      this.#setStatus(t("console.loading_terminal"), "connecting");
       this.#uncertainInput = false;
     }
     this.#selected = item;
@@ -451,7 +470,10 @@ class RetainedConsole implements CustomElementInstance {
         );
         this.#choose(this.#items[0]);
         if (this.#selected) await this.#connect();
-        else this.#setStatus("No terminals. Select New to open one.", "empty");
+        else {this.#setStatus(
+            t("console.no_terminals_select_new_to_open_one"),
+            "empty",
+          );}
       }
     });
   }
@@ -462,7 +484,9 @@ class RetainedConsole implements CustomElementInstance {
     const form = document.createElement("form");
     form.method = "dialog";
     const label = document.createElement("label");
-    label.textContent = mode === "rename" ? "Terminal name" : `Close ${name}?`;
+    label.textContent = mode === "rename"
+      ? t("console.terminal_name")
+      : `Close ${name}?`;
     const input = document.createElement("input");
     input.value = name;
     input.required = true;
@@ -470,15 +494,17 @@ class RetainedConsole implements CustomElementInstance {
     if (mode === "rename") label.append(input);
     const details = document.createElement("p");
     details.textContent = mode === "close"
-      ? "Running commands in this terminal will stop."
+      ? t("console.running_commands_in_this_terminal_will_stop")
       : "";
     const actions = document.createElement("div");
     const cancel = document.createElement("button");
     cancel.type = "button";
-    cancel.textContent = "Cancel";
+    cancel.textContent = t("program.cancel");
     const accept = document.createElement("button");
     accept.type = "submit";
-    accept.textContent = mode === "rename" ? "Save" : "Close terminal";
+    accept.textContent = mode === "rename"
+      ? t("console.save")
+      : t("console.close_terminal");
     actions.append(cancel, accept);
     form.append(label, details, actions);
     dialog.append(form);
@@ -516,7 +542,7 @@ class RetainedConsole implements CustomElementInstance {
     ) return;
     this.#connecting = true;
     const epoch = ++this.#connectEpoch;
-    this.#setStatus("Connecting terminal…", "connecting");
+    this.#setStatus(t("console.connecting_terminal"), "connecting");
     try {
       const config = this.#configuration!;
       const opened = terminalItem(
@@ -575,7 +601,7 @@ class RetainedConsole implements CustomElementInstance {
         this.#detach();
         if (stopped) {
           this.#setStatus(
-            event.reason || "Terminal disconnected",
+            event.reason || t("console.terminal_disconnected"),
             "disconnected",
           );
         } else this.#retry();
@@ -601,7 +627,9 @@ class RetainedConsole implements CustomElementInstance {
       : Infinity;
     if (typeof data === "string") {
       try {
-        if (data.length > 4096) throw new Error("Invalid terminal message");
+        if (data.length > 4096) {
+          throw new Error(t("console.invalid_terminal_message"));
+        }
         const message = object(JSON.parse(data));
         // A final notice must survive close even while display recovery or an
         // xterm write is pending. Stop the connection and its queued output now.
@@ -611,7 +639,7 @@ class RetainedConsole implements CustomElementInstance {
           this.#setStatus(
             typeof message.message === "string"
               ? message.message.slice(0, 500)
-              : "Terminal is unavailable",
+              : t("console.terminal_is_unavailable"),
             "error",
           );
           this.#detach();
@@ -620,7 +648,9 @@ class RetainedConsole implements CustomElementInstance {
         if (message.type === "input-ack") {
           const bytes = connection.inFlight.shift();
           if (bytes === undefined) {
-            throw new Error("Unexpected terminal input acknowledgement");
+            throw new Error(
+              t("console.unexpected_terminal_input_acknowledgement"),
+            );
           }
           connection.inputBytes -= bytes;
           this.#flushInput(connection);
@@ -636,7 +666,10 @@ class RetainedConsole implements CustomElementInstance {
       bytes > 65_544 || (connection.queuedBytes += bytes) > VIEW_QUEUE_BYTES ||
       ++connection.queuedFrames > VIEW_QUEUE_FRAMES
     ) {
-      this.#fail(connection, "Terminal output exceeded the connection limit");
+      this.#fail(
+        connection,
+        t("console.terminal_output_exceeded_the_connection_limit"),
+      );
       return;
     }
     this.#display = this.#display.then(async () => {
@@ -686,8 +719,8 @@ class RetainedConsole implements CustomElementInstance {
         if (
           typeof message.viewId !== "string" || message.viewId.length > 80 ||
           connection.ready
-        ) throw new Error("Invalid terminal recovery request");
-        this.#setStatus("Restoring terminal…", "recovering");
+        ) throw new Error(t("console.invalid_terminal_recovery_request"));
+        this.#setStatus(t("console.restoring_terminal"), "recovering");
         const url = this.#url("snapshot");
         url.searchParams.set("view", message.viewId);
         const response = await fetch(url, {
@@ -703,7 +736,7 @@ class RetainedConsole implements CustomElementInstance {
           !Number.isSafeInteger(sequence) || sequence < 0 ||
           !Number.isSafeInteger(bytes) || bytes < 1 ||
           bytes > MAX_SNAPSHOT_BYTES
-        ) throw new Error("Invalid terminal snapshot boundary");
+        ) throw new Error(t("console.invalid_terminal_snapshot_boundary"));
         const snapshot = await readJSON(response, bytes);
         if (this.#connection !== connection) return;
         restoreTerminal(this.#terminal, snapshot);
@@ -743,7 +776,7 @@ class RetainedConsole implements CustomElementInstance {
         connection.awaitingPong = false;
         break;
       default:
-        throw new Error("Unknown terminal message");
+        throw new Error(t("console.unknown_terminal_message"));
     }
   }
 
@@ -751,7 +784,7 @@ class RetainedConsole implements CustomElementInstance {
     if (
       !connection.ready || !Number.isSafeInteger(sequence) ||
       sequence !== connection.sequence + 1
-    ) throw new Error("Terminal output sequence was lost");
+    ) throw new Error(t("console.terminal_output_sequence_was_lost"));
     connection.sequence = sequence;
   }
   #ack(connection: Connection, sequence: number): void {
@@ -763,16 +796,16 @@ class RetainedConsole implements CustomElementInstance {
     connection.exited = message.exited === true;
     this.#setStatus(
       connection.exited
-        ? `Process exited${
-          typeof message.exitStatus === "number"
+        ? t("console.process_exited_value1", {
+          value1: typeof message.exitStatus === "number"
             ? ` (${message.exitStatus})`
-            : ""
-        }`
+            : "",
+        })
         : this.#uncertainInput
-        ? "Connected. Check your last input before continuing."
+        ? t("console.connected_check_your_last_input_before_continuing")
         : message.displayReset === true
-        ? "Terminal connected. Display restarted."
-        : "Terminal connected",
+        ? t("console.terminal_connected_display_restarted")
+        : t("console.terminal_connected"),
       connection.exited ? "exited" : "connected",
     );
     this.#controls();
@@ -805,7 +838,7 @@ class RetainedConsole implements CustomElementInstance {
     const available = VIEW_QUEUE_BYTES - connection.inputBytes;
     const full = () => {
       this.#setStatus(
-        "Input buffer is full. Wait for the terminal or paste a smaller amount.",
+        t("console.input_buffer_is_full_wait_for_the"),
         "connected",
       );
     };
@@ -902,7 +935,7 @@ class RetainedConsole implements CustomElementInstance {
     this.#setStatus(message, "error");
     this.#detach();
   }
-  #retry(message = "Terminal disconnected; reconnecting…"): void {
+  #retry(message = t("console.terminal_disconnected_reconnecting")): void {
     if (!this.#canConnect() || this.#reconnect) return;
     this.#setStatus(message, "disconnected");
     this.#reconnect = setTimeout(() => {
@@ -927,7 +960,7 @@ class RetainedConsole implements CustomElementInstance {
       connection.input.length = 0;
       connection.inputBytes = 0;
       connection.inFlight.length = 0;
-      connection.socket.close(1000, "Terminal view detached");
+      connection.socket.close(1000, t("console.terminal_view_detached"));
     }
     this.#terminal.options.disableStdin = true;
   }
@@ -955,7 +988,9 @@ class RetainedConsole implements CustomElementInstance {
     const button = this.element.querySelector<HTMLButtonElement>(
       '[data-terminal-action="fullscreen"]',
     )!;
-    button.title = enabled ? "Exit fullscreen" : "Fullscreen";
+    button.title = enabled
+      ? t("console.exit_fullscreen")
+      : t("console.fullscreen");
     button.setAttribute("aria-label", button.title);
     button.setAttribute("aria-pressed", String(enabled));
     this.renderText(
@@ -996,7 +1031,7 @@ class RetainedConsole implements CustomElementInstance {
 
 function object(value: unknown): Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    throw new Error("Invalid terminal response");
+    throw new Error(t("console.invalid_terminal_response"));
   }
   return value as Record<string, unknown>;
 }
@@ -1008,7 +1043,7 @@ function terminalItem(value: unknown): TerminalItem {
     !/^tty-[a-z0-9]{10}$/.test(item.terminalId) ||
     typeof item.name !== "string" || item.name.length > 80 ||
     typeof item.route !== "string" || item.route.length > 8192
-  ) throw new Error("Invalid terminal record");
+  ) throw new Error(t("console.invalid_terminal_record"));
   return {
     id: item.id,
     terminalId: item.terminalId,
@@ -1022,7 +1057,7 @@ function terminalSize(value: unknown): Size {
     typeof size.columns !== "number" || !Number.isSafeInteger(size.columns) ||
     size.columns < 2 || size.columns > 500 || typeof size.rows !== "number" ||
     !Number.isSafeInteger(size.rows) || size.rows < 1 || size.rows > 200
-  ) throw new Error("Invalid terminal dimensions");
+  ) throw new Error(t("console.invalid_terminal_dimensions"));
   return { columns: size.columns, rows: size.rows };
 }
 function configuration(
@@ -1072,17 +1107,17 @@ async function requireOK(response: Response): Promise<void> {
   if (response.ok) return;
   await response.body?.cancel();
   const message = response.status === 401
-    ? "Sign in to reconnect to your terminal."
+    ? t("console.sign_in_to_reconnect_to_your_terminal")
     : [404, 409].includes(response.status)
-    ? "Terminal is unavailable. You can close it or create a new one."
+    ? t("console.terminal_is_unavailable_you_can_close_it")
     : response.status === 403
-    ? "Terminal access was denied."
-    : `Terminal request failed (${response.status}).`;
+    ? t("console.terminal_access_was_denied")
+    : t("console.terminal_request_failed_value1", { value1: response.status });
   throw new RequestError(response.status, message);
 }
 async function readJSON(response: Response, maximum: number): Promise<unknown> {
   const reader = response.body?.getReader();
-  if (!reader) throw new Error("Terminal response is empty");
+  if (!reader) throw new Error(t("console.terminal_response_is_empty"));
   let length = 0;
   const chunks: Uint8Array[] = [];
   try {
@@ -1091,7 +1126,7 @@ async function readJSON(response: Response, maximum: number): Promise<unknown> {
       if (done) break;
       length += value.byteLength;
       if (length > maximum) {
-        throw new Error("Terminal response exceeds its size limit");
+        throw new Error(t("console.terminal_response_exceeds_its_size_limit"));
       }
       chunks.push(value);
     }

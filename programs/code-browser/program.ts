@@ -1,3 +1,6 @@
+import { currentLocalization } from "/p/the8020/i18n/mod.ts";
+import { text as localizedText } from "/p/the8020/i18n/mod.ts";
+import { msg } from "/p/the8020/dev-core/i18n/messages.ts";
 import { context } from "@the8020/context";
 import {
   BACK_EVENT,
@@ -65,9 +68,9 @@ const Input = LocationInput.partial().extend({
 });
 const Row = z.object({
   id: z.string(),
-  label: field(z.string(), { label: "Match" }),
-  path: field(z.string(), { label: "File" }),
-  line: field(z.number(), { label: "Line" }),
+  label: field(z.string(), { label: msg("program.match") }),
+  path: field(z.string(), { label: msg("program.file") }),
+  line: field(z.number(), { label: msg("program.line") }),
   column: z.number(),
 });
 type Row = z.infer<typeof Row>;
@@ -95,6 +98,32 @@ async function workspace<T>(user: string, input: object): Promise<T> {
   const output = JSON.parse((result.shell as { output: string }).output);
   if (output.error) throw new Error(output.error);
   return output;
+}
+
+function searchSummary(result: SearchResult, textSearch: boolean): string {
+  return localizedText(
+    msg("files.value1_value2_value3_generated_hidden_and_vendor", {
+      value1: result.partial
+        ? localizedText(msg("files.partial_results_narrow_your_search"))
+        : "",
+      value2: result.rows.length,
+      value3: localizedText(
+        msg(textSearch ? "files.matching_lines" : "files.files"),
+      ),
+      value4: result.skipped
+        ? localizedText(msg("files.skipped", { count: result.skipped }))
+        : "",
+    }),
+  );
+}
+
+function entryLabels(entries: Entry[]): Entry[] {
+  return entries.map((entry) => ({
+    ...entry,
+    kind: localizedText(
+      msg(entry.kind === "Folder" ? "files.folder" : "files.file"),
+    ),
+  }));
 }
 
 function rows(locations: Location[]): Row[] {
@@ -182,10 +211,14 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
   const sandboxId = sandbox.sandbox_id;
   let folder = "";
   let selected = "";
-  let sourceNotice = "Choose a source file or use Quick open.";
+  let sourceNotice = localizedText(
+    msg("program.choose_a_source_file_or_use_quick"),
+  );
   let crashLine: number | undefined;
-  let resultsTitle = "Search";
-  let searchNotice = "Search text across your package workspace.";
+  let resultsTitle = localizedText(msg("program.search_2"));
+  let searchNotice = localizedText(
+    msg("program.search_text_across_your_package_workspace"),
+  );
   let language: LanguageServer | undefined;
   let languageProject = "";
   let hover: { offset: number; text: string } | undefined;
@@ -280,9 +313,11 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
       );
     } catch (error) {
       sendMessage(
-        `Symbol navigation unavailable: ${
-          error instanceof Error ? error.message : error
-        }`,
+        localizedText(
+          msg("program.symbol_navigation_unavailable_value1", {
+            value1: error instanceof Error ? error.message : String(error),
+          }),
+        ),
         "warning",
       );
     }
@@ -300,7 +335,7 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
       const source = await read(path);
       if (source.entries) {
         folder = path;
-        model.data.entries = source.entries;
+        model.data.entries = entryLabels(source.entries);
         return;
       }
       if (!document && documents.size >= 20) {
@@ -315,21 +350,28 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
     selected = path;
     if (!path.startsWith("@runtime/")) {
       folder = path.split("/").slice(0, -1).join("/");
-      model.data.entries = (await read(folder)).entries ?? [];
+      model.data.entries = entryLabels((await read(folder)).entries ?? []);
     }
     model.data.content = sourceText(document.source.content ?? "");
-    sourceNotice = document.source.notice ??
-      (path.startsWith("@runtime/")
-        ? "Runtime SDK · read-only"
-        : "Private workspace · read-only");
+    sourceNotice =
+      (document.source.notice
+        ? localizedText(msg(document.source.notice))
+        : undefined) ??
+        (path.startsWith("@runtime/")
+          ? localizedText(msg("files.runtime"))
+          : localizedText(msg("program.private_workspace_read_only")));
     crashLine = undefined;
     if (input.origin?.path === path) {
       const origin = input.origin;
       const matches = matchesExcerpt(model.data.content, origin);
       if (matches) crashLine = origin.line;
       sourceNotice += matches
-        ? " · Matches the captured excerpt; crash revision was not recorded."
-        : " · Differs from the captured excerpt. The original location may have moved; see Crash context.";
+        ? localizedText(
+          msg("program.matches_the_captured_excerpt_crash_revision_was"),
+        )
+        : localizedText(
+          msg("program.differs_from_the_captured_excerpt_the_original"),
+        );
     }
     model.screen.elements["source-code"] = structuredClone(
       document.state ?? { scroll: { x: 0, y: 0 }, toolbarOpen: false },
@@ -352,7 +394,7 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
     }
     await symbols();
   }
-  model.data.entries = (await read(folder)).entries ?? [];
+  model.data.entries = entryLabels((await read(folder)).entries ?? []);
   try {
     if (input.path) {
       await open(input.path, {
@@ -363,19 +405,20 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
     while (true) {
       const event = await callScreen({
         id: "code-browser",
-        title: "Code browser",
-        description: selected || "Your package workspace",
+        title: msg("program.code_browser"),
+        description: selected ||
+          localizedText(msg("program.your_package_workspace")),
         model,
         schema: z.object({
           entries: field(
             z.array(
               z.object({
                 path: z.string(),
-                name: field(z.string(), { label: "Name" }),
-                kind: field(z.string(), { label: "Kind" }),
+                name: field(z.string(), { label: msg("program.name") }),
+                kind: field(z.string(), { label: msg("program.kind") }),
               }),
             ),
-            { label: "Files", control: "list", readOnly: true },
+            { label: msg("program.files"), control: "list", readOnly: true },
           ),
           results: field(z.array(Row), {
             label: resultsTitle,
@@ -384,17 +427,18 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
             readOnly: true,
           }),
           outline: field(z.array(Row), {
-            label: "Outline",
+            label: msg("program.outline"),
             control: "list",
             readOnly: true,
           }),
           query: field(z.string().max(1000), {
-            label: "Workspace text",
+            label: msg("program.workspace_text"),
             enterEvent: "search",
             fieldHelp: false,
           }),
           content: field(z.string(), {
-            label: selected.split("/").at(-1) || "Source",
+            label: selected.split("/").at(-1) ||
+              localizedText(msg("program.source")),
             description: sourceNotice,
             readOnly: true,
             fieldHelp: false,
@@ -406,21 +450,25 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
                 outputs: [{
                   name: "value",
                   path: "",
-                  label: "Source code",
+                  label: localizedText(msg("program.source_code")),
                   multiline: true,
                 }],
                 actions: [
                   {
                     name: "definition",
-                    label: "Go to definition",
+                    label: localizedText(msg("program.go_to_definition")),
                     event: "definition",
                   },
                   {
                     name: "references",
-                    label: "Find references",
+                    label: localizedText(msg("program.find_references")),
                     event: "references",
                   },
-                  { name: "info", label: "Symbol information", event: "hover" },
+                  {
+                    name: "info",
+                    label: localizedText(msg("program.symbol_information")),
+                    event: "hover",
+                  },
                 ],
               },
               module: packageAssetURL("the8020/dev-core", assets.module),
@@ -431,6 +479,14 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
                 ),
               ],
               config: {
+                texts: Object.fromEntries(
+                  Object.entries(
+                    (await currentLocalization()?.bundle("the8020/dev-core"))
+                      ?.texts ?? {},
+                  ).filter(([key]) =>
+                    key.startsWith("frontend.") || key.startsWith("console.")
+                  ),
+                ),
                 language:
                   languages[selected.split(".").at(-1)?.toLowerCase() ?? ""] ??
                     "text",
@@ -450,24 +506,24 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
           actions: [
             {
               id: "quick-open",
-              label: "[[icon=folder_open]] Quick open",
+              label: msg("program.quick_open"),
               shortcut: { key: "F9" },
             },
             ...(historyIndex > 0
               ? [{
                 id: "navigate-back",
-                label: "[[icon=arrow_back]] Previous location",
+                label: msg("program.previous_location"),
               }]
               : []),
             ...(historyIndex < history.length - 1
               ? [{
                 id: "navigate-forward",
-                label: "[[icon=arrow_forward]] Next location",
+                label: msg("program.next_location"),
               }]
               : []),
-            { id: "refresh", label: "[[icon=refresh]] Refresh" },
+            { id: "refresh", label: msg("program.refresh") },
             ...(input.origin
-              ? [{ id: "crash-context", label: "Crash context" }]
+              ? [{ id: "crash-context", label: msg("program.crash_context") }]
               : []),
           ],
         },
@@ -487,12 +543,12 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
                   {
                     id: "files-panel",
                     type: "list",
-                    title: "Files",
+                    title: msg("program.files"),
                     bind: "entries",
                     key: "path",
                     display: ["name"],
                     toolbar: folder
-                      ? [{ id: "up", label: "[[icon=arrow_upward]] Up" }]
+                      ? [{ id: "up", label: msg("program.up") }]
                       : [],
                   },
                   {
@@ -504,18 +560,18 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
                     display: ["label", "path", "line"],
                     toolbar: [{ id: "workspace-query", bind: "query" }, {
                       id: "search",
-                      label: "[[icon=search]] Search",
+                      label: msg("program.search"),
                     }],
                   },
                   {
                     id: "outline-panel",
                     type: "list",
-                    title: "Outline",
+                    title: msg("program.outline"),
                     bind: "outline",
                     key: "id",
                     display: ["label", "line"],
                     columnOptions: {
-                      label: { heading: "Symbol" },
+                      label: { heading: localizedText(msg("program.symbol")) },
                       line: { shortHeading: "Ln", length: "short" },
                     },
                   },
@@ -524,7 +580,7 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
               {
                 id: "source",
                 type: "field-group",
-                title: "Source code",
+                title: msg("program.source_code"),
                 controls: ["source-code"],
               },
             ],
@@ -541,7 +597,7 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
           if (language) await language.close();
           language = undefined;
           if (selected) await open(selected, undefined, false, true);
-          model.data.entries = (await read(folder)).entries ?? [];
+          model.data.entries = entryLabels((await read(folder)).entries ?? []);
         }
         if (event.action === "select") {
           const value = "value" in event ? String(event.value) : "";
@@ -579,7 +635,7 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
             else {
               model.data.content = "";
               model.data.outline = [];
-              sourceNotice = "Choose a source file.";
+              sourceNotice = localizedText(msg("program.choose_a_source_file"));
               jump = {
                 revision: jump.revision + 1,
                 line: 1,
@@ -609,11 +665,11 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
             search: model.data.query,
             text: true,
           });
-          resultsTitle = "Search";
-          searchNotice = result.notice;
+          resultsTitle = localizedText(msg("program.search_2"));
+          searchNotice = searchSummary(result, true);
           model.data.results = rows(result.rows);
           tab("results-panel");
-          sendMessage(result.notice, "info");
+          sendMessage(searchNotice, "info");
         }
         if (
           ["definition", "references", "hover"].includes(event.action) &&
@@ -649,11 +705,15 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
             hover = {
               offset,
               text: (text.length > 12000
-                ? `${
-                  text.slice(0, 12000)
-                }\n… More information is available at the definition.`
+                ? localizedText(
+                  msg("program.value1_more_information_is_available_at_the", {
+                    value1: text.slice(0, 12000),
+                  }),
+                )
                 : text) ||
-                "No symbol information at this position.",
+                localizedText(
+                  msg("program.no_symbol_information_at_this_position"),
+                ),
             };
           } else {
             const found = targets(result).map((row) => ({
@@ -666,15 +726,19 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
             } else {
               model.data.results = found;
               resultsTitle = event.action === "definition"
-                ? "Definitions"
-                : "References";
+                ? localizedText(msg("program.definitions"))
+                : localizedText(msg("program.references"));
               searchNotice = `${found.length} ${resultsTitle.toLowerCase()}${
                 found.length === 200 ? " (first 200)" : ""
               }.`;
               tab("results-panel");
               if (!found.length) {
                 sendMessage(
-                  "No matching symbols found. Unresolved dependencies may limit navigation.",
+                  localizedText(
+                    msg(
+                      "program.no_matching_symbols_found_unresolved_dependencies_may",
+                    ),
+                  ),
                   "info",
                 );
               }
@@ -705,17 +769,17 @@ async function quickOpen(user: string): Promise<string | undefined> {
   while (true) {
     const event = await callScreen({
       id: "quick-open",
-      title: "Quick open",
-      description: "Find a file by any part of its package path.",
+      title: msg("program.quick_open_2"),
+      description: msg("program.find_a_file_by_any_part_of"),
       model,
       schema: z.object({
         query: field(z.string().max(1000), {
-          label: "File name or path",
+          label: msg("program.file_name_or_path"),
           fieldHelp: false,
           enterEvent: "find-file",
         }),
         matches: field(z.array(Row), {
-          label: "Files",
+          label: msg("program.files"),
           control: "list",
           readOnly: true,
         }),
@@ -728,7 +792,7 @@ async function quickOpen(user: string): Promise<string | undefined> {
           type: "list",
           toolbar: [{ id: "file-query", bind: "query" }, {
             id: "find-file",
-            label: "Find",
+            label: msg("program.find"),
           }],
           bind: "matches",
           key: "id",
@@ -743,8 +807,11 @@ async function quickOpen(user: string): Promise<string | undefined> {
           search: model.data.query,
         });
         model.data.matches = rows(found.rows);
-        if (!found.rows.length || found.notice.startsWith("Partial results")) {
-          sendMessage(found.notice, "info");
+        if (
+          !found.rows.length ||
+          found.partial
+        ) {
+          sendMessage(searchSummary(found, false), "info");
         }
       } catch (error) {
         sendMessage(
@@ -765,9 +832,8 @@ async function crashContext(
 ): Promise<void> {
   await callScreen({
     id: "crash-context",
-    title: "Crash context",
-    description:
-      "Source excerpt captured when the error was displayed. The runtime did not record a commit revision.",
+    title: msg("program.crash_context"),
+    description: msg("program.source_excerpt_captured_when_the_error_was"),
     model: new Model({ source: origin.text }),
     schema: z.object({
       source: field(z.string(), {

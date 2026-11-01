@@ -20,7 +20,8 @@ export interface Location {
 
 export interface SearchResult {
   rows: Location[];
-  notice: string;
+  partial: boolean;
+  skipped: number;
 }
 
 /** CodeMirror and LSP positions share UTF-16 offsets in this display text. */
@@ -148,13 +149,8 @@ export async function searchSources(
   await walk("");
   return {
     rows,
-    notice: `${
-      limited ? "Partial results; narrow your search. " : ""
-    }${rows.length} ${
-      text ? "matching lines" : "files"
-    }. Generated, hidden and vendor files are excluded.${
-      skipped ? ` ${skipped} binary or large files skipped.` : ""
-    }`,
+    partial: limited,
+    skipped,
   };
 }
 
@@ -205,7 +201,7 @@ export async function readSource(root: string, path: string): Promise<Source> {
   if (stat.size > MAX_BYTES) {
     return {
       path,
-      notice: "This file exceeds 128 KiB. Open it in the terminal.",
+      notice: "files.this_file_exceeds_128_kib_open_it",
     };
   }
   // Read one bounded buffer even if another process grows the file meanwhile.
@@ -224,7 +220,7 @@ export async function readSource(root: string, path: string): Promise<Source> {
   if (size > MAX_BYTES) {
     return {
       path,
-      notice: "This file exceeds 128 KiB. Open it in the terminal.",
+      notice: "files.this_file_exceeds_128_kib_open_it",
     };
   }
   try {
@@ -234,7 +230,10 @@ export async function readSource(root: string, path: string): Promise<Source> {
     if (content.includes("\0")) throw new Error("binary");
     return { path, content };
   } catch {
-    return { path, notice: "This file is binary or is not UTF-8 text." };
+    return {
+      path,
+      notice: "files.this_file_is_binary_or_is_not",
+    };
   }
 }
 

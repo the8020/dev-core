@@ -1,3 +1,4 @@
+import { setTexts, t } from "/p/the8020/dev-core/i18n/browser.ts";
 import type {
   CustomElementContext,
   CustomElementInstance,
@@ -31,6 +32,7 @@ interface Configuration {
 export default function mount(
   context: CustomElementContext,
 ): CustomElementInstance {
+  setTexts(context.config.texts);
   const { host, signal } = context;
   host.classList.add("code-browser-editor");
   const native = mountEditor(context);
@@ -39,7 +41,7 @@ export default function mount(
   const files = document.createElement("div");
   files.className = "tab-list code-browser-files";
   files.setAttribute("role", "tablist");
-  files.setAttribute("aria-label", "Open files");
+  files.setAttribute("aria-label", t("frontend.open_files"));
   host.prepend(files);
   const findBar = document.createElement("div");
   findBar.className = "code-browser-find";
@@ -49,8 +51,8 @@ export default function mount(
   find.type = "search";
   find.maxLength = 1000;
   find.className = "data-list-search";
-  find.placeholder = "Find in file";
-  find.setAttribute("aria-label", "Find in file (case insensitive)");
+  find.placeholder = t("frontend.find_in_file");
+  find.setAttribute("aria-label", t("frontend.find_in_file_case_insensitive"));
   const count = document.createElement("span");
   count.className = "uui-code-status";
   count.setAttribute("role", "status");
@@ -64,8 +66,8 @@ export default function mount(
   line.min = "1";
   line.required = true;
   line.className = "data-list-search";
-  line.placeholder = "Line number";
-  line.setAttribute("aria-label", "Go to line");
+  line.placeholder = t("frontend.line_number");
+  line.setAttribute("aria-label", t("frontend.go_to_line"));
   gotoBar.append(line);
   const position = document.createElement("span");
   position.className = "uui-code-status code-browser-position";
@@ -112,23 +114,23 @@ export default function mount(
   };
   const definition = button(
     toolbar,
-    "Go to definition (F12)",
+    t("frontend.go_to_definition_f12"),
     "subdirectory_arrow_right",
     () => action("definition"),
   );
   const references = button(
     toolbar,
-    "Find references (Shift+F12)",
+    t("frontend.find_references_shift_f12"),
     "manage_search",
     () => action("references"),
   );
   const info = button(
     toolbar,
-    "Symbol information (F8)",
+    t("frontend.symbol_information_f8"),
     "info",
     () => action("hover"),
   );
-  const popup = new AnchoredPopover(info, "Symbol information", {
+  const popup = new AnchoredPopover(info, t("program.symbol_information"), {
     alignment: "start",
     bounds: () =>
       view.coordsAtPos(
@@ -161,11 +163,16 @@ export default function mount(
     line.focus();
     line.select();
   }
-  button(toolbar, "Find in file (Ctrl+F)", "search", openFind);
-  button(toolbar, "Go to line (Ctrl+G)", "format_list_numbered", openLine);
+  button(toolbar, t("frontend.find_in_file_ctrl_f"), "search", openFind);
+  button(
+    toolbar,
+    t("frontend.go_to_line_ctrl_g"),
+    "format_list_numbered",
+    openLine,
+  );
   const close = button(
     toolbar,
-    "Close current file",
+    t("frontend.close_current_file"),
     "close",
     () => context.send("close-file", config.path),
   );
@@ -227,12 +234,17 @@ export default function mount(
   }
   button(
     findBar,
-    "Previous match (Shift+Enter)",
+    t("frontend.previous_match_shift_enter"),
     "arrow_upward",
     () => next(true),
   );
-  button(findBar, "Next match (Enter)", "arrow_downward", () => next(false));
-  button(findBar, "Close find", "close", () => {
+  button(
+    findBar,
+    t("frontend.next_match_enter"),
+    "arrow_downward",
+    () => next(false),
+  );
+  button(findBar, t("frontend.close_find"), "close", () => {
     findBar.hidden = true;
     view.focus();
   });
@@ -249,7 +261,7 @@ export default function mount(
     gotoBar.hidden = true;
     view.focus();
   };
-  button(gotoBar, "Go to line", "arrow_forward", go);
+  button(gotoBar, t("frontend.go_to_line"), "arrow_forward", go);
   find.addEventListener("input", highlight, { signal });
   find.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {

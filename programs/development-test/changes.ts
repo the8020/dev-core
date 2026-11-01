@@ -1,3 +1,5 @@
+import { text as localizedText } from "/p/the8020/i18n/mod.ts";
+import { msg } from "/p/the8020/dev-core/i18n/messages.ts";
 import { development } from "../../src/development.ts";
 import {
   BACK_EVENT,
@@ -52,7 +54,7 @@ export async function reviewPackageChanges(
     files: field(
       z.array(activationFileInfo.pick({ path: true, change: true })),
       {
-        label: "Changed files",
+        label: msg("changes.changed_files"),
         control: "list",
         readOnly: true,
       },
@@ -65,17 +67,17 @@ export async function reviewPackageChanges(
     }));
     const event = await callScreen({
       id: "development-package-changes",
-      title: `Changes in ${id}`,
+      title: msg("changes.changes_in_id", { id: id }),
       description: files.length
-        ? "Choose a file to review its changes."
-        : "No private file changes remain in this package.",
+        ? localizedText(msg("changes.choose_a_file_to_review_its_changes"))
+        : localizedText(msg("changes.no_private_file_changes_remain_in_this")),
       schema,
       model,
       layout: {
         schema: 1,
         id: "development-package-changes",
         root: {
-          toolbar: [{ id: "refresh", label: "Refresh" }],
+          toolbar: [{ id: "refresh", label: msg("changes.refresh") }],
           id: "changed-files",
           type: "list",
           bind: "files",
@@ -117,7 +119,7 @@ async function reviewFileChange(user: string, id: string, path: string) {
       model.data.content = file?.diff?.text ?? "";
       notice = file
         ? file.diff?.notice ?? ""
-        : "This file no longer has private changes. Refresh the changed-file list.";
+        : localizedText(msg("changes.this_file_no_longer_has_private_changes"));
       refresh = false;
     }
     // ponytail: UUI accepts 256 annotations; literal +/- remain visible after
@@ -147,7 +149,7 @@ async function reviewFileChange(user: string, id: string, path: string) {
         }),
       }),
       model,
-      header: { actions: [{ id: "refresh", label: "Refresh" }] },
+      header: { actions: [{ id: "refresh", label: msg("changes.refresh") }] },
     });
     if (event.action === BACK_EVENT) return;
     if (event.action === "refresh") refresh = true;

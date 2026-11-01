@@ -1,3 +1,6 @@
+import { currentLocalization } from "/p/the8020/i18n/mod.ts";
+import { text as localizedText } from "/p/the8020/i18n/mod.ts";
+import { msg } from "/p/the8020/dev-core/i18n/messages.ts";
 import { development } from "../../src/development.ts";
 import type { SchemaPlan } from "/p/the8020/db/mod.ts";
 import { context } from "@the8020/context";
@@ -78,9 +81,8 @@ const ActivationScreen = z.object({
       ready: developmentInfo.shape.ready,
     })),
     {
-      label: "Changed packages",
-      description:
-        "Review changed files and line counts for each package before activation.",
+      label: msg("program.changed_packages"),
+      description: msg("program.review_changed_files_and_line_counts_for"),
       control: "list",
       readOnly: true,
     },
@@ -150,7 +152,7 @@ export default async function developmentTest(): Promise<void> {
     }
     const event = await callScreen({
       id: "development-test",
-      title: "Development",
+      title: msg("program.development"),
       description: sshHint(developmentUserId),
       schema: Screen,
       model: screenModel,
@@ -164,6 +166,14 @@ export default async function developmentTest(): Promise<void> {
         ),
         preserve: true,
         config: {
+          texts: Object.fromEntries(
+            Object.entries(
+              (await currentLocalization()?.bundle("the8020/dev-core"))
+                ?.texts ?? {},
+            ).filter(([key]) =>
+              key.startsWith("frontend.") || key.startsWith("console.")
+            ),
+          ),
           ...consoleConfiguration(sandboxId, running),
           refresh: terminalRefresh,
         },
@@ -179,7 +189,7 @@ export default async function developmentTest(): Promise<void> {
     if (event.action === "change") continue;
     if (event.action === "refresh") {
       terminalRefresh++;
-      status = "Refreshed";
+      status = localizedText(msg("program.refreshed"));
       continue;
     }
     if (event.action === "activate" && sandbox !== undefined) {
@@ -196,19 +206,21 @@ export default async function developmentTest(): Promise<void> {
       if (action === "start") {
         if (sandbox === undefined) {
           await development.sandbox.run("create", developmentUserId);
-          status = "Development sandbox created and started";
+          status = localizedText(
+            msg("program.development_sandbox_created_and_started"),
+          );
         } else {
           await development.sandbox.run("start", developmentUserId);
-          status = "Development sandbox started";
+          status = localizedText(msg("program.development_sandbox_started"));
         }
       }
       if (action === "stop" && sandbox !== undefined) {
         await development.sandbox.run("stop", developmentUserId);
-        status = "Development sandbox stopped";
+        status = localizedText(msg("program.development_sandbox_stopped"));
       }
       if (action === "restart" && sandbox !== undefined) {
         await development.sandbox.run("restart", developmentUserId);
-        status = "Development sandbox restarted";
+        status = localizedText(msg("program.development_sandbox_restarted"));
       }
       if (action === "reset-source" && sandbox !== undefined) {
         await development.sandbox.run(
@@ -216,7 +228,7 @@ export default async function developmentTest(): Promise<void> {
           developmentUserId,
           { confirm: true },
         );
-        status = "Development source reset";
+        status = localizedText(msg("program.development_source_reset"));
       }
       if (action === "factory-reset" && sandbox !== undefined) {
         await development.sandbox.run(
@@ -224,7 +236,9 @@ export default async function developmentTest(): Promise<void> {
           developmentUserId,
           { confirm: true },
         );
-        status = "Development sandbox factory reset";
+        status = localizedText(
+          msg("program.development_sandbox_factory_reset"),
+        );
       }
     } catch (error) {
       status = error instanceof Error ? error.message : String(error);
@@ -260,15 +274,21 @@ async function activateChanges(userId: string): Promise<void> {
       changedFiles: item.changed_files,
       addedRows: item.added_rows,
       removedRows: item.removed_rows,
-      ready: item.activation_ready ? "Ready" : "Blocked",
+      ready: item.activation_ready
+        ? localizedText(msg("program.ready"))
+        : localizedText(msg("program.blocked")),
     }));
     const model: z.infer<typeof ActivationScreen> = {
       packages,
       message,
       status: previewError || (pending
-        ? `${pending.status}: ${
-          pending.error ?? "Continue or abort preserving work."
-        }`
+        ? localizedText(
+          msg("program.value1_value2_2", {
+            value1: pending.status,
+            value2: pending.error ??
+              localizedText(msg("program.continue_or_abort_preserving_work")),
+          }),
+        )
         : "") ||
         (result.preview.retained?.length
           ? result.preview.retained.map((item) =>
@@ -280,20 +300,25 @@ async function activateChanges(userId: string): Promise<void> {
           ).join("\n")
           : "") ||
         (result.preview.inventory_truncated
-          ? "Retained inventory is truncated; inspect with activate --status in the terminal."
+          ? localizedText(
+            msg(
+              "program.retained_inventory_is_truncated_inspect_with_activate",
+            ),
+          )
           : "") ||
         status ||
         (!conflicted && packages.length === 0
-          ? "No private changes"
-          : "Review the changed packages and enter a commit message."),
+          ? localizedText(msg("program.no_private_changes"))
+          : localizedText(
+            msg("program.review_the_changed_packages_and_enter_a"),
+          )),
     };
     screenModel1 ??= new Model(model);
     screenModel1.data = model;
     const event = await callScreen({
       id: "development-activation",
-      title: "Activate development changes",
-      description:
-        "Activate your changes for all ready packages. Each package gets a commit with the message below.",
+      title: msg("program.activate_development_changes"),
+      description: msg("program.activate_your_changes_for_all_ready_packages"),
       schema: ActivationScreen,
       model: screenModel1,
       layout: {
@@ -308,7 +333,7 @@ async function activateChanges(userId: string): Promise<void> {
                   ...(conflicted
                     ? [{
                       id: "resolve",
-                      label: "Resolve conflicts",
+                      label: msg("program.resolve_conflicts"),
                       kind: "primary" as const,
                     }]
                     : []),
@@ -316,29 +341,30 @@ async function activateChanges(userId: string): Promise<void> {
                     ? [{
                       id: "continue",
                       label: pending.status === "cleanup-pending"
-                        ? "Retry cleanup"
-                        : "Continue activation",
-                    }, { id: "abort", label: "Abort, preserve work" }]
+                        ? localizedText(msg("program.retry_cleanup"))
+                        : localizedText(msg("conflicts.continue_activation")),
+                    }, {
+                      id: "abort",
+                      label: msg("program.abort_preserve_work"),
+                    }]
                     : []),
                   ...(!pending && packages.length > 0
                     ? [{
                       id: "sync-all",
-                      label: "Activate all changes",
+                      label: msg("program.activate_all_changes"),
                       kind: "primary" as const,
                     }]
                     : []),
                   ...(schemaPlan?.tables.some((t) =>
-                      t.affected_columns.some((c) =>
-                        c.repair !== "unsupported"
-                      )
+                      t.affected_columns.some((c) => c.repair !== "unsupported")
                     )
                     ? [{
                       id: "force",
-                      label: "Force activation…",
+                      label: msg("program.force_activation"),
                       kind: "danger" as const,
                     }]
                     : []),
-                  { id: "refresh", label: "Refresh" },
+                  { id: "refresh", label: msg("changes.refresh") },
                 ],
               }
               : child
@@ -361,12 +387,19 @@ async function activateChanges(userId: string): Promise<void> {
         });
         if (!result.success) {
           throw new Error(
-            String(result.error ?? "Abort could not finish"),
+            String(
+              result.error ??
+                localizedText(msg("program.abort_could_not_finish")),
+            ),
           );
         }
         status = result.status === "aborted-preserved"
-          ? "Attempt closed; files and captures preserved for recovery/export"
-          : "Attempt closed; private changes remain pending";
+          ? localizedText(
+            msg("program.attempt_closed_files_and_captures_preserved_for"),
+          )
+          : localizedText(
+            msg("program.attempt_closed_private_changes_remain_pending"),
+          );
         sendMessage(status, "success");
       } catch (error) {
         status = error instanceof Error ? error.message : String(error);
@@ -413,7 +446,9 @@ async function activateChanges(userId: string): Promise<void> {
               t.affected_columns.some((c) => c.repair !== "unsupported")
             )
           ) {
-            status = "No legal automatic column repair is available";
+            status = localizedText(
+              msg("program.no_legal_automatic_column_repair_is_available"),
+            );
             continue;
           }
           if (!(await confirmForce(schemaPlan, message.trim()))) continue;
@@ -460,10 +495,16 @@ async function activateChanges(userId: string): Promise<void> {
         message = "";
         schemaPlan = undefined;
         status = activation.phase === "aborted"
-          ? "Attempt closed; private changes remain pending"
+          ? localizedText(
+            msg("program.attempt_closed_private_changes_remain_pending"),
+          )
           : activation.resumed
-          ? "Captured changes activated; review remaining workspace changes"
-          : "All package changes activated";
+          ? localizedText(
+            msg(
+              "program.captured_changes_activated_review_remaining_workspace_changes",
+            ),
+          )
+          : localizedText(msg("program.all_package_changes_activated"));
         if (activation.schema_result) {
           status += ". " +
             Object.entries(activation.schema_result).map(([table, receipt]) =>
@@ -511,28 +552,47 @@ async function confirmForce(
       const event = await callScreen({
         id: "development-force-confirm",
         class: CONFIRM_CLASS,
-        title: "Force activation?",
-        description: `Commit: ${message}\n\n${
-          tables.flatMap((t) =>
-            t.affected_columns.filter((c) => c.repair !== "unsupported").map((
-              c,
-            ) =>
-              `${t.table_id}.${c.name}: only incompatible cells may become ${
-                c.repair === "null" ? "NULL" : "the authored target default"
-              }. Other values, rows, keys and identities are retained.`
-            )
-          ).join("\n")
-        }\nCleanup and native activation run first. Unsupported repairs stop without clearing a table.`,
+        title: msg("program.force_activation_2"),
+        description: msg(
+          "program.commit_message_value2_cleanup_and_native_activation",
+          {
+            message: message,
+            value2: tables.flatMap((t) =>
+              t.affected_columns.filter((c) => c.repair !== "unsupported").map((
+                c,
+              ) =>
+                localizedText(
+                  msg(
+                    "program.value1_value2_only_incompatible_cells_may_become",
+                    {
+                      value1: t.table_id,
+                      value2: c.name,
+                      value3: c.repair === "null"
+                        ? "NULL"
+                        : "the authored target default",
+                    },
+                  ),
+                )
+              )
+            ).join("\n"),
+          },
+        ),
         schema: z.object({
           confirmed: field(z.boolean(), {
-            label: "Repair incompatible cells in the listed columns",
+            label: msg(
+              "program.repair_incompatible_cells_in_the_listed_columns",
+            ),
           }),
         }),
         model,
         header: {
           actions: [
-            { id: "force", label: "Force activation", kind: "danger" },
-            { id: "cancel", label: "Cancel" },
+            {
+              id: "force",
+              label: msg("program.force_activation_3"),
+              kind: "danger",
+            },
+            { id: "cancel", label: msg("program.cancel") },
           ],
         },
       });
@@ -541,7 +601,12 @@ async function confirmForce(
       }
       if (event.action === "force" && model.data.confirmed) return true;
       if (event.action === "force") {
-        sendMessage("Confirm column repair before force activation.", "error");
+        sendMessage(
+          localizedText(
+            msg("program.confirm_column_repair_before_force_activation"),
+          ),
+          "error",
+        );
       }
     }
   });
@@ -554,14 +619,16 @@ async function startDevelopmentSandbox(userId: string): Promise<string> {
   if (
     sandbox !== undefined && isRunning(sandbox)
   ) {
-    return "Ready";
+    return localizedText(msg("program.ready"));
   }
   if (sandbox === undefined) {
     await development.sandbox.run("create", userId);
-    return "Development sandbox created and started";
+    return localizedText(
+      msg("program.development_sandbox_created_and_started"),
+    );
   }
   await development.sandbox.run("start", userId);
-  return "Development sandbox started";
+  return localizedText(msg("program.development_sandbox_started"));
 }
 
 async function confirmReset(factory: boolean): Promise<boolean> {
@@ -571,10 +638,16 @@ async function confirmReset(factory: boolean): Promise<boolean> {
       const response = await callScreen({
         id: "development-reset-confirm",
         class: CONFIRM_CLASS,
-        title: factory ? "Factory reset?" : "Reset source?",
+        title: factory
+          ? localizedText(msg("program.factory_reset_2"))
+          : localizedText(msg("program.reset_source_2")),
         description: factory
-          ? "This deletes your source changes, root home directory, and installed system changes."
-          : "This deletes your unactivated source changes. Your root home directory and installed system changes are kept.",
+          ? localizedText(
+            msg("program.this_deletes_your_source_changes_root_home"),
+          )
+          : localizedText(
+            msg("program.this_deletes_your_unactivated_source_changes_your"),
+          ),
         schema: z.object({
           confirmed: developmentInfo.shape.confirmed,
         }),
@@ -582,16 +655,23 @@ async function confirmReset(factory: boolean): Promise<boolean> {
         header: {
           actions: [{
             id: "reset",
-            label: factory ? "Factory reset" : "Reset source",
+            label: factory
+              ? localizedText(msg("program.factory_reset"))
+              : localizedText(msg("program.reset_source")),
             kind: "danger",
-          }, { id: "cancel", label: "Cancel" }],
+          }, { id: "cancel", label: msg("program.cancel") }],
         },
       });
       if (response.action === BACK_EVENT || response.action === "cancel") {
         return false;
       }
       if (response.action === "reset" && confirm.data.confirmed) return true;
-      sendMessage("Confirm deletion before resetting the sandbox.", "error");
+      sendMessage(
+        localizedText(
+          msg("program.confirm_deletion_before_resetting_the_sandbox"),
+        ),
+        "error",
+      );
     }
   });
 }
@@ -642,16 +722,38 @@ function actionsFor(sandbox: DevelopmentSandbox | undefined) {
   const running = sandbox !== undefined && isRunning(sandbox);
   return [
     ...(!running
-      ? [{ id: "start", label: "Start sandbox", kind: "primary" as const }]
+      ? [{
+        id: "start",
+        label: msg("program.start_sandbox"),
+        kind: "primary" as const,
+      }]
       : [
-        { id: "activate", label: "Review changes", kind: "primary" as const },
-        { id: "stop", label: "Stop sandbox", kind: "danger" as const },
+        {
+          id: "activate",
+          label: msg("program.review_changes"),
+          kind: "primary" as const,
+        },
+        {
+          id: "stop",
+          label: msg("program.stop_sandbox"),
+          kind: "danger" as const,
+        },
       ]),
-    ...(running ? [{ id: "restart", label: "Restart sandbox" }] : []),
+    ...(running
+      ? [{ id: "restart", label: msg("program.restart_sandbox") }]
+      : []),
     ...(sandbox === undefined ? [] : [
-      { id: "reset-source", label: "Reset source", kind: "danger" as const },
-      { id: "factory-reset", label: "Factory reset", kind: "danger" as const },
+      {
+        id: "reset-source",
+        label: msg("program.reset_source"),
+        kind: "danger" as const,
+      },
+      {
+        id: "factory-reset",
+        label: msg("program.factory_reset"),
+        kind: "danger" as const,
+      },
     ]),
-    { id: "refresh", label: "Refresh" },
+    { id: "refresh", label: msg("changes.refresh") },
   ];
 }

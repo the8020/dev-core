@@ -1,3 +1,4 @@
+import { test } from "/p/the8020/services/test_localization.ts";
 import { assert, assertEquals } from "@std/assert";
 import type { RequestMetadata } from "/p/the8020/services/http.ts";
 import { WorkerInvokeError } from "@the8020/kernel";
@@ -176,7 +177,7 @@ function fixture() {
   };
 }
 
-Deno.test("kernel expiry preserves the session label and completes its retained handler", async () => {
+test("kernel expiry preserves the session label and completes its retained handler", async () => {
   const test = fixture();
   try {
     const created = await test.fetch("/open", create, metadata());
@@ -193,7 +194,7 @@ Deno.test("kernel expiry preserves the session label and completes its retained 
   }
 });
 
-Deno.test("terminal establishment survives request loss and list, rename, detach, and close retain exact ownership", async () => {
+test("terminal establishment survives request loss and list, rename, detach, and close retain exact ownership", async () => {
   const test = fixture();
   try {
     const inserted = Promise.withResolvers<void>();
@@ -288,7 +289,7 @@ Deno.test("terminal establishment survives request loss and list, rename, detach
   }
 });
 
-Deno.test("failed initial publication closes its PTY and removes metadata", async () => {
+test("failed initial publication closes its PTY and removes metadata", async () => {
   const test = fixture();
   try {
     test.failRoute();
@@ -302,7 +303,7 @@ Deno.test("failed initial publication closes its PTY and removes metadata", asyn
   }
 });
 
-Deno.test("concurrent named opens share one processor and reconnect reads the saved label", async () => {
+test("concurrent named opens share one processor and reconnect reads the saved label", async () => {
   const test = fixture();
   try {
     const publishing = Promise.withResolvers<void>();
@@ -338,7 +339,7 @@ Deno.test("concurrent named opens share one processor and reconnect reads the sa
   }
 });
 
-Deno.test("stale named metadata opens a new physical terminal and preserves its label", async () => {
+test("stale named metadata opens a new physical terminal and preserves its label", async () => {
   const test = fixture();
   try {
     const meta = metadata();
@@ -376,7 +377,7 @@ Deno.test("stale named metadata opens a new physical terminal and preserves its 
   }
 });
 
-Deno.test("invalid and unowned terminal requests release temporary bindings", async () => {
+test("invalid and unowned terminal requests release temporary bindings", async () => {
   const test = fixture();
   try {
     assertEquals((await test.fetch("/unknown")).status, 404);
@@ -393,7 +394,7 @@ Deno.test("invalid and unowned terminal requests release temporary bindings", as
   }
 });
 
-Deno.test("explicit close reaches the terminal node after its display Worker has disappeared", async () => {
+test("explicit close reaches the terminal node after its display Worker has disappeared", async () => {
   const store = new MemoryMetadata();
   const native = new TestTerminals();
   const meta = metadata();
