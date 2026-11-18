@@ -16,8 +16,10 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
   operations live in their file-list toolbars; Save resolution stays with the
   editor form.
 
-- Development mutations use `src/development.ts` so the shared system role is
-  checked in the same owner as command mutations.
+- Sandbox use is available on every system role. Activation uses
+  `src/development.ts` for the same role/override policy as terminal and command
+  activation. Preview, status, and abort remain available when publication is
+  blocked.
 - Reuse package-owned development and activation fields from `src/fields.ts`;
   keep terminal controls, layout, and presentation hints in this program.
 
@@ -88,6 +90,14 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 # Work Guidance
 
 # Verification
+
+- `activation_policy.ts` runs through the sibling UUI native browser harness
+  using installed binaries and images. It checks test-system UUI sandbox
+  creation, production startup, all nine role/override combinations through
+  terminal activation, command refusal, preview/status/abort, live unset,
+  unchanged shared source on refusal, private edits, and process continuity. Run
+  this harness in a separate environment with explicit CPU, memory, and runtime
+  limits.
 
 - Run `deno task check` from the dev-core root.
 - From the dev-core root,

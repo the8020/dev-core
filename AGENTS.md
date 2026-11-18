@@ -160,9 +160,13 @@ below.
 
 # Local Contracts
 
-- `src/development.ts` gates application sandbox creation/start/shell and direct
-  activation with `system.requireDevelopment()`. Commands and UUI share this
-  owner; inspect, stop, kill, and deletion remain available for cleanup.
+- `src/development.ts` allows sandbox lifecycle and shell access on every system
+  role. Activation reads the hosting kernel's live node setting
+  `development.activation_allowed`: `auto` requires the development role, `true`
+  permits every role without reading the profile, and `false` rejects
+  publication. Commands, terminal helpers, and UUI share this policy. Preview,
+  status, and abort remain available. This package requires kernel 0.10.14 or
+  newer.
 - The package root is its independent Git repository root.
 - Development declares `uui = true` for Home; command entrypoints keep the
   non-UUI default.
@@ -183,9 +187,8 @@ below.
   native. Neither command parsing nor the UI may infer cleanup authority from a
   clean Git worktree or its age.
 - Activation transports optional schema preview, exact force-column scope and
-  approved-plan identity. Force does not skip cleanup/native activation or
-  application development-role checks; the DB owner validates repair/recovery
-  semantics.
+  approved-plan identity. Force does not skip cleanup/native activation or the
+  activation policy; the DB owner validates repair/recovery semantics.
 - Development test selects the authenticated user's single sandbox by `user_id`,
   reads its opaque `sbx-` console target from the returned sandbox record,
   automatically creates or starts it on entry, delegates lifecycle operations to
@@ -260,23 +263,24 @@ below.
 
 - Package-owned `deno task check` formats, lints, and type-checks development
   programs, terminal service/table entrypoints, and the browser component.
-  `deno task test` checks the terminal engine, owner, recovery bounds, and
-  service protocol. `deno task test:browser` checks the real browser and
-  retained protocol with deterministic native-terminal and authentication
-  doubles; native SSH, deployment, and interactive programs require separate
-  qualification. `test:native-browser` uses the sibling UUI node harness and
-  disposable real gVisor terminals; required options are in the terminal DOX.
-  `test:native-idle` checks real browser/SSH expiry and sandbox
-  persistent-workspace stop with seconds-long deadlines through the same
-  disposable harness. `bench:native-terminals` uses that harness for
-  direct/retained transport, recovery, slow-view, and process-tree resource
-  measurements. The sibling UUI `test:programs-browser` checks the combined
-  settings group, SSH subtitle, reset confirmation, activation validation,
-  file/diff navigation, and console DOM preservation against deterministic
-  kernel responses. Development-domain unit and real gVisor tests use
-  `the8020/dev-core` and `the8020/demo` identities to prove independent
-  histories and multi-package activation without pushing remotes; the browser
-  E2E covers sandbox lifecycle, the registered development console, UUI
-  activation validation/statistics, independent commits, and process continuity.
+  `deno task test` checks the activation role/override matrix, sandbox access,
+  terminal engine, owner, recovery bounds, and service protocol.
+  `deno task test:browser` checks the real browser and retained protocol with
+  deterministic native-terminal and authentication doubles; native SSH,
+  deployment, and interactive programs require separate qualification.
+  `test:native-browser` uses the sibling UUI node harness and disposable real
+  gVisor terminals; required options are in the terminal DOX. `test:native-idle`
+  checks real browser/SSH expiry and sandbox persistent-workspace stop with
+  seconds-long deadlines through the same disposable harness.
+  `bench:native-terminals` uses that harness for direct/retained transport,
+  recovery, slow-view, and process-tree resource measurements. The sibling UUI
+  `test:programs-browser` checks the combined settings group, SSH subtitle,
+  reset confirmation, activation validation, file/diff navigation, and console
+  DOM preservation against deterministic kernel responses. Development-domain
+  unit and real gVisor tests use `the8020/dev-core` and `the8020/demo`
+  identities to prove independent histories and multi-package activation without
+  pushing remotes; the browser E2E covers sandbox lifecycle, the registered
+  development console, UUI activation validation/statistics, independent
+  commits, and process continuity.
 - `deno task test` also checks code-browser source confinement, text search, and
   language-server framing. Build its assets with `deno task build:code-browser`.
