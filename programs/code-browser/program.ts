@@ -1,3 +1,6 @@
+import { DevelopmentError } from "../../i18n/errors.ts";
+import { localizedText as resolveMessage } from "/p/the8020/i18n/mod.ts";
+import { msg as messageSymbol } from "/p/the8020/dev-core/i18n/messages.ts";
 import { currentLocalization } from "/p/the8020/i18n/mod.ts";
 import { text as localizedText } from "/p/the8020/i18n/mod.ts";
 import { msg } from "/p/the8020/dev-core/i18n/messages.ts";
@@ -96,7 +99,12 @@ async function workspace<T>(user: string, input: object): Promise<T> {
       `deno run --no-config --allow-read=/workspace/packages /workspace/packages/the8020/dev-core/programs/code-browser/files.ts ${argument}`,
   });
   const output = JSON.parse((result.shell as { output: string }).output);
-  if (output.error) throw new Error(output.error);
+  if (output.error) {
+    if (typeof output.textKey === "string") {
+      throw new DevelopmentError(output.textKey);
+    }
+    throw new Error(output.error);
+  }
   return output;
 }
 
@@ -194,7 +202,11 @@ function hoverText(value: unknown): string {
 export default async function codeBrowser(raw: unknown = {}): Promise<void> {
   const input = Input.parse(raw);
   if (!context.authenticated) {
-    throw new Error("An authenticated user is required.");
+    throw new Error(
+      await resolveMessage(
+        messageSymbol("errors.an_authenticated_user_is_required"),
+      ),
+    );
   }
   if (!await allowed("the8020.dev-core.development.use", "")) return;
   const user = context.username;
@@ -207,7 +219,13 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
       item.user_id === user
     );
   }
-  if (!sandbox) throw new Error("Development sandbox is unavailable.");
+  if (!sandbox) {
+    throw new Error(
+      await resolveMessage(
+        messageSymbol("errors.development_sandbox_is_unavailable"),
+      ),
+    );
+  }
   const sandboxId = sandbox.sandbox_id;
   let folder = "";
   let selected = "";
@@ -315,7 +333,11 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
       sendMessage(
         localizedText(
           msg("program.symbol_navigation_unavailable_value1", {
-            value1: error instanceof Error ? error.message : String(error),
+            value1: error instanceof DevelopmentError
+              ? await resolveMessage(msg(error.textKey))
+              : error instanceof Error
+              ? error.message
+              : String(error),
           }),
         ),
         "warning",
@@ -340,7 +362,11 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
       }
       if (!document && documents.size >= 20) {
         throw new Error(
-          "Close an open file before opening another (20-file limit).",
+          await resolveMessage(
+            messageSymbol(
+              "errors.close_an_open_file_before_opening_another_20_file_limit",
+            ),
+          ),
         );
       }
       document = { ...document, source };
@@ -684,7 +710,13 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
           if (
             !Number.isSafeInteger(offset) || offset < 0 ||
             offset > model.data.content.length
-          ) throw new Error("Choose a symbol in the current file.");
+          ) {
+            throw new Error(
+              await resolveMessage(
+                messageSymbol("errors.choose_a_symbol_in_the_current_file"),
+              ),
+            );
+          }
           const before = model.data.content.slice(0, offset).split("\n");
           const server = await engine();
           const result = await server.request(`textDocument/${event.action}`, {
@@ -754,7 +786,11 @@ export default async function codeBrowser(raw: unknown = {}): Promise<void> {
         }
       } catch (error) {
         sendMessage(
-          error instanceof Error ? error.message : String(error),
+          error instanceof DevelopmentError
+            ? await resolveMessage(msg(error.textKey))
+            : error instanceof Error
+            ? error.message
+            : String(error),
           "error",
         );
       }
@@ -815,7 +851,11 @@ async function quickOpen(user: string): Promise<string | undefined> {
         }
       } catch (error) {
         sendMessage(
-          error instanceof Error ? error.message : String(error),
+          error instanceof DevelopmentError
+            ? await resolveMessage(msg(error.textKey))
+            : error instanceof Error
+            ? error.message
+            : String(error),
           "error",
         );
       }

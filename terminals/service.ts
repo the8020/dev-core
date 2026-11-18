@@ -1,3 +1,10 @@
+import { prepareTexts } from "/p/the8020/i18n/mod.ts";
+import { DevelopmentError } from "../i18n/errors.ts";
+import {
+  localizedText as resolveMessage,
+  text as formatMessage,
+} from "/p/the8020/i18n/mod.ts";
+import { msg as messageSymbol } from "/p/the8020/dev-core/i18n/messages.ts";
 import { context } from "@the8020/context";
 import {
   defineService,
@@ -75,12 +82,20 @@ export function defineTerminalService(
     authenticated(meta);
     if (owners.has(persistentId(meta))) {
       throw new HTTPError(409, {
-        error: "This operation requires an independent request",
+        error: await resolveMessage(
+          messageSymbol(
+            "errors.this_operation_requires_an_independent_request",
+          ),
+        ),
       });
     }
     return await action();
   };
   const service = defineService();
+  service.use(async (_request, next) => {
+    await prepareTexts(messageSymbol("errors.authentication_is_required"));
+    return await next();
+  });
   service.post(
     "/list",
     { summary: "List development terminals", body: Target.strict() },
@@ -104,7 +119,11 @@ export function defineTerminalService(
       authenticated(meta);
       if (owners.has(persistentId(meta))) {
         throw new HTTPError(409, {
-          error: "This operation requires an independent request",
+          error: await resolveMessage(
+            messageSymbol(
+              "errors.this_operation_requires_an_independent_request",
+            ),
+          ),
         });
       }
       const previous = await store.find(
@@ -133,7 +152,9 @@ export function defineTerminalService(
           ) throw error;
         }
         throw new HTTPError(409, {
-          error: "Open this session on its sandbox's node",
+          error: await resolveMessage(
+            messageSymbol("errors.open_this_session_on_its_sandbox_s_node"),
+          ),
         });
       }
       const ready = Promise.withResolvers<TerminalItem>();
@@ -149,7 +170,13 @@ export function defineTerminalService(
           input.targetSandboxId,
         );
         if (!previous && existing.length >= 256) {
-          throw new Error("Close unused terminals before creating another");
+          throw new Error(
+            await resolveMessage(
+              messageSymbol(
+                "errors.close_unused_terminals_before_creating_another",
+              ),
+            ),
+          );
         }
         const native = await terminals.open({
           kind: input.targetKind,
@@ -171,7 +198,11 @@ export function defineTerminalService(
             },
           });
           if (!current) {
-            throw new Error("Terminal owner stopped during opening");
+            throw new Error(
+              await resolveMessage(
+                messageSymbol("errors.terminal_owner_stopped_during_opening"),
+              ),
+            );
           }
           ready.resolve(
             await item(await requireRecord(store, meta, native.terminal.id)),
@@ -310,7 +341,7 @@ export function defineTerminalService(
   service.websocket("/connect", async ({ meta, socket }) => {
     const entry = await owned(meta);
     if (socket.protocol !== TERMINAL_PROTOCOL) {
-      socket.close(1002, "Unsupported terminal protocol");
+      socket.close(1002, "console.unsupported_terminal_protocol");
       return;
     }
     const first = await socket.receive();
@@ -318,7 +349,7 @@ export function defineTerminalService(
       first.type !== "message" || typeof first.data !== "string" ||
       first.data.length > 4096
     ) {
-      socket.close(1002, "Terminal attachment is required");
+      socket.close(1002, "console.terminal_attachment_required");
       return;
     }
     const input = z.object({
@@ -334,10 +365,13 @@ export function defineTerminalService(
         JSON.stringify({
           type: "error",
           message: message(error),
+          textKey: error instanceof DevelopmentError
+            ? error.textKey
+            : undefined,
           busy: error instanceof TerminalBusyError,
         }),
       );
-      socket.close(1008, "Terminal control is unavailable");
+      socket.close(1008, "console.terminal_control_unavailable");
       return;
     }
     try {
@@ -350,7 +384,11 @@ export function defineTerminalService(
           continue;
         }
         if (incoming.data.length > 4096) {
-          throw new Error("Terminal control message is too large");
+          throw new Error(
+            await resolveMessage(
+              messageSymbol("errors.terminal_control_message_is_too_large"),
+            ),
+          );
         }
         const command = JSON.parse(incoming.data) as Record<string, unknown>;
         if (command.type === "ready") {
@@ -398,7 +436,11 @@ export function defineTerminalService(
       completeUnowned(runtime.meta, () => {
         if (!runtime.meta.auth.authenticated) {
           return Promise.resolve(
-            Response.json({ error: "Authentication is required" }, {
+            Response.json({
+              error: formatMessage(
+                messageSymbol("errors.authentication_is_required"),
+              ),
+            }, {
               status: 401,
             }),
           );
@@ -409,7 +451,11 @@ export function defineTerminalService(
           entry.record.authenticatedUserId !== runtime.meta.user.userId
         ) {
           return Promise.resolve(
-            Response.json({ error: "Terminal display owner is unavailable" }, {
+            Response.json({
+              error: formatMessage(
+                messageSymbol("errors.terminal_display_owner_is_unavailable"),
+              ),
+            }, {
               status: 409,
             }),
           );
@@ -421,16 +467,28 @@ export function defineTerminalService(
 }
 
 function message(error: unknown): string {
-  return (error instanceof Error ? error.message : String(error)).slice(0, 500);
+  return (error instanceof DevelopmentError
+    ? formatMessage(messageSymbol(error.textKey))
+    : error instanceof Error
+    ? error.message
+    : String(error)).slice(0, 500);
 }
 function authenticated(meta: RequestMetadata): void {
   if (!meta.auth.authenticated) {
-    throw new HTTPError(401, { error: "Authentication is required" });
+    throw new HTTPError(401, {
+      error: formatMessage(messageSymbol("errors.authentication_is_required")),
+    });
   }
 }
 function persistentId(meta: RequestMetadata): string {
   const id = meta.execution.persistentExecutionId;
-  if (!id) throw new Error("Persistent terminal execution is unavailable");
+  if (!id) {
+    throw new Error(
+      formatMessage(
+        messageSymbol("errors.persistent_terminal_execution_is_unavailable"),
+      ),
+    );
+  }
   return id;
 }
 async function owned(meta: RequestMetadata): Promise<Entry> {
@@ -439,7 +497,9 @@ async function owned(meta: RequestMetadata): Promise<Entry> {
     await (opening.get(persistentId(meta)) ?? owners.get(persistentId(meta)));
   if (!entry || entry.record.authenticatedUserId !== meta.user.userId) {
     throw new HTTPError(409, {
-      error: "Terminal display owner is unavailable",
+      error: await resolveMessage(
+        messageSymbol("errors.terminal_display_owner_is_unavailable"),
+      ),
     });
   }
   return entry;
@@ -450,7 +510,11 @@ async function requireRecord(
   id: string,
 ): Promise<TerminalRecord> {
   const record = await store.get(meta.user.userId, id);
-  if (!record) throw new Error("Terminal is unavailable");
+  if (!record) {
+    throw new Error(
+      await resolveMessage(messageSymbol("console.terminal_is_unavailable")),
+    );
+  }
   return record;
 }
 function target(record: TerminalRecord) {
@@ -474,7 +538,9 @@ async function requestedOwner(input: unknown): Promise<Entry | undefined> {
     (entry.record.terminalId !== request.terminalId ||
       entry.record.authenticatedUserId !== context.userId)
   ) {
-    throw new Error("Terminal access was denied");
+    throw new Error(
+      await resolveMessage(messageSymbol("errors.terminal_access_was_denied")),
+    );
   }
   return entry;
 }
@@ -485,7 +551,13 @@ export const workerFunctions = Object.freeze({
   },
   "terminal.close": async (input: unknown): Promise<{ closed: true }> => {
     const entry = await requestedOwner(input);
-    if (!entry) throw new Error("Terminal owner is unavailable");
+    if (!entry) {
+      throw new Error(
+        await resolveMessage(
+          messageSymbol("errors.terminal_owner_is_unavailable"),
+        ),
+      );
+    }
     await entry.owner.close();
     await entry.completion;
     return { closed: true };

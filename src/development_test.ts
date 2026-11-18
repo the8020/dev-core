@@ -5,6 +5,12 @@ import {
   kernelInvokeSymbol,
 } from "@the8020/kernel";
 import { development } from "./development.ts";
+import {
+  defaultConfiguration,
+  Localization,
+  withLocalization,
+} from "/p/the8020/i18n/mod.ts";
+import czech from "../i18n/locales/cs.json" with { type: "json" };
 
 Deno.test("sandbox access and activation follow separate policies", async () => {
   const globals = globalThis as unknown as Record<symbol, unknown>;
@@ -85,6 +91,48 @@ Deno.test("sandbox access and activation follow separate policies", async () => 
       Error,
       "Invalid development.activation_allowed",
     );
+    const localization = new Localization(
+      "cs",
+      defaultConfiguration,
+      (packageId, chain) => {
+        assertEquals(packageId, "the8020/dev-core");
+        assertEquals(chain[0], "cs");
+        return Promise.resolve({
+          package: packageId,
+          language: "cs",
+          texts: czech.texts,
+        });
+      },
+    );
+    await withLocalization(localization, async () => {
+      for (
+        const [value, expected] of [
+          [
+            "auto",
+            "Aktivace ze sandboxu vyžaduje vývojový systém nebo development.activation_allowed=true.",
+          ],
+          [
+            "false",
+            "Aktivace ze sandboxu je zakázána nastavením development.activation_allowed=false.",
+          ],
+          [
+            "invalid",
+            "Neplatná hodnota nastavení development.activation_allowed.",
+          ],
+        ]
+      ) {
+        override = value;
+        for (const action of [undefined, "continue"]) {
+          calls.length = 0;
+          const error = await assertRejects(
+            () => development.activate.run({ ...activation, action }),
+            Error,
+          );
+          assertEquals(error.message, expected);
+          assertEquals(calls.includes("development.activate.run"), false);
+        }
+      }
+    });
   } finally {
     globals[kernelInvokeSymbol] = originalInvoke;
     globals[kernelDatabaseBackendSymbol] = originalBackend;

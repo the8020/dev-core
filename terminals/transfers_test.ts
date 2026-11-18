@@ -1,3 +1,4 @@
+import { DevelopmentError } from "../i18n/errors.ts";
 import { assertEquals, assertRejects, assertThrows } from "@std/assert";
 import { receiveFile } from "./transfer_files.ts";
 import {
@@ -79,4 +80,17 @@ Deno.test("transfer names reject traversal and quote paths without shell executi
     shellPaths(["/root/uploads/a'b $(id).png", "/root/uploads/b"]),
     "'/root/uploads/a'\\''b $(id).png' '/root/uploads/b'",
   );
+});
+
+Deno.test("standalone transfer errors preserve their presentation key", async () => {
+  const key = "errors.invalid_filename";
+  const reader = new TransferReader((async function* () {
+    yield header({ error: "Invalid filename", textKey: key });
+  })());
+  const error = await assertRejects(
+    () => reader.header(),
+    DevelopmentError,
+    "Invalid filename",
+  );
+  assertEquals(error.textKey, key);
 });

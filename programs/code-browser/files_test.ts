@@ -7,11 +7,12 @@ import {
   sourceURI,
 } from "./files.ts";
 
+function assert(value: unknown): asserts value {
+  if (!value) throw new Error("Assertion failed");
+}
+
 Deno.test("code browser reads bounded package text and rejects unsafe paths", async () => {
   const root = await Deno.makeTempDir();
-  const assert = (value: unknown) => {
-    if (!value) throw new Error("Assertion failed");
-  };
   try {
     await Deno.mkdir(`${root}/folder`);
     await Deno.mkdir(`${root}/.git`);
@@ -102,5 +103,24 @@ Deno.test("code browser reads bounded package text and rejects unsafe paths", as
     }
   } finally {
     await Deno.remove(root, { recursive: true });
+  }
+});
+
+Deno.test("standalone file-reader failures carry a catalog key and an English diagnostic", async () => {
+  const { DevelopmentError } = await import("../../i18n/errors.ts");
+  try {
+    sourcePath("file:///etc/passwd");
+    throw new Error("Expected a confined-path rejection");
+  } catch (error) {
+    assert(error instanceof DevelopmentError);
+    assert(
+      error.textKey ===
+        "errors.this_dependency_is_outside_packages_and_the_runtime_sdk",
+    );
+    assert(
+      error.message ===
+        "This dependency is outside Packages and the runtime SDK.",
+    );
+    assert(JSON.parse(JSON.stringify(error)).textKey === error.textKey);
   }
 });

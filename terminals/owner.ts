@@ -1,3 +1,4 @@
+import { DevelopmentError } from "../i18n/errors.ts";
 import {
   kernel,
   type TerminalAttachment,
@@ -23,7 +24,7 @@ import { NativeTerminalView } from "./native_view.ts";
 type NativeTerminals = typeof kernel.terminals;
 const encoder = new TextEncoder();
 
-export class TerminalBusyError extends Error {}
+export class TerminalBusyError extends DevelopmentError {}
 
 /** One package display owner for one physical PTY. */
 export class TerminalOwner {
@@ -83,8 +84,8 @@ export class TerminalOwner {
       this.#view?.close(
         1000,
         this.#closeRequested
-          ? "Terminal closed"
-          : "Terminal display unavailable",
+          ? "console.terminal_closed"
+          : "errors.terminal_display_owner_is_unavailable",
       );
       if (this.#closeRequested) await this.#destroy();
       await drain;
@@ -94,7 +95,7 @@ export class TerminalOwner {
         this.#stop.abort();
         this.#advanced.resolve();
         this.#nativeView?.close();
-        this.#view?.close(1000, "Terminal detached");
+        this.#view?.close(1000, "console.terminal_view_detached");
         await drain;
         await nativeViews;
         await this.#views;
@@ -178,9 +179,10 @@ export class TerminalOwner {
           this.#view?.send(JSON.stringify({
             type: "error",
             message: "Terminal control transferred to another connection",
+            textKey: "console.control_transferred",
             busy: true,
           }));
-          this.#view?.close(1000, "Terminal control transferred");
+          this.#view?.close(1000, "console.control_transferred");
           this.#nativeView?.close();
           const display = new NativeTerminalDisplay(this.engine);
           try {
@@ -236,16 +238,18 @@ export class TerminalOwner {
   ): Promise<TerminalView> {
     const result = this.#views.then(async () => {
       if (this.#failure || this.#stop.signal.aborted) {
-        throw new Error("Terminal display owner is unavailable");
+        throw new DevelopmentError(
+          "errors.terminal_display_owner_is_unavailable",
+        );
       }
       const previous = this.#view;
       if (previous) {
         if (!previous.closed && previous.clientId !== clientId && !takeover) {
           throw new TerminalBusyError(
-            "This terminal is controlled in another window",
+            "errors.this_terminal_is_controlled_in_another_window",
           );
         }
-        previous.close(1000, "Terminal control transferred");
+        previous.close(1000, "console.control_transferred");
         await this.terminals.detach(previous.attachment.attachmentId);
       }
       const attachment = await this.terminals.attach(
@@ -256,7 +260,7 @@ export class TerminalOwner {
       ).catch((error) => {
         if (error instanceof TerminalControlBusyError) {
           throw new TerminalBusyError(
-            "This terminal is controlled by another connection",
+            "errors.this_terminal_is_controlled_by_another_connection",
           );
         }
         throw error;
@@ -264,7 +268,7 @@ export class TerminalOwner {
       this.#nativeView?.close();
       if (this.#stop.signal.aborted || socket.signal.aborted) {
         await this.terminals.detach(attachment.attachmentId);
-        throw new Error("Terminal attachment ended");
+        throw new DevelopmentError("errors.terminal_attachment_ended");
       }
       const view = new TerminalView(this, socket, clientId, attachment);
       this.#view = view;
@@ -275,7 +279,7 @@ export class TerminalOwner {
   }
 
   async detach(view: TerminalView): Promise<void> {
-    view.close(1000, "Terminal detached");
+    view.close(1000, "console.terminal_view_detached");
     await this.terminals.detach(view.attachment.attachmentId);
     if (this.#view === view) this.#view = undefined;
   }

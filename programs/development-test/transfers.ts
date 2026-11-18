@@ -1,3 +1,4 @@
+import { DevelopmentError } from "../../i18n/errors.ts";
 import {
   BACK_EVENT,
   callScreen,
@@ -96,6 +97,7 @@ export async function transferDialog(
                       (await currentLocalization()?.bundle("the8020/dev-core"))
                         ?.texts ?? {},
                     ).filter(([key]) =>
+                      key.startsWith("errors.") ||
                       key.startsWith("frontend.") ||
                       key.startsWith("console.") ||
                       key.startsWith("transfer.")
@@ -164,7 +166,12 @@ export async function transferDialog(
         names.forEach(filename);
         start = crypto.randomUUID();
       } catch (error) {
-        sendMessage(String(error), "error");
+        sendMessage(
+          error instanceof DevelopmentError
+            ? text(msg(error.textKey))
+            : String(error),
+          "error",
+        );
       }
     }
     if (event.action === "transferred" || event.action === "transfer-failed") {

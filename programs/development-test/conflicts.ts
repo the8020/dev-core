@@ -1,3 +1,5 @@
+import { localizedText as resolveMessage } from "/p/the8020/i18n/mod.ts";
+import { msg as messageSymbol } from "/p/the8020/dev-core/i18n/messages.ts";
 import { text as localizedText } from "/p/the8020/i18n/mod.ts";
 import { msg } from "/p/the8020/dev-core/i18n/messages.ts";
 import { development } from "../../src/development.ts";
@@ -47,7 +49,11 @@ async function conflictCommand<T>(
   );
   if (bytes.length > 64 * 1024) {
     throw new Error(
-      "This edit is too large for this screen. Resolve it in the terminal.",
+      await resolveMessage(
+        messageSymbol(
+          "errors.this_edit_is_too_large_for_this_screen_resolve_it",
+        ),
+      ),
     );
   }
   const data = btoa(

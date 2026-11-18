@@ -70,13 +70,15 @@ Deno.test("one controller survives reload and explicit control transfer without 
   const owner = new TerminalOwner(native.native, native.api);
   const running = owner.run();
   try {
-    const first = await owner.attach(new TestSocket(), "one", false);
+    const socket = new TestSocket();
+    const first = await owner.attach(socket, "one", false);
     await assertRejects(
       () => owner.attach(new TestSocket(), "two", false),
       TerminalBusyError,
     );
     const reload = await owner.attach(new TestSocket(), "one", false);
     assert(first.closed);
+    assertEquals(socket.closed?.reason, "console.control_transferred");
     const transfer = await owner.attach(new TestSocket(), "two", true);
     assert(reload.closed);
     assertEquals(native.closed, []);
