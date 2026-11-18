@@ -257,6 +257,18 @@
     "files.folder": "Fascikla",
     "files.file": "Datoteka",
     "files.runtime": "SDK izvršnog okruženja · samo za čitanje",
-    "layout.files": "Datoteke"
+    "layout.files": "Datoteke",
+    "transfer.upload": "Otpremi datoteke",
+    "transfer.download": "Preuzmi datoteke",
+    "transfer.folder": "Fascikla",
+    "transfer.files": "Datoteke",
+    "transfer.result": "Rezultat",
+    "transfer.confirm": "Nastavi",
+    "transfer.copy_paths": "Kopiraj putanje",
+    "transfer.complete": "Gotovo",
+    "transfer.choose_files": "Datoteke: 1–100",
+    "transfer.too_large": "Datoteka ne sme premašiti 1073741824 bajtova",
+    "transfer.uploading": "Otpremi · {name}",
+    "transfer.file_lines": "Datoteke (jedna po redu)"
   }
 }

@@ -257,6 +257,18 @@
     "files.folder": "Aplankas",
     "files.file": "Failas",
     "files.runtime": "Vykdymo aplinkos SDK · tik skaitymui",
-    "layout.files": "Failai"
+    "layout.files": "Failai",
+    "transfer.upload": "Įkelti failus",
+    "transfer.download": "Parsisiųsti failus",
+    "transfer.folder": "Aplankas",
+    "transfer.files": "Failai",
+    "transfer.result": "Rezultatas",
+    "transfer.confirm": "Tęsti",
+    "transfer.copy_paths": "Kopijuoti kelius",
+    "transfer.complete": "Baigta",
+    "transfer.choose_files": "Failai: 1–100",
+    "transfer.too_large": "Failas negali viršyti 1073741824 baitų",
+    "transfer.uploading": "Įkelti · {name}",
+    "transfer.file_lines": "Failai (po vieną eilutėje)"
   }
 }

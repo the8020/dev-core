@@ -257,6 +257,18 @@
     "files.folder": "Mappe",
     "files.file": "Fil",
     "files.runtime": "Runtime-SDK · skrivebeskyttet",
-    "layout.files": "Filer"
+    "layout.files": "Filer",
+    "transfer.upload": "Upload filer",
+    "transfer.download": "Download filer",
+    "transfer.folder": "Mappe",
+    "transfer.files": "Filer",
+    "transfer.result": "Resultat",
+    "transfer.confirm": "Fortsæt",
+    "transfer.copy_paths": "Kopiér stier",
+    "transfer.complete": "Færdig",
+    "transfer.choose_files": "Filer: 1–100",
+    "transfer.too_large": "Filen må ikke overstige 1073741824 byte",
+    "transfer.uploading": "Upload · {name}",
+    "transfer.file_lines": "Filer (én pr. linje)"
   }
 }

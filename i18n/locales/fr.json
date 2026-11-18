@@ -257,6 +257,18 @@
     "files.folder": "Dossier",
     "files.file": "Fichier",
     "files.runtime": "SDK d’exécution · lecture seule",
-    "layout.files": "Fichiers"
+    "layout.files": "Fichiers",
+    "transfer.upload": "Envoyer des fichiers",
+    "transfer.download": "Télécharger des fichiers",
+    "transfer.folder": "Dossier",
+    "transfer.files": "Fichiers",
+    "transfer.result": "Résultat",
+    "transfer.confirm": "Continuer",
+    "transfer.copy_paths": "Copier les chemins",
+    "transfer.complete": "Terminer",
+    "transfer.choose_files": "Fichiers: 1–100",
+    "transfer.too_large": "Le fichier ne doit pas dépasser 1073741824 octets",
+    "transfer.uploading": "Envoyer · {name}",
+    "transfer.file_lines": "Fichiers (un par ligne)"
   }
 }

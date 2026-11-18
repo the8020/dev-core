@@ -257,6 +257,18 @@
     "files.folder": "Mappa",
     "files.file": "Fájl",
     "files.runtime": "Futtatókörnyezeti SDK · csak olvasható",
-    "layout.files": "Fájlok"
+    "layout.files": "Fájlok",
+    "transfer.upload": "Fájlok feltöltése",
+    "transfer.download": "Fájlok letöltése",
+    "transfer.folder": "Mappa",
+    "transfer.files": "Fájlok",
+    "transfer.result": "Eredmény",
+    "transfer.confirm": "Folytatás",
+    "transfer.copy_paths": "Útvonalak másolása",
+    "transfer.complete": "Kész",
+    "transfer.choose_files": "Fájlok: 1–100",
+    "transfer.too_large": "A fájl legfeljebb 1073741824 bájt lehet",
+    "transfer.uploading": "Feltöltés · {name}",
+    "transfer.file_lines": "Fájlok (soronként egy)"
   }
 }

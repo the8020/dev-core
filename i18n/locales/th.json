@@ -257,6 +257,18 @@
     "files.folder": "โฟลเดอร์",
     "files.file": "ไฟล์",
     "files.runtime": "SDK รันไทม์ · อ่านอย่างเดียว",
-    "layout.files": "ไฟล์"
+    "layout.files": "ไฟล์",
+    "transfer.upload": "อัพโหลดไฟล์",
+    "transfer.download": "ดาวน์โหลดไฟล์",
+    "transfer.folder": "โฟลเดอร์",
+    "transfer.files": "ไฟล์",
+    "transfer.result": "ผลลัพธ์",
+    "transfer.confirm": "ดำเนินการต่อ",
+    "transfer.copy_paths": "คัดลอกพาธ",
+    "transfer.complete": "เสร็จ",
+    "transfer.choose_files": "ไฟล์: 1–100",
+    "transfer.too_large": "ไฟล์ต้องไม่เกิน 1073741824 ไบต์",
+    "transfer.uploading": "อัปโหลด · {name}",
+    "transfer.file_lines": "ไฟล์ (หนึ่งไฟล์ต่อบรรทัด)"
   }
 }

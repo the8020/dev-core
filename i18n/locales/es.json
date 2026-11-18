@@ -257,6 +257,18 @@
     "files.folder": "Carpeta",
     "files.file": "Archivo",
     "files.runtime": "SDK del entorno de ejecución · solo lectura",
-    "layout.files": "Archivos"
+    "layout.files": "Archivos",
+    "transfer.upload": "Subir archivos",
+    "transfer.download": "Descargar archivos",
+    "transfer.folder": "Carpeta",
+    "transfer.files": "Archivos",
+    "transfer.result": "Resultado",
+    "transfer.confirm": "Continuar",
+    "transfer.copy_paths": "Copiar rutas",
+    "transfer.complete": "Listo",
+    "transfer.choose_files": "Archivos: 1–100",
+    "transfer.too_large": "El archivo no debe superar 1073741824 bytes",
+    "transfer.uploading": "Subir · {name}",
+    "transfer.file_lines": "Archivos (uno por línea)"
   }
 }

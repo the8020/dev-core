@@ -257,6 +257,18 @@
     "files.folder": "Klasör",
     "files.file": "Dosya",
     "files.runtime": "Çalışma zamanı SDK'sı · salt okunur",
-    "layout.files": "Dosyalar"
+    "layout.files": "Dosyalar",
+    "transfer.upload": "Dosyaları yükle",
+    "transfer.download": "Dosyaları indir",
+    "transfer.folder": "Klasör",
+    "transfer.files": "Dosyalar",
+    "transfer.result": "Sonuç",
+    "transfer.confirm": "Devam et",
+    "transfer.copy_paths": "Yolları kopyala",
+    "transfer.complete": "Tamam",
+    "transfer.choose_files": "Dosyalar: 1–100",
+    "transfer.too_large": "Dosya 1073741824 baytı aşmamalıdır",
+    "transfer.uploading": "Yükle · {name}",
+    "transfer.file_lines": "Dosyalar (her satırda bir tane)"
   }
 }

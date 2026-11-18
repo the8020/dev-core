@@ -257,6 +257,18 @@
     "files.folder": "Map",
     "files.file": "Bestand",
     "files.runtime": "Runtime-SDK · alleen-lezen",
-    "layout.files": "Bestanden"
+    "layout.files": "Bestanden",
+    "transfer.upload": "Bestanden uploaden",
+    "transfer.download": "Bestanden downloaden",
+    "transfer.folder": "Map",
+    "transfer.files": "Bestanden",
+    "transfer.result": "Resultaat",
+    "transfer.confirm": "Doorgaan",
+    "transfer.copy_paths": "Paden kopiëren",
+    "transfer.complete": "Gereed",
+    "transfer.choose_files": "Bestanden: 1–100",
+    "transfer.too_large": "Het bestand mag niet groter zijn dan 1073741824 bytes",
+    "transfer.uploading": "Uploaden · {name}",
+    "transfer.file_lines": "Bestanden (één per regel)"
   }
 }

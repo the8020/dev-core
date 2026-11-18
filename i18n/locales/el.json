@@ -257,6 +257,18 @@
     "files.folder": "Φάκελος",
     "files.file": "Αρχείο",
     "files.runtime": "SDK εκτέλεσης · μόνο ανάγνωση",
-    "layout.files": "Αρχεία"
+    "layout.files": "Αρχεία",
+    "transfer.upload": "Μεταφόρτωση αρχείων",
+    "transfer.download": "Λήψη αρχείων",
+    "transfer.folder": "Φάκελος",
+    "transfer.files": "Αρχεία",
+    "transfer.result": "Αποτέλεσμα",
+    "transfer.confirm": "Συνέχεια",
+    "transfer.copy_paths": "Αντιγραφή διαδρομών",
+    "transfer.complete": "Τέλος",
+    "transfer.choose_files": "Αρχεία: 1–100",
+    "transfer.too_large": "Το αρχείο δεν πρέπει να ξεπερνά τα 1073741824 byte",
+    "transfer.uploading": "Μεταφόρτωση · {name}",
+    "transfer.file_lines": "Αρχεία (ένα ανά γραμμή)"
   }
 }

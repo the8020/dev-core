@@ -257,6 +257,18 @@
     "files.folder": "Kansio",
     "files.file": "Tiedosto",
     "files.runtime": "Ajoympäristön SDK · vain luku",
-    "layout.files": "Tiedostot"
+    "layout.files": "Tiedostot",
+    "transfer.upload": "Lataa tiedostoja",
+    "transfer.download": "Lataa tiedostoja",
+    "transfer.folder": "Kansio",
+    "transfer.files": "Tiedostot",
+    "transfer.result": "Tulos",
+    "transfer.confirm": "Jatka",
+    "transfer.copy_paths": "Kopioi polut",
+    "transfer.complete": "Valmis",
+    "transfer.choose_files": "Tiedostot: 1–100",
+    "transfer.too_large": "Tiedoston koko saa olla enintään 1073741824 tavua",
+    "transfer.uploading": "Lähetä · {name}",
+    "transfer.file_lines": "Tiedostot (yksi per rivi)"
   }
 }

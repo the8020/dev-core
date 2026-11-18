@@ -257,6 +257,18 @@
     "files.folder": "پوشه",
     "files.file": "فایل",
     "files.runtime": "SDK اجرا · فقط‌خواندنی",
-    "layout.files": "فایل‌ها"
+    "layout.files": "فایل‌ها",
+    "transfer.upload": "فایل ها را آپلود کنید",
+    "transfer.download": "دانلود فایل ها",
+    "transfer.folder": "پوشه",
+    "transfer.files": "فایل‌ها",
+    "transfer.result": "نتیجه",
+    "transfer.confirm": "ادامه",
+    "transfer.copy_paths": "کپی مسیرها",
+    "transfer.complete": "تمام",
+    "transfer.choose_files": "فایل‌ها: 1–100",
+    "transfer.too_large": "فایل نباید بیش از 1073741824 بایت باشد",
+    "transfer.uploading": "بارگذاری · {name}",
+    "transfer.file_lines": "فایل‌ها (هر فایل در یک خط)"
   }
 }

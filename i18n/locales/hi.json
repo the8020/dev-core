@@ -257,6 +257,18 @@
     "files.folder": "फ़ोल्डर",
     "files.file": "फ़ाइल",
     "files.runtime": "रनटाइम SDK · केवल-पठन",
-    "layout.files": "फ़ाइलें"
+    "layout.files": "फ़ाइलें",
+    "transfer.upload": "फाइलें अपलोड करें",
+    "transfer.download": "फ़ाइलें डाउनलोड करें",
+    "transfer.folder": "फ़ोल्डर",
+    "transfer.files": "फ़ाइलें",
+    "transfer.result": "परिणाम",
+    "transfer.confirm": "जारी रखें",
+    "transfer.copy_paths": "पथ कॉपी करें",
+    "transfer.complete": "पूरा हुआ",
+    "transfer.choose_files": "फ़ाइलें: 1–100",
+    "transfer.too_large": "फ़ाइल 1073741824 बाइट से बड़ी नहीं होनी चाहिए",
+    "transfer.uploading": "अपलोड करें · {name}",
+    "transfer.file_lines": "फ़ाइलें (हर पंक्ति में एक)"
   }
 }

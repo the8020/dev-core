@@ -257,6 +257,18 @@
     "files.folder": "Dosar",
     "files.file": "Fișier",
     "files.runtime": "SDK runtime · doar citire",
-    "layout.files": "Fișiere"
+    "layout.files": "Fișiere",
+    "transfer.upload": "Încărcați fișiere",
+    "transfer.download": "Descărcați fișiere",
+    "transfer.folder": "Dosar",
+    "transfer.files": "Fișiere",
+    "transfer.result": "Rezultat",
+    "transfer.confirm": "Continuă",
+    "transfer.copy_paths": "Copiază căile",
+    "transfer.complete": "Gata",
+    "transfer.choose_files": "Fișiere: 1–100",
+    "transfer.too_large": "Fișierul nu trebuie să depășească 1073741824 octeți",
+    "transfer.uploading": "Încarcă · {name}",
+    "transfer.file_lines": "Fișiere (unul pe linie)"
   }
 }

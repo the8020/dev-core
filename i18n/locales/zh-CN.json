@@ -257,6 +257,18 @@
     "files.folder": "文件夹",
     "files.file": "文件",
     "files.runtime": "运行时 SDK · 只读",
-    "layout.files": "文件"
+    "layout.files": "文件",
+    "transfer.upload": "上传文件",
+    "transfer.download": "下载文件",
+    "transfer.folder": "文件夹",
+    "transfer.files": "文件",
+    "transfer.result": "结果",
+    "transfer.confirm": "继续",
+    "transfer.copy_paths": "复制路径",
+    "transfer.complete": "完成",
+    "transfer.choose_files": "文件: 1–100",
+    "transfer.too_large": "文件不得超过 1073741824 字节",
+    "transfer.uploading": "上传 · {name}",
+    "transfer.file_lines": "文件（每行一个）"
   }
 }

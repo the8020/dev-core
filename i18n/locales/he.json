@@ -257,6 +257,18 @@
     "files.folder": "תיקייה",
     "files.file": "קובץ",
     "files.runtime": "SDK הריצה · לקריאה בלבד",
-    "layout.files": "קבצים"
+    "layout.files": "קבצים",
+    "transfer.upload": "העלה קבצים",
+    "transfer.download": "הורד קבצים",
+    "transfer.folder": "תיקייה",
+    "transfer.files": "קבצים",
+    "transfer.result": "תוצאה",
+    "transfer.confirm": "המשך",
+    "transfer.copy_paths": "העתקת נתיבים",
+    "transfer.complete": "סיום",
+    "transfer.choose_files": "קבצים: 1–100",
+    "transfer.too_large": "גודל הקובץ לא יעלה על 1073741824 בתים",
+    "transfer.uploading": "העלאה · {name}",
+    "transfer.file_lines": "קבצים (אחד בכל שורה)"
   }
 }

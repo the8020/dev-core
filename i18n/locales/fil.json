@@ -257,6 +257,18 @@
     "files.folder": "Folder",
     "files.file": "File",
     "files.runtime": "Runtime SDK · read-only",
-    "layout.files": "Mga file"
+    "layout.files": "Mga file",
+    "transfer.upload": "Mag-upload ng mga file",
+    "transfer.download": "Mag-download ng mga file",
+    "transfer.folder": "Folder",
+    "transfer.files": "Mga file",
+    "transfer.result": "Resulta",
+    "transfer.confirm": "Magpatuloy",
+    "transfer.copy_paths": "Kopyahin ang mga path",
+    "transfer.complete": "Tapos na",
+    "transfer.choose_files": "Mga file: 1–100",
+    "transfer.too_large": "Hindi dapat lumampas sa 1073741824 byte ang file",
+    "transfer.uploading": "I-upload · {name}",
+    "transfer.file_lines": "Mga file (isa bawat linya)"
   }
 }

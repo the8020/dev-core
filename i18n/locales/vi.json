@@ -257,6 +257,18 @@
     "files.folder": "Thư mục",
     "files.file": "Tệp",
     "files.runtime": "SDK môi trường chạy · chỉ đọc",
-    "layout.files": "Tệp"
+    "layout.files": "Tệp",
+    "transfer.upload": "Tải tập tin lên",
+    "transfer.download": "Tải tập tin xuống",
+    "transfer.folder": "Thư mục",
+    "transfer.files": "Tệp",
+    "transfer.result": "Kết quả",
+    "transfer.confirm": "Tiếp tục",
+    "transfer.copy_paths": "Sao chép đường dẫn",
+    "transfer.complete": "Xong",
+    "transfer.choose_files": "Tệp: 1–100",
+    "transfer.too_large": "Tệp không được vượt 1073741824 byte",
+    "transfer.uploading": "Tải lên · {name}",
+    "transfer.file_lines": "Tệp (mỗi dòng một tệp)"
   }
 }

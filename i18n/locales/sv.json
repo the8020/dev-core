@@ -257,6 +257,18 @@
     "files.folder": "Mapp",
     "files.file": "Fil",
     "files.runtime": "Körtids-SDK · skrivskyddad",
-    "layout.files": "Filer"
+    "layout.files": "Filer",
+    "transfer.upload": "Ladda upp filer",
+    "transfer.download": "Ladda ner filer",
+    "transfer.folder": "Mapp",
+    "transfer.files": "Filer",
+    "transfer.result": "Resultat",
+    "transfer.confirm": "Fortsätt",
+    "transfer.copy_paths": "Kopiera sökvägar",
+    "transfer.complete": "Klart",
+    "transfer.choose_files": "Filer: 1–100",
+    "transfer.too_large": "Filen får inte överstiga 1073741824 byte",
+    "transfer.uploading": "Ladda upp · {name}",
+    "transfer.file_lines": "Filer (en per rad)"
   }
 }

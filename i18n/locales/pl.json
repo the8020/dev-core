@@ -257,6 +257,18 @@
     "files.folder": "Folder",
     "files.file": "Plik",
     "files.runtime": "SDK środowiska wykonawczego · tylko do odczytu",
-    "layout.files": "Pliki"
+    "layout.files": "Pliki",
+    "transfer.upload": "Wyślij pliki",
+    "transfer.download": "Pobierz pliki",
+    "transfer.folder": "Folder",
+    "transfer.files": "Pliki",
+    "transfer.result": "Wynik",
+    "transfer.confirm": "Kontynuuj",
+    "transfer.copy_paths": "Kopiuj ścieżki",
+    "transfer.complete": "Gotowe",
+    "transfer.choose_files": "Pliki: 1–100",
+    "transfer.too_large": "Maksymalny rozmiar pliku w bajtach: 1073741824",
+    "transfer.uploading": "Wyślij · {name}",
+    "transfer.file_lines": "Pliki (jeden w wierszu)"
   }
 }

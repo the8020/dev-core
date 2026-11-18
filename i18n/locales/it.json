@@ -257,6 +257,18 @@
     "files.folder": "Cartella",
     "files.file": "File",
     "files.runtime": "SDK di esecuzione · sola lettura",
-    "layout.files": "File"
+    "layout.files": "File",
+    "transfer.upload": "Carica file",
+    "transfer.download": "Scarica file",
+    "transfer.folder": "Cartella",
+    "transfer.files": "File",
+    "transfer.result": "Risultato",
+    "transfer.confirm": "Continua",
+    "transfer.copy_paths": "Copia percorsi",
+    "transfer.complete": "Fine",
+    "transfer.choose_files": "File: 1–100",
+    "transfer.too_large": "Il file non deve superare 1073741824 byte",
+    "transfer.uploading": "Carica · {name}",
+    "transfer.file_lines": "File (uno per riga)"
   }
 }

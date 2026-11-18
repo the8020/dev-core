@@ -25,6 +25,7 @@ import layout from "./layouts/main.json" with { type: "json" };
 import activationLayout from "./layouts/activation.json" with { type: "json" };
 import terminalAssets from "../../terminals/assets.json" with { type: "json" };
 import { type ConflictPackage, resolveConflicts } from "./conflicts.ts";
+import { terminalUploads, transferDialog } from "./transfers.ts";
 import {
   type ActivationPackagePreview,
   changeLabel,
@@ -160,6 +161,7 @@ export default async function developmentTest(): Promise<void> {
       actions: actions.filter((action) => settingsActions.includes(action.id)),
       customElements: [{
         id: "sandbox-console",
+        channel: terminalUploads(sandboxId),
         module: packageAssetURL("the8020/dev-core", terminalAssets.module),
         styles: terminalAssets.styles.map((path) =>
           packageAssetURL("the8020/dev-core", path)
@@ -171,7 +173,9 @@ export default async function developmentTest(): Promise<void> {
               (await currentLocalization()?.bundle("the8020/dev-core"))
                 ?.texts ?? {},
             ).filter(([key]) =>
-              key.startsWith("frontend.") || key.startsWith("console.")
+              key.startsWith("frontend.") ||
+              key.startsWith("console.") ||
+              key.startsWith("transfer.")
             ),
           ),
           ...consoleConfiguration(sandboxId, running),
@@ -186,6 +190,18 @@ export default async function developmentTest(): Promise<void> {
     });
     const action = event.action;
     if (event.action === BACK_EVENT) return;
+    if (
+      running &&
+      (event.action === "upload-files" || event.action === "download-files")
+    ) {
+      await presentModal(() =>
+        transferDialog(
+          sandboxId,
+          event.action === "upload-files" ? "upload" : "download",
+        )
+      );
+      continue;
+    }
     if (event.action === "change") continue;
     if (event.action === "refresh") {
       terminalRefresh++;

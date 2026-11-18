@@ -257,6 +257,18 @@
     "files.folder": "Folder",
     "files.file": "Fail",
     "files.runtime": "SDK masa jalan · baca sahaja",
-    "layout.files": "Fail"
+    "layout.files": "Fail",
+    "transfer.upload": "Muat naik fail",
+    "transfer.download": "Muat turun fail",
+    "transfer.folder": "Folder",
+    "transfer.files": "Fail",
+    "transfer.result": "Hasil",
+    "transfer.confirm": "Teruskan",
+    "transfer.copy_paths": "Salin laluan",
+    "transfer.complete": "Selesai",
+    "transfer.choose_files": "Fail: 1–100",
+    "transfer.too_large": "Fail tidak boleh melebihi 1073741824 bait",
+    "transfer.uploading": "Muat naik · {name}",
+    "transfer.file_lines": "Fail (satu setiap baris)"
   }
 }

@@ -257,6 +257,18 @@
     "files.folder": "Pasta",
     "files.file": "Ficheiro",
     "files.runtime": "SDK do runtime · só de leitura",
-    "layout.files": "Ficheiros"
+    "layout.files": "Ficheiros",
+    "transfer.upload": "Carregar ficheiros",
+    "transfer.download": "Transferir ficheiros",
+    "transfer.folder": "Pasta",
+    "transfer.files": "Ficheiros",
+    "transfer.result": "Resultado",
+    "transfer.confirm": "Continuar",
+    "transfer.copy_paths": "Copiar caminhos",
+    "transfer.complete": "Concluir",
+    "transfer.choose_files": "Ficheiros: 1–100",
+    "transfer.too_large": "O ficheiro não deve exceder 1073741824 bytes",
+    "transfer.uploading": "Carregar · {name}",
+    "transfer.file_lines": "Ficheiros (um por linha)"
   }
 }

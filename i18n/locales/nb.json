@@ -257,6 +257,18 @@
     "files.folder": "Mappe",
     "files.file": "Fil",
     "files.runtime": "Kjøretids-SDK · skrivebeskyttet",
-    "layout.files": "Filer"
+    "layout.files": "Filer",
+    "transfer.upload": "Last opp filer",
+    "transfer.download": "Last ned filer",
+    "transfer.folder": "Mappe",
+    "transfer.files": "Filer",
+    "transfer.result": "Resultat",
+    "transfer.confirm": "Fortsett",
+    "transfer.copy_paths": "Kopier stier",
+    "transfer.complete": "Ferdig",
+    "transfer.choose_files": "Filer: 1–100",
+    "transfer.too_large": "Filen må ikke overstige 1073741824 byte",
+    "transfer.uploading": "Last opp · {name}",
+    "transfer.file_lines": "Filer (én per linje)"
   }
 }

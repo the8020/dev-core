@@ -257,6 +257,18 @@
     "files.folder": "Ordner",
     "files.file": "Datei",
     "files.runtime": "Laufzeit-SDK · schreibgeschützt",
-    "layout.files": "Dateien"
+    "layout.files": "Dateien",
+    "transfer.upload": "Dateien hochladen",
+    "transfer.download": "Dateien herunterladen",
+    "transfer.folder": "Ordner",
+    "transfer.files": "Dateien",
+    "transfer.result": "Ergebnis",
+    "transfer.confirm": "Weiter",
+    "transfer.copy_paths": "Pfade kopieren",
+    "transfer.complete": "Fertig",
+    "transfer.choose_files": "Dateien: 1–100",
+    "transfer.too_large": "Die Datei darf 1073741824 Bytes nicht überschreiten",
+    "transfer.uploading": "Hochladen · {name}",
+    "transfer.file_lines": "Dateien (eine pro Zeile)"
   }
 }

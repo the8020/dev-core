@@ -257,6 +257,18 @@
     "files.folder": "資料夾",
     "files.file": "檔案",
     "files.runtime": "執行階段 SDK · 唯讀",
-    "layout.files": "檔案"
+    "layout.files": "檔案",
+    "transfer.upload": "上傳檔案",
+    "transfer.download": "下載檔案",
+    "transfer.folder": "資料夾",
+    "transfer.files": "檔案",
+    "transfer.result": "結果",
+    "transfer.confirm": "繼續",
+    "transfer.copy_paths": "複製路徑",
+    "transfer.complete": "完成",
+    "transfer.choose_files": "檔案: 1–100",
+    "transfer.too_large": "檔案不得超過 1073741824 位元組",
+    "transfer.uploading": "上傳 · {name}",
+    "transfer.file_lines": "檔案（每行一個）"
   }
 }

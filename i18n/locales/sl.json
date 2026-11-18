@@ -257,6 +257,18 @@
     "files.folder": "Mapa",
     "files.file": "Datoteka",
     "files.runtime": "SDK izvajalnega okolja · samo za branje",
-    "layout.files": "Datoteke"
+    "layout.files": "Datoteke",
+    "transfer.upload": "Nalaganje datotek",
+    "transfer.download": "Prenesite datoteke",
+    "transfer.folder": "Mapa",
+    "transfer.files": "Datoteke",
+    "transfer.result": "Rezultat",
+    "transfer.confirm": "Nadaljuj",
+    "transfer.copy_paths": "Kopiraj poti",
+    "transfer.complete": "Končano",
+    "transfer.choose_files": "Datoteke: 1–100",
+    "transfer.too_large": "Datoteka ne sme presegati 1073741824 bajtov",
+    "transfer.uploading": "Naloži · {name}",
+    "transfer.file_lines": "Datoteke (ena na vrstico)"
   }
 }

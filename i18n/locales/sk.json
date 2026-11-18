@@ -257,6 +257,18 @@
     "files.folder": "Priečinok",
     "files.file": "Súbor",
     "files.runtime": "Runtime SDK · iba na čítanie",
-    "layout.files": "Súbory"
+    "layout.files": "Súbory",
+    "transfer.upload": "Nahrať súbory",
+    "transfer.download": "Stiahnuť súbory",
+    "transfer.folder": "Priečinok",
+    "transfer.files": "Súbory",
+    "transfer.result": "Výsledok",
+    "transfer.confirm": "Pokračovať",
+    "transfer.copy_paths": "Kopírovať cesty",
+    "transfer.complete": "Hotovo",
+    "transfer.choose_files": "Súbory: 1–100",
+    "transfer.too_large": "Súbor nesmie byť väčší ako 1073741824 bajtov",
+    "transfer.uploading": "Nahrať · {name}",
+    "transfer.file_lines": "Súbory (jeden na riadok)"
   }
 }

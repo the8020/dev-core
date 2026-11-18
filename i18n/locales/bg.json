@@ -257,6 +257,18 @@
     "files.folder": "Папка",
     "files.file": "Файл",
     "files.runtime": "SDK на средата за изпълнение · само за четене",
-    "layout.files": "Файлове"
+    "layout.files": "Файлове",
+    "transfer.upload": "Качване на файлове",
+    "transfer.download": "Изтегляне на файлове",
+    "transfer.folder": "Папка",
+    "transfer.files": "Файлове",
+    "transfer.result": "Резултат",
+    "transfer.confirm": "Продължаване",
+    "transfer.copy_paths": "Копиране на пътищата",
+    "transfer.complete": "Готово",
+    "transfer.choose_files": "Файлове: 1–100",
+    "transfer.too_large": "Файлът не трябва да надвишава 1073741824 байта",
+    "transfer.uploading": "Качване · {name}",
+    "transfer.file_lines": "Файлове (по един на ред)"
   }
 }

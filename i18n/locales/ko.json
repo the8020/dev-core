@@ -257,6 +257,18 @@
     "files.folder": "폴더",
     "files.file": "파일",
     "files.runtime": "런타임 SDK · 읽기 전용",
-    "layout.files": "파일"
+    "layout.files": "파일",
+    "transfer.upload": "파일 업로드",
+    "transfer.download": "파일 다운로드",
+    "transfer.folder": "폴더",
+    "transfer.files": "파일",
+    "transfer.result": "결과",
+    "transfer.confirm": "계속",
+    "transfer.copy_paths": "경로 복사",
+    "transfer.complete": "완료",
+    "transfer.choose_files": "파일: 1–100",
+    "transfer.too_large": "파일은 1073741824바이트를 초과할 수 없습니다",
+    "transfer.uploading": "업로드 · {name}",
+    "transfer.file_lines": "파일 (한 줄에 하나)"
   }
 }

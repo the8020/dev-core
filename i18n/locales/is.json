@@ -257,6 +257,18 @@
     "files.folder": "Mappa",
     "files.file": "Skrá",
     "files.runtime": "Keyrslu-SDK · skrifvarið",
-    "layout.files": "Skrár"
+    "layout.files": "Skrár",
+    "transfer.upload": "Hladdu upp skrám",
+    "transfer.download": "Sækja skrár",
+    "transfer.folder": "Mappa",
+    "transfer.files": "Skrár",
+    "transfer.result": "Niðurstaða",
+    "transfer.confirm": "Halda áfram",
+    "transfer.copy_paths": "Afrita slóðir",
+    "transfer.complete": "Lokið",
+    "transfer.choose_files": "Skrár: 1–100",
+    "transfer.too_large": "Skráin má ekki vera stærri en 1073741824 bæti",
+    "transfer.uploading": "Hlaða upp · {name}",
+    "transfer.file_lines": "Skrár (ein í hverri línu)"
   }
 }

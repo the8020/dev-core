@@ -257,6 +257,18 @@
     "files.folder": "Mape",
     "files.file": "Fails",
     "files.runtime": "Izpildvides SDK · tikai lasāms",
-    "layout.files": "Faili"
+    "layout.files": "Faili",
+    "transfer.upload": "Augšupielādēt failus",
+    "transfer.download": "Lejupielādēt failus",
+    "transfer.folder": "Mape",
+    "transfer.files": "Faili",
+    "transfer.result": "Rezultāts",
+    "transfer.confirm": "Turpināt",
+    "transfer.copy_paths": "Kopēt ceļus",
+    "transfer.complete": "Gatavs",
+    "transfer.choose_files": "Faili: 1–100",
+    "transfer.too_large": "Fails nedrīkst pārsniegt 1073741824 baitus",
+    "transfer.uploading": "Augšupielādēt · {name}",
+    "transfer.file_lines": "Faili (viens katrā rindā)"
   }
 }

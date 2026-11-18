@@ -50,9 +50,16 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
 - The Development component uses the package's retained terminal service for
   create, list, select, rename, close, and explicit control takeover. Activity
   loss, navigation, reload, network loss, and disposal detach the view only.
-- Keep terminal selection, New, Rename, Refresh, fullscreen, Close, and status
-  in one toolbar, with status aligned right. These five buttons use accessible
-  icon-only labels and tooltips through the host's `renderText` icon renderer.
+- Keep terminal selection, New, Rename, Refresh, fullscreen, Upload, Download,
+  Close, and status in one toolbar, with status aligned right. These buttons use
+  accessible icon-only labels and tooltips through the host's `renderText` icon
+  renderer.
+- Clipboard images/files and dropped files upload to `/root/uploads` through the
+  component's screen channel, then paste shell-quoted paths using xterm's normal
+  paste API without submitting Enter. Keep ordinary text paste unchanged.
+  Capture the initiating terminal connection and never paste paths into a
+  replacement connection or after control is lost. Upload/Download open ordinary
+  UUI modals. File selection stays browser-local until confirmation.
 - Close is red and last among the toolbar icons. Contain terminal scrolling so
   reaching either scroll boundary does not scroll the surrounding page.
 - Fullscreen toggles UUI's generic `uui-content-fullscreen` class on the whole
@@ -103,6 +110,10 @@ Parent DOX: [dev-core/terminals DOX](../AGENTS.md).
 - Rebuild with `deno task build` after browser source or stylesheet changes.
 
 # Verification
+
+- The browser fixture sends clipboard images and dropped files through real UUI
+  channels and checks exact binary bytes and quoted terminal input without
+  Enter.
 
 - Run the package check, `deno task test:browser`, and sibling UUI
   programs/browser tests. The package browser fixture exercises real Chromium

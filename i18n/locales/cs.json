@@ -257,6 +257,18 @@
     "files.folder": "Složka",
     "files.file": "Soubor",
     "files.runtime": "Runtime SDK · pouze ke čtení",
-    "layout.files": "Soubory"
+    "layout.files": "Soubory",
+    "transfer.upload": "Nahrát soubory",
+    "transfer.download": "Stáhnout soubory",
+    "transfer.folder": "Složka",
+    "transfer.files": "Soubory",
+    "transfer.result": "Výsledek",
+    "transfer.confirm": "Pokračovat",
+    "transfer.copy_paths": "Kopírovat cesty",
+    "transfer.complete": "Hotovo",
+    "transfer.choose_files": "Soubory: 1–100",
+    "transfer.too_large": "Soubor nesmí být větší než 1073741824 bajtů",
+    "transfer.uploading": "Nahrát · {name}",
+    "transfer.file_lines": "Soubory (jeden na řádek)"
   }
 }

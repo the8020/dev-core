@@ -257,6 +257,18 @@
     "files.folder": "Тека",
     "files.file": "Файл",
     "files.runtime": "SDK середовища виконання · лише читання",
-    "layout.files": "Файли"
+    "layout.files": "Файли",
+    "transfer.upload": "Завантажувати файли",
+    "transfer.download": "Завантажити файли",
+    "transfer.folder": "Папка",
+    "transfer.files": "Файли",
+    "transfer.result": "Результат",
+    "transfer.confirm": "Продовжити",
+    "transfer.copy_paths": "Копіювати шляхи",
+    "transfer.complete": "Готово",
+    "transfer.choose_files": "Файли: 1–100",
+    "transfer.too_large": "Максимальний розмір файла в байтах: 1073741824",
+    "transfer.uploading": "Вивантажити · {name}",
+    "transfer.file_lines": "Файли (по одному в рядку)"
   }
 }

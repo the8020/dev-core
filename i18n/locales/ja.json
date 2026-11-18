@@ -257,6 +257,18 @@
     "files.folder": "フォルダー",
     "files.file": "ファイル",
     "files.runtime": "ランタイム SDK · 読み取り専用",
-    "layout.files": "ファイル"
+    "layout.files": "ファイル",
+    "transfer.upload": "ファイルをアップロード",
+    "transfer.download": "ファイルをダウンロードする",
+    "transfer.folder": "フォルダー",
+    "transfer.files": "ファイル",
+    "transfer.result": "結果",
+    "transfer.confirm": "続行",
+    "transfer.copy_paths": "パスをコピー",
+    "transfer.complete": "完了",
+    "transfer.choose_files": "ファイル: 1–100",
+    "transfer.too_large": "ファイルは 1073741824 バイト以下にしてください",
+    "transfer.uploading": "アップロード · {name}",
+    "transfer.file_lines": "ファイル（1行に1つ）"
   }
 }

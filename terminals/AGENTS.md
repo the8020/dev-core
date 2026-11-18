@@ -22,6 +22,16 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 
 # Local Contracts
 
+- File transfers use UUI screen byte streams and a separate short-lived raw
+  sandbox process through the existing terminal SDK. UUI 0.10.9 or newer is
+  required for the upload field's channel binding. `transfer_files.ts` runs
+  inside the user's sandbox; never interpret file bytes in their interactive
+  terminal. Bound files to 1 GiB and browser batches to 100 files, stream with
+  backpressure, and close the helper on completion, cancellation, or screen
+  loss. Uploads stage in the destination and publish complete files without
+  overwrite; collisions receive numbered names. Downloads accept regular files
+  and require a complete response. Keep filesystem authority inside the sandbox.
+
 - Keep xterm browser and headless pinned together at 6.0.0. State transfer
   preserves parser continuation, both buffers, modes, Unicode, links, palette,
   and cursor without replaying historical terminal output. Changes to private
@@ -146,6 +156,11 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   console and SSH semantics. Phase 2 storage work remains separate and gated.
 
 # Verification
+
+- `transfers_test.ts` checks split binary framing, filename validation, shell
+  quoting, collision preservation, and cleanup after incomplete uploads. Qualify
+  uploads/downloads in an installed development sandbox, including byte-exact
+  binary/empty files and cancellation cleanup.
 
 - Keep local checks small and sequential. Run native/browser performance and
   multi-node qualification in a separate environment with CPU, memory, and

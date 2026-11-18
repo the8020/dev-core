@@ -257,6 +257,18 @@
     "files.folder": "Carpeta",
     "files.file": "Fitxer",
     "files.runtime": "SDK de l'entorn d'execució · només lectura",
-    "layout.files": "Fitxers"
+    "layout.files": "Fitxers",
+    "transfer.upload": "Puja fitxers",
+    "transfer.download": "Baixa els fitxers",
+    "transfer.folder": "Carpeta",
+    "transfer.files": "Fitxers",
+    "transfer.result": "Resultat",
+    "transfer.confirm": "Continua",
+    "transfer.copy_paths": "Copia els camins",
+    "transfer.complete": "Fet",
+    "transfer.choose_files": "Fitxers: 1–100",
+    "transfer.too_large": "El fitxer no ha de superar 1073741824 bytes",
+    "transfer.uploading": "Puja · {name}",
+    "transfer.file_lines": "Fitxers (un per línia)"
   }
 }

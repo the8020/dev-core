@@ -257,6 +257,18 @@
     "files.folder": "Folder",
     "files.file": "File",
     "files.runtime": "Runtime SDK · read-only",
-    "layout.files": "Files"
+    "layout.files": "Files",
+    "transfer.upload": "Upload files",
+    "transfer.download": "Download files",
+    "transfer.folder": "Folder",
+    "transfer.files": "Files",
+    "transfer.result": "Result",
+    "transfer.confirm": "Continue",
+    "transfer.copy_paths": "Copy paths",
+    "transfer.complete": "Done",
+    "transfer.choose_files": "Files: 1–100",
+    "transfer.too_large": "File must not exceed 1073741824 bytes",
+    "transfer.uploading": "Upload · {name}",
+    "transfer.file_lines": "Files (one per line)"
   }
 }

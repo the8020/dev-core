@@ -1,4 +1,10 @@
 import { assertEquals } from "@std/assert";
+import {
+  defaultConfiguration,
+  Localization,
+  withLocalization,
+} from "/p/the8020/i18n/mod.ts";
+import { TransferReader } from "./transfer_protocol.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
 import type {
   RequestMetadata,
@@ -12,6 +18,7 @@ import type {
 import { installContextProvider } from "../../kernel/defaults/config/runtime/deno/context/runtime.ts";
 import {
   callScreen,
+  Channel,
   Model,
   packageAssetURL,
   presentPage,
@@ -37,6 +44,18 @@ export interface Browser {
 
 /** Actual UUI/Chromium and HTTP/WebSocket protocol; physical PTYs are deterministic doubles. */
 export default async function fixture(temporaryRoot: string) {
+  const localization = new Localization(
+    "en",
+    defaultConfiguration,
+    async (packageId, chain) => ({
+      package: packageId,
+      language: chain[0]!,
+      texts: (await import(`/p/${packageId}/i18n/locales/en.json`, {
+        with: { type: "json" },
+      })).default.texts,
+    }),
+  );
+  const uploads = new Map<string, number[]>();
   const published = `${temporaryRoot}/packages/the8020/dev-core/public`;
   await Deno.mkdir(published, { recursive: true });
   const browserEntry = `${temporaryRoot}/terminal-browser-fixture.ts`;
@@ -324,6 +343,22 @@ export default async function fixture(temporaryRoot: string) {
     async run() {
       let refresh = 0;
       while (true) {
+        const channel = new Channel();
+        channel.subscribe("upload", async (_id, source) => {
+          const reply = channel.capture();
+          const reader = new TransferReader(
+            source as ReadableStream<Uint8Array>,
+          );
+          const metadata = await reader.header();
+          const bytes: number[] = [];
+          for await (const chunk of reader.bytes(Number(metadata.size))) {
+            bytes.push(...chunk);
+          }
+          if (await reader.chunk()) throw new Error("Unexpected upload bytes");
+          const path = `/root/uploads/${metadata.name}`;
+          uploads.set(path, bytes);
+          reply.send("uploaded", path);
+        });
         const event = await callScreen({
           id: "retained-terminal-fixture",
           title: "Development terminals",
@@ -331,6 +366,7 @@ export default async function fixture(temporaryRoot: string) {
           model: screen,
           customElements: [{
             id: "terminal",
+            channel,
             module: packageAssetURL("the8020/dev-core", "terminal.js"),
             styles: [packageAssetURL("the8020/dev-core", "terminal.css")],
             config: { ...config, refresh },
@@ -441,10 +477,14 @@ export default async function fixture(temporaryRoot: string) {
           void contexts.run(
             meta,
             () =>
-              service.connectWebSocket(logical, {
-                meta,
-                signal: incoming.signal,
-              }, adapter),
+              withLocalization(
+                localization,
+                () =>
+                  service.connectWebSocket(logical, {
+                    meta,
+                    signal: incoming.signal,
+                  }, adapter),
+              ),
           ).then((response) => {
             if (!response.ok) {
               adapter.close(1008, "Terminal connection rejected");
@@ -458,7 +498,11 @@ export default async function fixture(temporaryRoot: string) {
       }
       return await contexts.run(
         meta,
-        () => service.fetch(logical, { meta, signal: request.signal }),
+        () =>
+          withLocalization(
+            localization,
+            () => service.fetch(logical, { meta, signal: request.signal }),
+          ),
       );
     },
     async verify(page: Browser, openPage: () => Promise<Browser>) {
@@ -961,7 +1005,7 @@ export default async function fixture(temporaryRoot: string) {
         await page.evaluate(`(() => {
         const bar = document.querySelector('.sandbox-console-toolbar');
         return bar.contains(document.querySelector('.sandbox-console-status')) &&
-          ['new','rename','close','refresh','fullscreen'].every(action => {
+          ['new','rename','close','refresh','fullscreen','upload','download'].every(action => {
             const button = bar.querySelector('[data-terminal-action=' + action + ']');
             const icon = button.querySelector('.material-icon');
             return button.textContent.trim() === '' && button.title && button.getAttribute('aria-label') && icon &&
@@ -1115,6 +1159,35 @@ export default async function fixture(temporaryRoot: string) {
           ),
         "Unicode bracketed paste",
       );
+      for (const kind of ["paste", "drop"]) {
+        const before = textInput(native);
+        await page.evaluate(`(() => {
+          const data = new DataTransfer();
+          data.items.add(new File([new Uint8Array([0,255,13,10,27])], '${
+          kind === "paste" ? "image.png" : "dropped file.bin"
+        }', { type: '${
+          kind === "paste" ? "image/png" : "application/octet-stream"
+        }' }));
+          const target = document.querySelector('.xterm-helper-textarea');
+          target.dispatchEvent(${
+          kind === "paste"
+            ? "new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true })"
+            : "new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true })"
+        });
+        })()`);
+        const path = `/root/uploads/${
+          kind === "paste" ? "clipboard-image.png" : "dropped file.bin"
+        }`;
+        await until(
+          () => textInput(native).includes(path),
+          `${kind} uploaded path`,
+        );
+        assertEquals(uploads.get(path), [0, 255, 13, 10, 27]);
+        assertEquals(
+          textInput(native).slice(before.length),
+          `\u001b[200~'${path}'\u001b[201~`,
+        );
+      }
       const beforeOversized = textInput(native);
       await page.evaluate(`(() => {
         const data = new DataTransfer();

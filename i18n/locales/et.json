@@ -257,6 +257,18 @@
     "files.folder": "Kaust",
     "files.file": "Fail",
     "files.runtime": "Käituskeskkonna SDK · kirjutuskaitstud",
-    "layout.files": "Failid"
+    "layout.files": "Failid",
+    "transfer.upload": "Failide üleslaadimine",
+    "transfer.download": "Laadige alla failid",
+    "transfer.folder": "Kaust",
+    "transfer.files": "Failid",
+    "transfer.result": "Tulemus",
+    "transfer.confirm": "Jätka",
+    "transfer.copy_paths": "Kopeeri teed",
+    "transfer.complete": "Valmis",
+    "transfer.choose_files": "Failid: 1–100",
+    "transfer.too_large": "Fail ei tohi ületada 1073741824 baiti",
+    "transfer.uploading": "Laadi üles · {name}",
+    "transfer.file_lines": "Failid (üks rea kohta)"
   }
 }

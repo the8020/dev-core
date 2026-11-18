@@ -11,6 +11,14 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 
 # Local Contracts
 
+- Terminal Upload and Download open ordinary modal screens with files and an
+  absolute sandbox folder, initially `/root/uploads`. Upload selection supports
+  multiple local files; download names use one filename per line relative to the
+  folder. Confirmation starts streaming over UUI's existing screen channels;
+  downloads use its native browser-save facility. Show completion or failure
+  with completed paths, and offer Copy paths after uploads. Closing the modal
+  cancels its pending transfers; completed files remain.
+
 - Changed-package activation, refresh, and conflict-resolution entry actions
   live in the packages toolbar. Changed-file refresh and selected conflict-file
   operations live in their file-list toolbars; Save resolution stays with the

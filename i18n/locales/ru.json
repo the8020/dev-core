@@ -257,6 +257,18 @@
     "files.folder": "Папка",
     "files.file": "Файл",
     "files.runtime": "SDK среды выполнения · только чтение",
-    "layout.files": "Файлы"
+    "layout.files": "Файлы",
+    "transfer.upload": "Загрузить файлы",
+    "transfer.download": "Скачать файлы",
+    "transfer.folder": "Папка",
+    "transfer.files": "Файлы",
+    "transfer.result": "Результат",
+    "transfer.confirm": "Продолжить",
+    "transfer.copy_paths": "Копировать пути",
+    "transfer.complete": "Готово",
+    "transfer.choose_files": "Файлы: 1–100",
+    "transfer.too_large": "Максимальный размер файла в байтах: 1073741824",
+    "transfer.uploading": "Загрузить · {name}",
+    "transfer.file_lines": "Файлы (по одному в строке)"
   }
 }

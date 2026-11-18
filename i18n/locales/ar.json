@@ -257,6 +257,18 @@
     "files.folder": "المجلد",
     "files.file": "الملف",
     "files.runtime": "SDK التشغيل · للقراءة فقط",
-    "layout.files": "الملفات"
+    "layout.files": "الملفات",
+    "transfer.upload": "تحميل الملفات",
+    "transfer.download": "تنزيل الملفات",
+    "transfer.folder": "مجلد",
+    "transfer.files": "ملفات",
+    "transfer.result": "النتيجة",
+    "transfer.confirm": "متابعة",
+    "transfer.copy_paths": "نسخ المسارات",
+    "transfer.complete": "تم",
+    "transfer.choose_files": "ملفات: 1–100",
+    "transfer.too_large": "يجب ألا يتجاوز حجم الملف 1073741824 بايت",
+    "transfer.uploading": "رفع · {name}",
+    "transfer.file_lines": "الملفات (ملف في كل سطر)"
   }
 }

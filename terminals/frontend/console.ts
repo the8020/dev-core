@@ -1,6 +1,8 @@
 import { setTexts, t } from "/p/the8020/dev-core/i18n/browser.ts";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
+import { droppedFiles, sendFiles, uploadPicker } from "./transfers.ts";
+import { shellPaths } from "../transfer_protocol.ts";
 import type {
   CustomElementContext,
   CustomElementInstance,
@@ -62,10 +64,13 @@ class RequestError extends Error {
 }
 
 export default function mount(
-  { host, config, signal, renderText }: CustomElementContext,
+  context: CustomElementContext,
 ): CustomElementInstance {
+  const { host, config, signal, renderText } = context;
   setTexts(config.texts);
+  if (config.transferPicker) return uploadPicker(context);
   const instance = new RetainedConsole(config, renderText);
+  instance.transfers(context);
   host.append(instance.element);
   signal.addEventListener("abort", () => instance.dispose(), { once: true });
   return instance;
@@ -130,6 +135,74 @@ class RetainedConsole implements CustomElementInstance {
   #connectEpoch = 0;
   #display: Promise<void> = Promise.resolve();
   readonly #displayWrites = new Set<Promise<void>>();
+
+  transfers(context: CustomElementContext): void {
+    let uploading = false;
+    let paths: string[] = [];
+    context.channel.subscribe("uploaded", (_id, path) => {
+      if (uploading && typeof path === "string") paths.push(path);
+    });
+    const receive = async (files: File[]) => {
+      const connection = this.#connection;
+      if (
+        uploading || !connection?.ready || this.#terminal.options.disableStdin
+      ) return;
+      uploading = true;
+      paths = [];
+      let result = t("transfer.complete");
+      const notice = (value: string) => {
+        this.#status.textContent = this.#status.title = value;
+      };
+      try {
+        await sendFiles(
+          context,
+          files,
+          (name) => notice(t("transfer.uploading", { name })),
+        );
+      } catch (error) {
+        result = errorMessage(error);
+      } finally {
+        if (
+          paths.length &&
+          this.#connection === connection && connection.ready &&
+          !this.#terminal.options.disableStdin
+        ) {
+          this.#terminal.paste(shellPaths(paths));
+          this.#terminal.focus();
+        }
+        notice(`${result}${paths.length ? `: ${paths.join(" ")}` : ""}`);
+        uploading = false;
+      }
+    };
+    this.#viewport.addEventListener("paste", (event) => {
+      if (!event.clipboardData?.files.length) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      void receive(droppedFiles(event.clipboardData, true));
+    }, { capture: true, signal: this.#lifetime.signal });
+    this.#viewport.addEventListener("dragover", (event) => {
+      if (!event.dataTransfer?.types.includes("Files")) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "copy";
+    }, { signal: this.#lifetime.signal });
+    this.#viewport.addEventListener("drop", (event) => {
+      if (!event.dataTransfer?.types.includes("Files")) return;
+      event.preventDefault();
+      event.stopPropagation();
+      void receive(droppedFiles(event.dataTransfer));
+    }, { signal: this.#lifetime.signal });
+    for (const action of ["upload", "download"]) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.dataset.terminalAction = action;
+      button.title = button.ariaLabel = t(`transfer.${action}`);
+      this.renderText(button, `[[icon=${action}]]`);
+      button.addEventListener("click", () => context.send(`${action}-files`));
+      this.element.querySelector('[data-terminal-action="close"]')!.before(
+        button,
+      );
+    }
+  }
 
   constructor(
     config: Record<string, unknown>,
