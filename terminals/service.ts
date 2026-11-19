@@ -341,7 +341,7 @@ export function defineTerminalService(
   service.websocket("/connect", async ({ meta, socket }) => {
     const entry = await owned(meta);
     if (socket.protocol !== TERMINAL_PROTOCOL) {
-      socket.close(1002, "Unsupported terminal protocol");
+      socket.close(1002, "console.unsupported_terminal_protocol");
       return;
     }
     const first = await socket.receive();
@@ -349,7 +349,7 @@ export function defineTerminalService(
       first.type !== "message" || typeof first.data !== "string" ||
       first.data.length > 4096
     ) {
-      socket.close(1002, "Terminal attachment is required");
+      socket.close(1002, "console.terminal_attachment_required");
       return;
     }
     const input = z.object({
@@ -371,7 +371,7 @@ export function defineTerminalService(
           busy: error instanceof TerminalBusyError,
         }),
       );
-      socket.close(1008, "Terminal control is unavailable");
+      socket.close(1008, "console.terminal_control_unavailable");
       return;
     }
     try {

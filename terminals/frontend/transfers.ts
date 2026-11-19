@@ -1,3 +1,4 @@
+import { DevelopmentError } from "../../i18n/errors.ts";
 import type {
   CustomElementContext,
   CustomElementInstance,
@@ -61,7 +62,12 @@ export function uploadPicker(
         context.send("transferred");
       } catch (error) {
         if (!context.signal.aborted) {
-          context.send("transfer-failed", String(error));
+          context.send(
+            "transfer-failed",
+            error instanceof DevelopmentError
+              ? t(error.textKey)
+              : String(error),
+          );
         }
       }
     });

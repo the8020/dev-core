@@ -184,7 +184,13 @@ export class LanguageServer {
         }
       }
     } else {
-      if (source.content === undefined) throw new Error(source.notice);
+      if (source.content === undefined) {
+        throw new Error(
+          source.notice
+            ? await resolveMessage(messageSymbol(source.notice))
+            : undefined,
+        );
+      }
       // LSP open documents also resolve imports when the SDK is absent on disk.
       await this.open(
         sourceURI(`@runtime/${path}`),

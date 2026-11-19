@@ -27,13 +27,14 @@ Parent DOX: [dev-core](../AGENTS.md).
   `categories.<path>.title`, and `declarations.<file-stem>.<key>`.
 
 - Authored UI errors and validation use this package's text symbols. Shared
-  asynchronous APIs prepare their catalog in the current language scope; unscoped
-  command-line calls keep English source fallbacks. Native/bootstrap diagnostics,
-  protocol identifiers, and raw source/log text remain unchanged.
+  asynchronous APIs prepare their catalog in the current language scope;
+  unscoped command-line calls keep English source fallbacks. Native/bootstrap
+  diagnostics, protocol identifiers, and raw source/log text remain unchanged.
 
 - `errors.ts` carries catalog keys with English diagnostics across standalone
-  sandbox file-reader/transfer boundaries. Retained terminal control notices
-  carry keys for each browser to resolve in its own language.
+  sandbox file-reader and file-transfer boundaries. Retained terminal control
+  notices carry keys, including bounded WebSocket close reasons, for each
+  browser to resolve in its own language.
 
 # Work Guidance
 

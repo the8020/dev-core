@@ -1,3 +1,4 @@
+import { DevelopmentError } from "../../i18n/errors.ts";
 import { setTexts, t } from "/p/the8020/dev-core/i18n/browser.ts";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
@@ -674,7 +675,7 @@ class RetainedConsole implements CustomElementInstance {
         this.#detach();
         if (stopped) {
           this.#setStatus(
-            event.reason || t("console.terminal_disconnected"),
+            t(event.reason || "console.terminal_disconnected"),
             "disconnected",
           );
         } else this.#retry();
@@ -1039,7 +1040,7 @@ class RetainedConsole implements CustomElementInstance {
       connection.input.length = 0;
       connection.inputBytes = 0;
       connection.inFlight.length = 0;
-      connection.socket.close(1000, t("console.terminal_view_detached"));
+      connection.socket.close(1000, "console.terminal_view_detached");
     }
     this.#terminal.options.disableStdin = true;
   }
@@ -1180,7 +1181,11 @@ function save(key: string, value: string): void {
   } catch { /* Selection still works when browser storage is disabled. */ }
 }
 function errorMessage(error: unknown): string {
-  return (error instanceof Error ? error.message : String(error)).slice(0, 500);
+  return (error instanceof DevelopmentError
+    ? t(error.textKey)
+    : error instanceof Error
+    ? error.message
+    : String(error)).slice(0, 500);
 }
 async function requireOK(response: Response): Promise<void> {
   if (response.ok) return;

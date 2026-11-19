@@ -182,8 +182,7 @@ export default async function developmentTest(): Promise<void> {
                 ?.texts ?? {},
             ).filter(([key]) =>
               key.startsWith("errors.") || key.startsWith("frontend.") ||
-              key.startsWith("console.") ||
-              key.startsWith("transfer.")
+              key.startsWith("console.") || key.startsWith("transfer.")
             ),
           ),
           ...consoleConfiguration(sandboxId, running),

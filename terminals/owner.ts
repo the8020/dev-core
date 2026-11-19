@@ -84,8 +84,8 @@ export class TerminalOwner {
       this.#view?.close(
         1000,
         this.#closeRequested
-          ? "Terminal closed"
-          : "Terminal display unavailable",
+          ? "console.terminal_closed"
+          : "errors.terminal_display_owner_is_unavailable",
       );
       if (this.#closeRequested) await this.#destroy();
       await drain;
@@ -95,7 +95,7 @@ export class TerminalOwner {
         this.#stop.abort();
         this.#advanced.resolve();
         this.#nativeView?.close();
-        this.#view?.close(1000, "Terminal detached");
+        this.#view?.close(1000, "console.terminal_view_detached");
         await drain;
         await nativeViews;
         await this.#views;
@@ -182,7 +182,7 @@ export class TerminalOwner {
             textKey: "console.control_transferred",
             busy: true,
           }));
-          this.#view?.close(1000, "Terminal control transferred");
+          this.#view?.close(1000, "console.control_transferred");
           this.#nativeView?.close();
           const display = new NativeTerminalDisplay(this.engine);
           try {
@@ -249,7 +249,7 @@ export class TerminalOwner {
             "errors.this_terminal_is_controlled_in_another_window",
           );
         }
-        previous.close(1000, "Terminal control transferred");
+        previous.close(1000, "console.control_transferred");
         await this.terminals.detach(previous.attachment.attachmentId);
       }
       const attachment = await this.terminals.attach(
@@ -279,7 +279,7 @@ export class TerminalOwner {
   }
 
   async detach(view: TerminalView): Promise<void> {
-    view.close(1000, "Terminal detached");
+    view.close(1000, "console.terminal_view_detached");
     await this.terminals.detach(view.attachment.attachmentId);
     if (this.#view === view) this.#view = undefined;
   }
