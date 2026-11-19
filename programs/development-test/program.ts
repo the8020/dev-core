@@ -1,3 +1,5 @@
+import { localizedText as resolveMessage } from "/p/the8020/i18n/mod.ts";
+import { msg as messageSymbol } from "/p/the8020/dev-core/i18n/messages.ts";
 import { currentLocalization } from "/p/the8020/i18n/mod.ts";
 import { text as localizedText } from "/p/the8020/i18n/mod.ts";
 import { msg } from "/p/the8020/dev-core/i18n/messages.ts";
@@ -100,7 +102,13 @@ const ActivationScreen = z.object({
 });
 
 export default async function developmentTest(): Promise<void> {
-  if (!context.authenticated) throw new Error("authenticated user is required");
+  if (!context.authenticated) {
+    throw new Error(
+      await resolveMessage(
+        messageSymbol("errors.authenticated_user_is_required"),
+      ),
+    );
+  }
   if (!await allowed("the8020.dev-core.development.use", "")) return;
   const developmentUserId = context.username;
   let status = await startDevelopmentSandbox(developmentUserId);
@@ -173,7 +181,7 @@ export default async function developmentTest(): Promise<void> {
               (await currentLocalization()?.bundle("the8020/dev-core"))
                 ?.texts ?? {},
             ).filter(([key]) =>
-              key.startsWith("frontend.") ||
+              key.startsWith("errors.") || key.startsWith("frontend.") ||
               key.startsWith("console.") ||
               key.startsWith("transfer.")
             ),

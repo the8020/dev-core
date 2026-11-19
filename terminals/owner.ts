@@ -1,3 +1,4 @@
+import { DevelopmentError } from "../i18n/errors.ts";
 import {
   kernel,
   type TerminalAttachment,
@@ -23,7 +24,7 @@ import { NativeTerminalView } from "./native_view.ts";
 type NativeTerminals = typeof kernel.terminals;
 const encoder = new TextEncoder();
 
-export class TerminalBusyError extends Error {}
+export class TerminalBusyError extends DevelopmentError {}
 
 /** One package display owner for one physical PTY. */
 export class TerminalOwner {
@@ -178,6 +179,7 @@ export class TerminalOwner {
           this.#view?.send(JSON.stringify({
             type: "error",
             message: "Terminal control transferred to another connection",
+            textKey: "console.control_transferred",
             busy: true,
           }));
           this.#view?.close(1000, "Terminal control transferred");
@@ -236,13 +238,15 @@ export class TerminalOwner {
   ): Promise<TerminalView> {
     const result = this.#views.then(async () => {
       if (this.#failure || this.#stop.signal.aborted) {
-        throw new Error("Terminal display owner is unavailable");
+        throw new DevelopmentError(
+          "errors.terminal_display_owner_is_unavailable",
+        );
       }
       const previous = this.#view;
       if (previous) {
         if (!previous.closed && previous.clientId !== clientId && !takeover) {
           throw new TerminalBusyError(
-            "This terminal is controlled in another window",
+            "errors.this_terminal_is_controlled_in_another_window",
           );
         }
         previous.close(1000, "Terminal control transferred");
@@ -256,7 +260,7 @@ export class TerminalOwner {
       ).catch((error) => {
         if (error instanceof TerminalControlBusyError) {
           throw new TerminalBusyError(
-            "This terminal is controlled by another connection",
+            "errors.this_terminal_is_controlled_by_another_connection",
           );
         }
         throw error;
@@ -264,7 +268,7 @@ export class TerminalOwner {
       this.#nativeView?.close();
       if (this.#stop.signal.aborted || socket.signal.aborted) {
         await this.terminals.detach(attachment.attachmentId);
-        throw new Error("Terminal attachment ended");
+        throw new DevelopmentError("errors.terminal_attachment_ended");
       }
       const view = new TerminalView(this, socket, clientId, attachment);
       this.#view = view;

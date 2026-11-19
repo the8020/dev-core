@@ -2,3 +2,4 @@ schema = 1
 uui = true
 description = "Code browser"
 entrypoint = "program.ts"
+shortcut = "CODE"

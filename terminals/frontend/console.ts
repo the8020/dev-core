@@ -685,7 +685,11 @@ class RetainedConsole implements CustomElementInstance {
       if (
         !(error instanceof RequestError) ||
         ![401, 403, 400].includes(error.status)
-      ) this.#retry(`${errorMessage(error)} Reconnecting…`);
+      ) {
+        this.#retry(
+          t("console.error_reconnecting", { error: errorMessage(error) }),
+        );
+      }
     } finally {
       if (epoch === this.#connectEpoch) this.#connecting = false;
     }
@@ -710,7 +714,9 @@ class RetainedConsole implements CustomElementInstance {
           connection.stopped = true;
           this.#takeover.hidden = message.busy !== true;
           this.#setStatus(
-            typeof message.message === "string"
+            typeof message.textKey === "string"
+              ? t(message.textKey)
+              : typeof message.message === "string"
               ? message.message.slice(0, 500)
               : t("console.terminal_is_unavailable"),
             "error",

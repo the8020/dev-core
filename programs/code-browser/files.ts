@@ -1,3 +1,4 @@
+import { DevelopmentError } from "../../i18n/errors.ts";
 export interface Entry {
   path: string;
   name: string;
@@ -56,12 +57,16 @@ export function sourceURI(path: string): string {
 export function sourcePath(uri: string): string {
   const url = new URL(uri);
   if (url.protocol !== "file:" || url.host || url.search || url.hash) {
-    throw new Error("This dependency is outside the browsable workspace.");
+    throw new DevelopmentError(
+      "errors.this_dependency_is_outside_the_browsable_workspace",
+    );
   }
   const path = decodeURIComponent(url.pathname);
   if (path.startsWith("/workspace/packages/")) return path.slice(20);
   if (path.startsWith("/opt/runtime/")) return "@runtime/" + path.slice(13);
-  throw new Error("This dependency is outside Packages and the runtime SDK.");
+  throw new DevelopmentError(
+    "errors.this_dependency_is_outside_packages_and_the_runtime_sdk",
+  );
 }
 
 const MAX_BYTES = 128 * 1024;
@@ -80,7 +85,7 @@ export async function searchSources(
   text: boolean,
 ): Promise<SearchResult> {
   if (!query.trim() || query.length > 1000) {
-    throw new Error("Enter 1–1,000 characters to search.");
+    throw new DevelopmentError("errors.enter_1_1_000_characters_to_search");
   }
   const rows: Location[] = [];
   let files = 0;
@@ -165,12 +170,14 @@ export async function readSource(root: string, path: string): Promise<Source> {
     [...path].some((char) =>
       char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127
     )
-  ) throw new Error("Choose a path inside Packages.");
+  ) throw new DevelopmentError("errors.choose_a_path_inside_packages");
   let target = await Deno.realPath(root);
   for (const part of parts) {
     target += "/" + part;
     if ((await Deno.lstat(target)).isSymlink) {
-      throw new Error("Symbolic links cannot be opened in the code browser.");
+      throw new DevelopmentError(
+        "errors.symbolic_links_cannot_be_opened_in_the_code_browser",
+      );
     }
   }
   const stat = await Deno.lstat(target);
@@ -181,8 +188,8 @@ export async function readSource(root: string, path: string): Promise<Source> {
       if (parts.length < 2 && entry.name.startsWith(".")) continue;
       if (!entry.isFile && !entry.isDirectory) continue;
       if (entries.length >= 1000) {
-        throw new Error(
-          "This folder has more than 1,000 entries. Use the terminal to browse it.",
+        throw new DevelopmentError(
+          "errors.this_folder_has_more_than_1_000_entries_use_the_terminal_to_browse_it",
         );
       }
       entries.push({
@@ -197,7 +204,9 @@ export async function readSource(root: string, path: string): Promise<Source> {
     );
     return { path, entries };
   }
-  if (!stat.isFile) throw new Error("Choose an ordinary source file.");
+  if (!stat.isFile) {
+    throw new DevelopmentError("errors.choose_an_ordinary_source_file");
+  }
   if (stat.size > MAX_BYTES) {
     return {
       path,
@@ -260,6 +269,7 @@ if (import.meta.main) {
     console.log(
       JSON.stringify({
         error: error instanceof Error ? error.message : String(error),
+        textKey: error instanceof DevelopmentError ? error.textKey : undefined,
       }),
     );
     Deno.exit(1);

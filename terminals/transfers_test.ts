@@ -80,3 +80,21 @@ Deno.test("transfer names reject traversal and quote paths without shell executi
     "'/root/uploads/a'\\''b $(id).png' '/root/uploads/b'",
   );
 });
+
+Deno.test("sandbox transfer errors retain their catalog key and English diagnostic", async () => {
+  const { DevelopmentError } = await import("../i18n/errors.ts");
+  const error = assertThrows(
+    () => filename("../bad"),
+    DevelopmentError,
+    "Invalid filename",
+  );
+  const reader = new TransferReader((async function* () {
+    yield header({ error: error.message, textKey: error.textKey });
+  })());
+  const received = await assertRejects(
+    () => reader.header(),
+    DevelopmentError,
+    "Invalid filename",
+  );
+  assertEquals(received.textKey, "errors.invalid_filename");
+});

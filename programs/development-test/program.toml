@@ -3,3 +3,4 @@ uui = true
 description = "Start, control, and open a browser console in your development sandbox"
 entrypoint = "program.ts"
 default_layout = "layouts/main.json"
+shortcut = "DEV"

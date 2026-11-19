@@ -1,3 +1,8 @@
+import {
+  localizedText as resolveMessage,
+  text as formatMessage,
+} from "/p/the8020/i18n/mod.ts";
+import { msg as messageSymbol } from "/p/the8020/dev-core/i18n/messages.ts";
 import { kernel } from "@the8020/kernel";
 import { readSource, sourceText, sourceURI } from "./files.ts";
 
@@ -31,14 +36,22 @@ export class Frames {
       }
       if (end < 0) {
         if (this.#bytes.length > 8192) {
-          throw new Error("Invalid language server header.");
+          throw new Error(
+            formatMessage(
+              messageSymbol("errors.invalid_language_server_header"),
+            ),
+          );
         }
         break;
       }
       const header = new TextDecoder().decode(this.#bytes.subarray(0, end));
       const size = Number(header.match(/^Content-Length: (\d+)\r?$/im)?.[1]);
       if (!Number.isSafeInteger(size) || size < 0 || size > 4 * 1024 * 1024) {
-        throw new Error("Language server response exceeds its limit.");
+        throw new Error(
+          formatMessage(
+            messageSymbol("errors.language_server_response_exceeds_its_limit"),
+          ),
+        );
       }
       if (this.#bytes.length < end + 4 + size) break;
       messages.push(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(
@@ -122,7 +135,14 @@ export class LanguageServer {
         started,
         new Promise((_, reject) => {
           const timer = setTimeout(
-            () => reject(new Error("Language server did not start.")),
+            () =>
+              reject(
+                new Error(
+                  formatMessage(
+                    messageSymbol("errors.language_server_did_not_start"),
+                  ),
+                ),
+              ),
             10000,
           );
           started.finally(() => clearTimeout(timer)).catch(() => {});
@@ -209,7 +229,13 @@ export class LanguageServer {
         }
       }
       if (batch.exited) {
-        throw new Error("Language server stopped. Refresh to reconnect.");
+        throw new Error(
+          await resolveMessage(
+            messageSymbol(
+              "errors.language_server_stopped_refresh_to_reconnect",
+            ),
+          ),
+        );
       }
     }
   }
@@ -236,7 +262,15 @@ export class LanguageServer {
       this.#pending.set(id, { resolve, reject });
       timer = setTimeout(
         () =>
-          reject(new Error("Language query timed out. Try again or Refresh.")),
+          reject(
+            new Error(
+              formatMessage(
+                messageSymbol(
+                  "errors.language_query_timed_out_try_again_or_refresh",
+                ),
+              ),
+            ),
+          ),
         30000,
       );
     });

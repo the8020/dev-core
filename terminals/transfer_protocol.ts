@@ -1,3 +1,4 @@
+import { DevelopmentError } from "../i18n/errors.ts";
 export const UPLOADS = "/root/uploads";
 export const MAX_FILE_BYTES = 1024 * 1024 * 1024;
 export const MAX_FILES = 100;
@@ -9,7 +10,7 @@ export function filename(value: unknown): string {
     typeof value !== "string" || !value.trim() || value.length > 255 ||
     value === "." || value === ".." || /[/\\]/.test(value) ||
     controls.test(value)
-  ) throw new Error("Invalid filename");
+  ) throw new DevelopmentError("errors.invalid_filename");
   return value;
 }
 
@@ -18,7 +19,9 @@ export function folder(value: unknown): string {
     typeof value !== "string" || !value.startsWith("/") ||
     value.length > 4096 || controls.test(value)
   ) {
-    throw new Error("Folder must be an absolute sandbox path");
+    throw new DevelopmentError(
+      "errors.folder_must_be_an_absolute_sandbox_path",
+    );
   }
   return value.replace(/\/+$/, "") || "/";
 }
@@ -49,13 +52,13 @@ export class TransferReader {
     while (true) {
       const chunk = await this.chunk();
       if (!chunk) {
-        throw new Error("Transfer ended before its response");
+        throw new DevelopmentError("errors.transfer_ended_before_its_response");
       }
       const end = chunk.indexOf(10);
       const part = end < 0 ? chunk : chunk.subarray(0, end);
       size += part.length;
       if (size > 16384) {
-        throw new Error("Transfer header is too large");
+        throw new DevelopmentError("errors.transfer_header_is_too_large");
       }
       parts.push(part);
       if (end < 0) continue;
@@ -68,9 +71,12 @@ export class TransferReader {
       }
       const value = JSON.parse(new TextDecoder().decode(bytes));
       if (!value || typeof value !== "object" || Array.isArray(value)) {
-        throw new Error("Invalid transfer header");
+        throw new DevelopmentError("errors.invalid_transfer_header");
       }
       if (typeof value.error === "string") {
+        if (typeof value.textKey === "string") {
+          throw new DevelopmentError(value.textKey);
+        }
         throw new Error(value.error);
       }
       return value;
@@ -78,12 +84,14 @@ export class TransferReader {
   }
   async *bytes(size: number): AsyncGenerator<Uint8Array> {
     if (!Number.isSafeInteger(size) || size < 0 || size > MAX_FILE_BYTES) {
-      throw new Error("File must not exceed 1 GiB");
+      throw new DevelopmentError("errors.file_must_not_exceed_1_gib");
     }
     while (size > 0) {
       const chunk = await this.chunk();
       if (!chunk) {
-        throw new Error("Transfer ended before the complete file");
+        throw new DevelopmentError(
+          "errors.transfer_ended_before_the_complete_file",
+        );
       }
       const take = Math.min(size, chunk.length);
       if (take < chunk.length) this.#pending = chunk.slice(take);

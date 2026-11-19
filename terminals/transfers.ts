@@ -1,3 +1,6 @@
+import { DevelopmentError } from "../i18n/errors.ts";
+import { localizedText as resolveMessage } from "/p/the8020/i18n/mod.ts";
+import { msg as messageSymbol } from "/p/the8020/dev-core/i18n/messages.ts";
 import { kernel } from "@the8020/kernel";
 import {
   filename,
@@ -81,14 +84,16 @@ export async function upload(
     }
     if (await input.chunk()) {
       throw new Error(
-        "Upload exceeds the declared size",
+        await resolveMessage(
+          messageSymbol("errors.upload_exceeds_the_declared_size"),
+        ),
       );
     }
     await child.write(header({ commit: true }));
     const result = await child.reader.header();
     if (typeof result.path !== "string") {
       throw new Error(
-        "Missing uploaded path",
+        await resolveMessage(messageSymbol("errors.missing_uploaded_path")),
       );
     }
     return result.path;
@@ -116,7 +121,9 @@ export async function* downloadFile(
     const size = Number(metadata.size);
     if (!Number.isSafeInteger(size) || size < 0 || size > MAX_FILE_BYTES) {
       throw new Error(
-        "File must not exceed 1 GiB",
+        await resolveMessage(
+          messageSymbol("errors.file_must_not_exceed_1_gib"),
+        ),
       );
     }
     for (let offset = 0; offset < size; offset += 65536) {
@@ -125,9 +132,14 @@ export async function* downloadFile(
     }
     if (!(await child.reader.header()).complete) {
       throw new Error(
-        "Download did not complete",
+        await resolveMessage(messageSymbol("errors.download_did_not_complete")),
       );
     }
+  } catch (error) {
+    if (error instanceof DevelopmentError) {
+      error.message = await resolveMessage(messageSymbol(error.textKey));
+    }
+    throw error;
   } finally {
     await child?.close();
   }

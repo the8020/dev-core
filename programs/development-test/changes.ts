@@ -1,3 +1,5 @@
+import { localizedText as resolveMessage } from "/p/the8020/i18n/mod.ts";
+import { msg as messageSymbol } from "/p/the8020/dev-core/i18n/messages.ts";
 import { text as localizedText } from "/p/the8020/i18n/mod.ts";
 import { msg } from "/p/the8020/dev-core/i18n/messages.ts";
 import { development } from "../../src/development.ts";
@@ -115,7 +117,13 @@ async function reviewFileChange(user: string, id: string, path: string) {
     if (refresh) {
       const preview = await previewPackage(user, id, path);
       const file = preview?.files.find((file) => file.path === path);
-      if (file && !file.diff) throw new Error("The file diff is unavailable.");
+      if (file && !file.diff) {
+        throw new Error(
+          await resolveMessage(
+            messageSymbol("errors.the_file_diff_is_unavailable"),
+          ),
+        );
+      }
       model.data.content = file?.diff?.text ?? "";
       notice = file
         ? file.diff?.notice ?? ""

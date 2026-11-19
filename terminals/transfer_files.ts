@@ -1,3 +1,4 @@
+import { DevelopmentError } from "../i18n/errors.ts";
 // Executed inside the authenticated developer's sandbox, never in a Worker.
 import {
   filename,
@@ -53,7 +54,7 @@ export async function receiveFile(
         if (!(error instanceof Deno.errors.AlreadyExists)) throw error;
       }
     }
-    throw new Error("Too many files with this name");
+    throw new DevelopmentError("errors.too_many_files_with_this_name");
   } finally {
     if (import.meta.main) {
       Deno.removeSignalListener("SIGTERM", terminate);
@@ -82,24 +83,24 @@ if (import.meta.main) {
       const source = async function* () {
         yield* input.bytes(Number(request.size));
         if (!(await input.header()).commit) {
-          throw new Error("Upload was not completed");
+          throw new DevelopmentError("errors.upload_was_not_completed");
         }
       };
       const path = await receiveFile(directory, name, source());
       await write(header({ path }));
     } else if (request.operation === "download") {
       if (!(await Deno.stat(`${directory}/${name}`)).isFile) {
-        throw new Error("Choose a regular file");
+        throw new DevelopmentError("errors.choose_a_regular_file");
       }
       const file = await Deno.open(`${directory}/${name}`, { read: true });
       try {
         const info = await file.stat();
         if (!info.isFile) {
-          throw new Error("Choose a regular file");
+          throw new DevelopmentError("errors.choose_a_regular_file");
         }
         await write(header({ size: info.size }));
         if (!(await input.header()).ready) {
-          throw new Error("Download was not accepted");
+          throw new DevelopmentError("errors.download_was_not_accepted");
         }
         let remaining = info.size;
         const buffer = new Uint8Array(65536);
@@ -109,7 +110,7 @@ if (import.meta.main) {
           while (read < count) {
             const size = await file.read(buffer.subarray(read, count));
             if (size === null) {
-              throw new Error("File changed during download");
+              throw new DevelopmentError("errors.file_changed_during_download");
             }
             read += size;
           }
@@ -117,18 +118,19 @@ if (import.meta.main) {
           remaining -= count;
           // Native terminal history is bounded; admit one file chunk at a time.
           if (!(await input.header()).ready) {
-            throw new Error("Download was cancelled");
+            throw new DevelopmentError("errors.download_was_cancelled");
           }
         }
         await write(header({ complete: true }));
       } finally {
         file.close();
       }
-    } else throw new Error("Invalid transfer operation");
+    } else throw new DevelopmentError("errors.invalid_transfer_operation");
   } catch (error) {
     await write(
       header({
         error: error instanceof Error ? error.message : String(error),
+        textKey: error instanceof DevelopmentError ? error.textKey : undefined,
       }),
     );
     Deno.exitCode = 1;

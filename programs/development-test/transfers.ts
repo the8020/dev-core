@@ -96,6 +96,7 @@ export async function transferDialog(
                       (await currentLocalization()?.bundle("the8020/dev-core"))
                         ?.texts ?? {},
                     ).filter(([key]) =>
+                      key.startsWith("errors.") ||
                       key.startsWith("frontend.") ||
                       key.startsWith("console.") ||
                       key.startsWith("transfer.")
