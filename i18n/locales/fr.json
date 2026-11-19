@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Le transfert a été terminé avant sa réponse",
     "errors.transfer_header_is_too_large": "L' en-tête de transfert est trop grand",
     "errors.invalid_transfer_header": "En-tête de transfert non valide",
-    "errors.transfer_ended_before_the_complete_file": "Le transfert a pris fin avant le fichier complet"
+    "errors.transfer_ended_before_the_complete_file": "Le transfert a pris fin avant le fichier complet",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminaux"
   }
 }

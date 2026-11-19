@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Ang paglipat ay natapos bago ang pagtugon nito",
     "errors.transfer_header_is_too_large": "Ang header ng paglipat ay masyadong malaki",
     "errors.invalid_transfer_header": "Invalid na header ng paglipat",
-    "errors.transfer_ended_before_the_complete_file": "Ang paglipat ay natapos bago ang kumpletong file"
+    "errors.transfer_ended_before_the_complete_file": "Ang paglipat ay natapos bago ang kumpletong file",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Mga terminal"
   }
 }

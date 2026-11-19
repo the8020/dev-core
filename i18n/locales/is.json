@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Flutningur var lokið áður en viðbrögð var svarað.",
     "errors.transfer_header_is_too_large": "Flutningsheader er of stórt.",
     "errors.invalid_transfer_header": "Ógildi flutningsheader",
-    "errors.transfer_ended_before_the_complete_file": "Flutningur lokið áður en skráin er fullkomin"
+    "errors.transfer_ended_before_the_complete_file": "Flutningur lokið áður en skráin er fullkomin",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Skjáhermar"
   }
 }

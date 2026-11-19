@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Transferencia terminada antes de su respuesta",
     "errors.transfer_header_is_too_large": "El encabezado de transferencia es demasiado grande",
     "errors.invalid_transfer_header": "Título de transferencia inválido",
-    "errors.transfer_ended_before_the_complete_file": "La transferencia terminó antes del archivo completo"
+    "errors.transfer_ended_before_the_complete_file": "La transferencia terminó antes del archivo completo",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminales"
   }
 }

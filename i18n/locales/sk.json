@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Prenos sa ukončil pred jeho odpoveďou",
     "errors.transfer_header_is_too_large": "Prenosová hlava je príliš veľká",
     "errors.invalid_transfer_header": "Nevalidný nadpis prevodov",
-    "errors.transfer_ended_before_the_complete_file": "Prenos skončil pred úplným súborom"
+    "errors.transfer_ended_before_the_complete_file": "Prenos skončil pred úplným súborom",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminály"
   }
 }

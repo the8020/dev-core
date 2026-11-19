@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "轉讓在回應之前結束",
     "errors.transfer_header_is_too_large": "傳輸頭頭太大了",
     "errors.invalid_transfer_header": "不有效的轉移標題",
-    "errors.transfer_ended_before_the_complete_file": "在完整檔案之前完成傳輸"
+    "errors.transfer_ended_before_the_complete_file": "在完整檔案之前完成傳輸",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "終端機"
   }
 }

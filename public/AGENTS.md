@@ -14,6 +14,9 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 
 # Local Contracts
 
+- The hand-authored `tuxee-view.js` and `tuxee-view.css` embed the desktop on
+  its own origin and release the viewer when the component becomes inactive.
+
 - UUI's authenticated generic asset handler exposes this directory to browsers.
   Keep backend source, configuration, credentials, and private data outside it.
 - `deno task build` produces content-hashed terminal files and updates

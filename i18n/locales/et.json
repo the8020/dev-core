@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Transfert lõpetati enne vastust",
     "errors.transfer_header_is_too_large": "Transfer headers on liiga suur",
     "errors.invalid_transfer_header": "Võltumatu üleandmise pealkiri",
-    "errors.transfer_ended_before_the_complete_file": "Transfer lõpetati enne täielikku faili"
+    "errors.transfer_ended_before_the_complete_file": "Transfer lõpetati enne täielikku faili",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminalid"
   }
 }

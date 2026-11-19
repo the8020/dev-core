@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Siirto päättyi ennen vastausta",
     "errors.transfer_header_is_too_large": "Siirtäjän otsikko on liian iso .",
     "errors.invalid_transfer_header": "Epävirhainen siirto- otsikko",
-    "errors.transfer_ended_before_the_complete_file": "Siirtäminen päättyi ennen täydellistä tiedostoa"
+    "errors.transfer_ended_before_the_complete_file": "Siirtäminen päättyi ennen täydellistä tiedostoa",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Päätteet"
   }
 }

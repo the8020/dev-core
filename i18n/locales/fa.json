@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "انتقال قبل از پاسخ پایان یافت",
     "errors.transfer_header_is_too_large": "عنوان انتقال خیلی بزرگه",
     "errors.invalid_transfer_header": "عنوان انتقال غیرفعال",
-    "errors.transfer_ended_before_the_complete_file": "انتقال قبل از کامل شدن پرونده تمام شد"
+    "errors.transfer_ended_before_the_complete_file": "انتقال قبل از کامل شدن پرونده تمام شد",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "پایانه ها"
   }
 }

@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Prevod je završen pre nego što je odgovoran",
     "errors.transfer_header_is_too_large": "Naglavnik prenosa je preveliko",
     "errors.invalid_transfer_header": "Nevažni naslov prenosa",
-    "errors.transfer_ended_before_the_complete_file": "Prevod je završen pre potpune datoteke"
+    "errors.transfer_ended_before_the_complete_file": "Prevod je završen pre potpune datoteke",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminali"
   }
 }

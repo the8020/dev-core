@@ -1,0 +1,34 @@
+.desktop-view.uui-content-fullscreen {
+  display: flex;
+  background: var(--surface);
+}
+.desktop-view iframe {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+}
+.desktop-view [role="status"]:not(:empty) {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+}
+.button.dev-refresh { font-size: 0; }
+.dev-refresh::before,
+.dev-show-terminals::before {
+  font: 400 20px/1 "UUI Material Symbols";
+  font-feature-settings: "liga";
+}
+.dev-refresh::before { content: "refresh" / ""; }
+.dev-show-terminals::before { content: "terminal" / ""; }
+.dev-show-tuxee::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  background: black;
+  mask: url("./tuxee-emblem.png") center / contain no-repeat;
+  mask-mode: luminance;
+}
+html[data-theme="dark"] .dev-show-tuxee::before { background: white; }

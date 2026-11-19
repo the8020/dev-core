@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Transferul s-a încheiat înainte de răspuns",
     "errors.transfer_header_is_too_large": "Capul de transfer este prea mare",
     "errors.invalid_transfer_header": "Titlul de transfer nu este valabil",
-    "errors.transfer_ended_before_the_complete_file": "Transferul s-a încheiat înainte de completarea fișierului"
+    "errors.transfer_ended_before_the_complete_file": "Transferul s-a încheiat înainte de completarea fișierului",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminale"
   }
 }

@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Överföringen avslutades före dess svar",
     "errors.transfer_header_is_too_large": "Överföringshöjdaren är för stor",
     "errors.invalid_transfer_header": "Invalida överlåtelseheader",
-    "errors.transfer_ended_before_the_complete_file": "Överföringen avslutades innan den kompletta filen"
+    "errors.transfer_ended_before_the_complete_file": "Överföringen avslutades innan den kompletta filen",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminaler"
   }
 }

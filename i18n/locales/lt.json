@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Pervedimas baigtas prieš atsakymą",
     "errors.transfer_header_is_too_large": "Perdavimo antraštė yra per didelė",
     "errors.invalid_transfer_header": "Negalima perdavimo antraštinė dalis",
-    "errors.transfer_ended_before_the_complete_file": "Perdavimo pabaiga prieš visą failą"
+    "errors.transfer_ended_before_the_complete_file": "Perdavimo pabaiga prieš visą failą",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminalai"
   }
 }

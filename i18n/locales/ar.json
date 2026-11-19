@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "انتهت النقل قبل استجابتها",
     "errors.transfer_header_is_too_large": "رأس النقل كبير جدا",
     "errors.invalid_transfer_header": "عنوان نقل غير صالح",
-    "errors.transfer_ended_before_the_complete_file": "انتهى التحويل قبل إكمال الملف"
+    "errors.transfer_ended_before_the_complete_file": "انتهى التحويل قبل إكمال الملف",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "المحطات"
   }
 }

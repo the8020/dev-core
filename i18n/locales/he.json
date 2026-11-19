@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "העברה הסתיימה לפני התגובה",
     "errors.transfer_header_is_too_large": "כותרת העברה גדולה מדי.",
     "errors.invalid_transfer_header": "כותרת העברה לא תקופה",
-    "errors.transfer_ended_before_the_complete_file": "העברה הסתיימה לפני הקובץ המלא"
+    "errors.transfer_ended_before_the_complete_file": "העברה הסתיימה לפני הקובץ המלא",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "טרמינלים"
   }
 }

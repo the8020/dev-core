@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Penghantaran berakhir sebelum balasannya",
     "errors.transfer_header_is_too_large": "Header pemindahan terlalu besar",
     "errors.invalid_transfer_header": "Header pemindahan yang tidak sah",
-    "errors.transfer_ended_before_the_complete_file": "Pemindahan selesai sebelum fail lengkap"
+    "errors.transfer_ended_before_the_complete_file": "Pemindahan selesai sebelum fail lengkap",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminal"
   }
 }

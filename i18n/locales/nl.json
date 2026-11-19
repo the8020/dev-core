@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "De overdracht is vóór de beantwoording beëindigd",
     "errors.transfer_header_is_too_large": "Transferheader is te groot",
     "errors.invalid_transfer_header": "Niet geldig overdrachtskop",
-    "errors.transfer_ended_before_the_complete_file": "Transfer eindigde vóór het volledige bestand"
+    "errors.transfer_ended_before_the_complete_file": "Transfer eindigde vóór het volledige bestand",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminals"
   }
 }

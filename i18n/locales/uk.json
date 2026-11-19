@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Передача завершилася до відповіді",
     "errors.transfer_header_is_too_large": "Заголовок передачі занадто великий",
     "errors.invalid_transfer_header": "Недійний заголовник передачі",
-    "errors.transfer_ended_before_the_complete_file": "Передача завершилася до повного файлу"
+    "errors.transfer_ended_before_the_complete_file": "Передача завершилася до повного файлу",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Термінали"
   }
 }

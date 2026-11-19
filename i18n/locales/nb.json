@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Overføringen er avsluttet før svaret",
     "errors.transfer_header_is_too_large": "Overføring overskrift er for stor",
     "errors.invalid_transfer_header": "Ugyldig overføringsoverskrift",
-    "errors.transfer_ended_before_the_complete_file": "Overføring avsluttet før hele filen"
+    "errors.transfer_ended_before_the_complete_file": "Overføring avsluttet før hele filen",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminaler"
   }
 }

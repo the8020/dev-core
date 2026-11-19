@@ -122,8 +122,8 @@ below.
   display state, and package-owned terminal workflow.
 - [public/AGENTS.md](public/AGENTS.md): Publish built browser modules and styles
   for on-demand loading by programs.
-- [services/AGENTS.md](services/AGENTS.md): Declare the authenticated retained
-  terminal service and its execution lifetime.
+- [services/AGENTS.md](services/AGENTS.md): Declare the authenticated terminal service and
+  desktop admission for the Docker preview.
 - [tables/AGENTS.md](tables/AGENTS.md): Store terminal names and exact owner
   references without terminal contents or routing credentials.
 
@@ -159,6 +159,10 @@ below.
   implementation, physical PTYs, generic browser hosting, or kernel routing.
 
 # Local Contracts
+
+- The Docker concept adds an optional Tuxee view to Development through an
+  authenticated desktop-access service. The development image supplies the
+  native Tuxee server.
 
 - `src/development.ts` allows sandbox lifecycle and shell access on every system
   role. Activation reads the hosting kernel's live node setting

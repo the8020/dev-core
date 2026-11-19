@@ -113,6 +113,8 @@ export default async function developmentTest(): Promise<void> {
   const developmentUserId = context.username;
   let status = await startDevelopmentSandbox(developmentUserId);
   let terminalRefresh = 0;
+  const desktopStyles = packageAssetURL("the8020/dev-core", "tuxee-view.css");
+  let desktop = false;
   let screenModel: Model<DevelopmentScreenModel> | undefined;
   while (true) {
     const sandboxes = await developmentSandboxes();
@@ -167,35 +169,63 @@ export default async function developmentTest(): Promise<void> {
       model: screenModel,
       layout: screenLayout,
       actions: actions.filter((action) => settingsActions.includes(action.id)),
-      customElements: [{
-        id: "sandbox-console",
-        channel: terminalUploads(sandboxId),
-        module: packageAssetURL("the8020/dev-core", terminalAssets.module),
-        styles: terminalAssets.styles.map((path) =>
-          packageAssetURL("the8020/dev-core", path)
-        ),
-        preserve: true,
-        config: {
-          texts: Object.fromEntries(
-            Object.entries(
-              (await currentLocalization()?.bundle("the8020/dev-core"))
-                ?.texts ?? {},
-            ).filter(([key]) =>
-              key.startsWith("errors.") || key.startsWith("frontend.") ||
-              key.startsWith("console.") || key.startsWith("transfer.")
+      customElements: desktop && running
+        ? [{
+          id: "sandbox-console",
+          module: packageAssetURL("the8020/dev-core", "tuxee-view.js"),
+          styles: [desktopStyles],
+          preserve: true,
+          config: {
+            language: context.language ?? "en",
+            loading: localizedText(msg("console.loading")),
+            error: localizedText(
+              msg("errors.development_sandbox_is_unavailable"),
             ),
-          ),
-          ...consoleConfiguration(sandboxId, running),
-          refresh: terminalRefresh,
-        },
-      }],
+          },
+        }]
+        : [{
+          id: "sandbox-console",
+          channel: terminalUploads(sandboxId),
+          module: packageAssetURL("the8020/dev-core", terminalAssets.module),
+          styles: [
+            desktopStyles,
+            ...terminalAssets.styles.map((path) =>
+              packageAssetURL("the8020/dev-core", path)
+            ),
+          ],
+          preserve: true,
+          config: {
+            texts: Object.fromEntries(
+              Object.entries(
+                (await currentLocalization()?.bundle("the8020/dev-core"))
+                  ?.texts ?? {},
+              ).filter(([key]) =>
+                key.startsWith("errors.") ||
+                key.startsWith("console.") || key.startsWith("transfer.")
+              ),
+            ),
+            ...consoleConfiguration(sandboxId, running),
+            refresh: terminalRefresh,
+          },
+        }],
       header: {
-        actions: actions.filter((action) =>
-          !settingsActions.includes(action.id)
-        ),
+        actions: [
+          ...actions.filter((action) => !settingsActions.includes(action.id)),
+          ...(running
+            ? [{
+              id: "desktop-toggle",
+              class: desktop ? "dev-show-terminals" : "dev-show-tuxee",
+              label: desktop ? msg("desktop.terminals") : msg("desktop.tuxee"),
+            }]
+            : []),
+        ],
       },
     });
     const action = event.action;
+    if (event.action === "desktop-toggle") {
+      desktop = !desktop;
+      continue;
+    }
     if (event.action === BACK_EVENT) return;
     if (
       running &&
@@ -776,6 +806,6 @@ function actionsFor(sandbox: DevelopmentSandbox | undefined) {
         kind: "danger" as const,
       },
     ]),
-    { id: "refresh", label: msg("changes.refresh") },
+    { id: "refresh", class: "dev-refresh", label: msg("changes.refresh") },
   ];
 }

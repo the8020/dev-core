@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Прехвърлянето приключи преди да бъде отговорено",
     "errors.transfer_header_is_too_large": "Наглавието за прехвърляне е твърде голямо.",
     "errors.invalid_transfer_header": "Невалидно заглавие за трансфер",
-    "errors.transfer_ended_before_the_complete_file": "Прехвърлянето приключи преди пълното файло"
+    "errors.transfer_ended_before_the_complete_file": "Прехвърлянето приключи преди пълното файло",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Терминали"
   }
 }

@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Η μεταφορά ολοκληρώθηκε πριν από την ανταπόκριση της",
     "errors.transfer_header_is_too_large": "Η κεφαλίδα μεταφοράς είναι πολύ μεγάλη .",
     "errors.invalid_transfer_header": "Απαράβλητη κεφαλίδα μεταφοράς",
-    "errors.transfer_ended_before_the_complete_file": "Η μεταφορά ολοκληρώθηκε πριν ολοκληρωθεί το αρχείο"
+    "errors.transfer_ended_before_the_complete_file": "Η μεταφορά ολοκληρώθηκε πριν ολοκληρωθεί το αρχείο",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Τερματικά"
   }
 }

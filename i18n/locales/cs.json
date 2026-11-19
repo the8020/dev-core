@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Přenos skončil před přijetím odpovědi",
     "errors.transfer_header_is_too_large": "Hlavička přenosu je příliš velká",
     "errors.invalid_transfer_header": "Neplatná hlavička přenosu",
-    "errors.transfer_ended_before_the_complete_file": "Přenos skončil před dokončením souboru"
+    "errors.transfer_ended_before_the_complete_file": "Přenos skončil před dokončením souboru",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminály"
   }
 }

@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Transferència finalitzada abans de la seva resposta",
     "errors.transfer_header_is_too_large": "El cap de transferència és massa gran",
     "errors.invalid_transfer_header": "Capítol de transferència invalida",
-    "errors.transfer_ended_before_the_complete_file": "La transferència va finalitzar abans del fitxer complet"
+    "errors.transfer_ended_before_the_complete_file": "La transferència va finalitzar abans del fitxer complet",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminals"
   }
 }

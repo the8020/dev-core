@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Depolamadan önce yapılan transfer sona erdi.",
     "errors.transfer_header_is_too_large": "Transfer başlığı çok büyük .",
     "errors.invalid_transfer_header": "Geçersiz aktarım başlığı",
-    "errors.transfer_ended_before_the_complete_file": "Kayıt tamamlanmadan önce sona erdi"
+    "errors.transfer_ended_before_the_complete_file": "Kayıt tamamlanmadan önce sona erdi",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminaller"
   }
 }

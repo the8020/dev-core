@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "उत्तर देने से पहले संपन्न हस्तांतरण",
     "errors.transfer_header_is_too_large": "स्थानांतरण हेडर बहुत बड़ा है",
     "errors.invalid_transfer_header": "अवैध स्थानांतरण हेडर",
-    "errors.transfer_ended_before_the_complete_file": "पूर्ण फ़ाइल से पहले स्थानांतरण समाप्त"
+    "errors.transfer_ended_before_the_complete_file": "पूर्ण फ़ाइल से पहले स्थानांतरण समाप्त",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "टर्मिनल"
   }
 }

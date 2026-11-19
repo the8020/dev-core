@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Prenos je bil zaključen pred odgovorom",
     "errors.transfer_header_is_too_large": "Glavni naslov je prevelik.",
     "errors.invalid_transfer_header": "Neveljavna naslovnica prenosa",
-    "errors.transfer_ended_before_the_complete_file": "Prenos je končan pred dokončno datoteko"
+    "errors.transfer_ended_before_the_complete_file": "Prenos je končan pred dokončno datoteko",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminali"
   }
 }

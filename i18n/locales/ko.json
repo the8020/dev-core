@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "환불은 응답 전에 종료되었습니다",
     "errors.transfer_header_is_too_large": "전송 헤더가 너무 크다",
     "errors.invalid_transfer_header": "유효하지 않은 전송 헤더",
-    "errors.transfer_ended_before_the_complete_file": "전송은 전체 파일이 완료되기 전에 종료되었습니다."
+    "errors.transfer_ended_before_the_complete_file": "전송은 전체 파일이 완료되기 전에 종료되었습니다.",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "터미널"
   }
 }

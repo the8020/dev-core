@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "转移在应答之前结束",
     "errors.transfer_header_is_too_large": "转移标题太大了",
     "errors.invalid_transfer_header": "无效的转移标题",
-    "errors.transfer_ended_before_the_complete_file": "在完整文件之前完成转移"
+    "errors.transfer_ended_before_the_complete_file": "在完整文件之前完成转移",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "终端"
   }
 }

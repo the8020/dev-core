@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Transfer ended before its response",
     "errors.transfer_header_is_too_large": "Transfer header is too large",
     "errors.invalid_transfer_header": "Invalid transfer header",
-    "errors.transfer_ended_before_the_complete_file": "Transfer ended before the complete file"
+    "errors.transfer_ended_before_the_complete_file": "Transfer ended before the complete file",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminals"
   }
 }

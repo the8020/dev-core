@@ -11,6 +11,12 @@ Parent DOX: [dev-core/programs DOX](../AGENTS.md).
 
 # Local Contracts
 
+- Place the Tuxee/Terminals switch after the icon-only Refresh action. Show the
+  monochrome Tuxee emblem in the current shell theme or the terminal icon when
+  returning to terminals. Tuxee fills the viewport below the navbar while open.
+  Pass the UUI session language to Tuxee and retain the named terminal when
+  changing views.
+
 - Terminal Upload and Download open ordinary modal screens with files and an
   absolute sandbox folder, initially `/root/uploads`. Upload selection supports
   multiple local files; download names use one filename per line relative to the

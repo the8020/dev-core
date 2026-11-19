@@ -2,7 +2,7 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
 
 # Purpose
 
-- Expose the package-owned retained terminal workflow.
+- Expose retained terminal sessions and authorize desktop access.
 
 # Ownership
 
@@ -10,6 +10,10 @@ Parent DOX: [dev-core DOX](../AGENTS.md).
   owns implementation; the kernel owns physical PTYs and generic transport.
 
 # Local Contracts
+
+- The desktop-access service requires the development-use grant and derives the
+  running sandbox from the authenticated user. The preview proxy uses this
+  service for admission.
 
 - Terminal service admission uses the existing authenticated access policy.
 - Use explicit-completion session lifetime (`session_keep_alive = "0s"`).

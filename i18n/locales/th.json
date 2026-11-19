@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "การโอนเงินเสร็จก่อนการตอบสนอง",
     "errors.transfer_header_is_too_large": "หัวหน้าโอนใหญ่เกินไป",
     "errors.invalid_transfer_header": "หัวหน้าการโอนไม่ถูกต้อง",
-    "errors.transfer_ended_before_the_complete_file": "การโอนเสร็จก่อนเอกสารครบ"
+    "errors.transfer_ended_before_the_complete_file": "การโอนเสร็จก่อนเอกสารครบ",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "เทอร์มินัล"
   }
 }

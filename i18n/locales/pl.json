@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Transfer zakończony przed jego odpowiedzią",
     "errors.transfer_header_is_too_large": "Nagłówek przesyłania jest zbyt duży",
     "errors.invalid_transfer_header": "Nieprawidłowe nagłówki przesyłania",
-    "errors.transfer_ended_before_the_complete_file": "Przekaz zakończony przed kompletnym plikem"
+    "errors.transfer_ended_before_the_complete_file": "Przekaz zakończony przed kompletnym plikem",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminale"
   }
 }

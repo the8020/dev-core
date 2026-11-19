@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "Die Übertragung wurde vor ihrer Antwort abgeschlossen.",
     "errors.transfer_header_is_too_large": "Transfer-Header ist zu groß",
     "errors.invalid_transfer_header": "Ungültige Übertragungsheader",
-    "errors.transfer_ended_before_the_complete_file": "Die Übertragung ist vor der vollständigen Datei abgeschlossen."
+    "errors.transfer_ended_before_the_complete_file": "Die Übertragung ist vor der vollständigen Datei abgeschlossen.",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "Terminals"
   }
 }

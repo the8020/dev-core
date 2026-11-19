@@ -327,6 +327,8 @@
     "errors.transfer_ended_before_its_response": "返信前に送金終了",
     "errors.transfer_header_is_too_large": "転送ヘッダは大きすぎる",
     "errors.invalid_transfer_header": "不正な転送ヘッダ",
-    "errors.transfer_ended_before_the_complete_file": "転送はファイルが完了する前に終了"
+    "errors.transfer_ended_before_the_complete_file": "転送はファイルが完了する前に終了",
+    "desktop.tuxee": "Tuxee",
+    "desktop.terminals": "端末"
   }
 }
